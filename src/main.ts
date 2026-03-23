@@ -8,6 +8,8 @@ import { loadKakaoMap } from "./services/kakaoMapLoader";
 import { KakaoMapManager, KakaoPlaceResult } from "./map/KakaoMapManager";
 import { AIService } from "./engine/AIService";
 import type { AIInput } from "./engine/types";
+import { authService } from "./services/AuthService";
+import { historyService } from "./services/HistoryService";
 
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
@@ -17,13 +19,6 @@ const getVal = (id: string, defaultVal: string = "0") => (getEl(id) as HTMLInput
 const getNum = (id: string, defaultVal: number = 0) => Number(getVal(id, defaultVal.toString())) || defaultVal;
 const getCheck = (id: string) => (getEl(id) as HTMLInputElement)?.checked || false;
 
-interface User {
-    id: string;
-    email: string;
-    isPro: boolean;
-}
-let currentUser: User | null = JSON.parse(sessionStorage.getItem('jari_user') || 'null');
-let analysisCount = Number(sessionStorage.getItem('jari_analysis_count') || '0');
 let lastAnalysisResult: RiskAnalysis | null = null;
 
 const elements = {
@@ -394,17 +389,8 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     };
 }
 
-// ── Persistence Logic (localStorage) ──────────────────────────────────────────
-const HISTORY_KEY = 'riskx_analysis_history';
-
-function saveToHistory(loc: LocationState, industry: { code: string, name: string }, radius: number, analysis: RiskAnalysis, aiResult: AIAnalysisResult | null) {
-    let history: any[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-
-    // Remove if exactly the same location + industry + radius already exists to avoid clutter
-    history = history.filter(h =>
-        !(h.location.lat === loc.lat && h.location.lng === loc.lng && h.industry.code === industry.code && h.radius === radius)
-    );
-
+// ── Persistence Logic (Supabase + localStorage) ──────────────────────────────
+async function saveToHistory(loc: LocationState, industry: { code: string, name: string }, radius: number, analysis: RiskAnalysis, aiResult: AIAnalysisResult | null) {
     // Minimize storage: Save only critical fields
     const leanAnalysis = {
         cri: analysis.cri,
@@ -415,34 +401,31 @@ function saveToHistory(loc: LocationState, industry: { code: string, name: strin
         },
         confidenceScore: analysis.confidenceScore,
         competitorsCount: (analysis as any)._rawPublicData?.competitorsCount
-    };
+    } as unknown as RiskAnalysis;
 
-    const newItem = {
+    const newItem: AnalysisHistoryItem = {
         location: {
             lat: loc.lat,
             lng: loc.lng,
-            address: loc.address,
-            placeName: loc.placeName
+            address: loc.address || loc.placeName || '',
+            placeName: loc.placeName || ''
         },
         industry,
         radius,
         analysis: leanAnalysis,
-        aiResult: aiResult ? { oneLineSummary: aiResult.oneLineSummary } : null,
+        aiResult: aiResult ? { oneLineSummary: aiResult.oneLineSummary } as AIAnalysisResult : null,
         timestamp: Date.now()
     };
 
-    history.unshift(newItem);
-    if (history.length > 20) history.pop(); // Increased limit but smaller items
-
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    await historyService.saveResult(newItem);
     renderHistory();
 }
 
-function renderHistory() {
+async function renderHistory() {
     const container = document.getElementById('kakaoRecentHistory');
     if (!container) return;
 
-    const history: any[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const history = await historyService.getHistory();
 
     // Show selection count
     const selectedCount = selectedHistoryForComparison.length;
@@ -807,7 +790,9 @@ function renderRadiusComparison(comparison: any[], activeRadius: number) {
         }
 
         // Pro Insight Hook
-        if (currentUser?.isPro) {
+        const user = authService.getUser();
+        const isPro = (user as any)?.user_metadata?.is_pro || false;
+        if (isPro) {
             summaryHtml += `
                 <div class="pro-only-insight">
                     <span>💎 PRO Insight:</span>
@@ -826,13 +811,6 @@ const debouncedAnalysis = debounce(runAnalysis, 500);
 async function runAnalysis() {
     const startTime = Date.now();
     const analysisId = `analysis_${Date.now()} `;
-
-    // Billing Gating (Phase 28)
-    const isPro = currentUser?.isPro || false;
-    if (!isPro && analysisCount >= 3) {
-        showLimitNotice();
-        return;
-    }
 
     performance.mark(`${analysisId}: start`);
     const rent = getNum('rent', 0);
@@ -1162,17 +1140,6 @@ async function runAnalysis() {
 
     // Store for saving (Phase 27)
     lastAnalysisResult = analysis;
-
-    // Increment Usage (Phase 28 Polish)
-    if (!currentUser?.isPro) {
-        analysisCount++;
-        sessionStorage.setItem('jari_analysis_count', analysisCount.toString());
-
-        // Usage Warning (Conversion Refactoring)
-        if (analysisCount === 2) {
-            alert('💡 이번이 마지막 무료 판단입니다. 결정의 순간을 놓치지 않도록 주의하세요!');
-        }
-    }
 }
 
 // @ts-ignore
@@ -1472,18 +1439,20 @@ function updateJudgmentUI(analysis: RiskAnalysis) {
     // 1. Location Context Header
     const reportLocationHeader = document.getElementById('reportLocationHeader');
     if (reportLocationHeader) {
-        const address = currentLocation.address || currentLocation.placeName || '선택된 위치';
-        const sectorLabel = elements.selectedSectorLabel.innerText || '해당 업종';
-
-        // PRO Result Label Sync
-        if (currentUser?.isPro) {
+        // Pro Insight Hook
+        const user = authService.getUser();
+        const isPro = (user as any)?.user_metadata?.is_pro || false;
+        if (isPro) {
             elements.proResultLabel?.classList.remove('hidden');
         } else {
             elements.proResultLabel?.classList.add('hidden');
         }
 
+        const address = currentLocation.address || currentLocation.placeName || '알 수 없는 위치';
+        const sectorLabel = elements.selectedSectorLabel?.innerText || '해당 업종';
+
         reportLocationHeader.innerHTML = `
-            ${currentUser?.isPro ? '<span class="pro-result-label">💎 프리미엄 판단 결과</span>' : ''}
+            ${isPro ? '<span class="pro-result-label">💎 프리미엄 판단 결과</span>' : ''}
             <div class="report-lead-text">자리보고의 판단 결정입니다</div>
             <span class="context-icon">📍</span>
             <span class="report-location-text">${address} | ${sectorLabel}</span>
@@ -1604,96 +1573,52 @@ document.querySelectorAll('.btn-start-app').forEach(btn => {
 
 // ── Auth & Billing Logic (Phase 27/28) ───────────────────────────
 function updateAuthUI() {
-    if (currentUser) {
+    const user = authService.getUser();
+    if (user) {
         elements.btnLogin?.classList.add('hidden');
         elements.userInfo?.classList.remove('hidden');
         if (elements.userEmail) {
-            elements.userEmail.textContent = currentUser.email;
+            elements.userEmail.textContent = user.email || '사용자';
         }
 
-        // Billing UI Sync
-        if (currentUser.isPro) {
-            elements.proBadge?.classList.remove('hidden');
-            elements.btnUpgrade?.classList.add('hidden');
-            elements.proBenefits?.classList.add('hidden');
-        } else {
-            elements.proBadge?.classList.add('hidden');
-            elements.btnUpgrade?.classList.remove('hidden');
-            elements.proBenefits?.classList.remove('hidden');
-        }
+        // MVP 1: Simple Pro display based on metadata
+        const isPro = (user as any).user_metadata?.is_pro || false;
+        elements.proBadge?.classList.toggle('hidden', !isPro);
+        elements.btnUpgrade?.classList.toggle('hidden', isPro);
     } else {
         elements.btnLogin?.classList.remove('hidden');
         elements.userInfo?.classList.add('hidden');
-        elements.btnUpgrade?.classList.add('hidden');
         elements.proBadge?.classList.add('hidden');
-        elements.proBenefits?.classList.remove('hidden'); // Show benefits to guests too
+        elements.btnUpgrade?.classList.add('hidden');
     }
 }
 
 function login() {
-    currentUser = { id: 'user_123', email: 'pro_founder@jaribogo.com', isPro: false };
-    sessionStorage.setItem('jari_user', JSON.stringify(currentUser));
-    updateAuthUI();
-    alert('성공적으로 로그인되었습니다 (Mock)');
+    authService.login();
 }
 
 function logout() {
-    currentUser = null;
-    sessionStorage.removeItem('jari_user');
-    updateAuthUI();
+    authService.logout();
 }
 
 function upgradeToPro() {
-    if (!currentUser) {
-        alert('로그인이 필요한 기능입니다.');
-        login();
-        return;
-    }
-
-    if (confirm('프리미엄 멤버십으로 업그레이드 하시겠습니까?\n(무제한 판단 및 정밀 비교 기능이 해제됩니다)')) {
-        currentUser.isPro = true;
-        sessionStorage.setItem('jari_user', JSON.stringify(currentUser));
-        updateAuthUI();
-        alert('축하합니다! 이제 자리보고 Pro 멤버십을 이용하실 수 있습니다.');
-
-        // Clear any limit notices
-        const existingNotice = document.querySelector('.limit-notice-banner');
-        existingNotice?.remove();
-    }
-}
-
-function showLimitNotice() {
-    // Check if notice already exists
-    if (document.querySelector('.limit-notice-banner')) return;
-
-    const notice = document.createElement('div');
-    notice.className = 'limit-notice-banner';
-    notice.innerHTML = `
-        <span class="limit-reached-title">여기서 멈추면 중요한 판단을 놓칠 수 있습니다</span>
-        <span class="limit-reached-sub">이 자리, 끝까지 확인해보시겠어요? (3/3 시도 완료)</span>
-    `;
-
-    // Insert before the upgrade container in sidebar
-    const upgradeContainer = document.getElementById('upgradeContainer');
-    if (upgradeContainer) {
-        upgradeContainer.prepend(notice);
-    } else {
-        elements.authContainer?.appendChild(notice);
-    }
-
-    alert('지금 멈추면 가장 중요한 결론을 놓칠 수 있습니다.\n프리미엄 무제한 이용으로 명확한 결정을 내려보세요!');
+    alert('MVP 1 단계에서는 아직 결정까지 확인 기능이 비활성화 되어 있습니다.');
 }
 
 elements.btnLogin?.addEventListener('click', login);
 elements.btnLogout?.addEventListener('click', logout);
 elements.btnUpgrade?.addEventListener('click', upgradeToPro);
 
-// Initialize UI
-updateAuthUI();
+// Initialize UI & Sync with Auth state
+authService.onAuthStateChange(() => {
+    updateAuthUI();
+    renderHistory();
+});
 
 // ── Save Spot Logic (Phase 27) ───────────────────────────
 elements.btnSaveSpot?.addEventListener('click', () => {
-    if (!currentUser) {
+    const user = authService.getUser();
+    if (!user) {
         if (confirm('내 자리를 저장하려면 로그인이 필요합니다. 로그인하시겠습니까?')) {
             login();
         }
@@ -1716,7 +1641,7 @@ elements.btnSaveSpot?.addEventListener('click', () => {
     };
 
     // Save to user-based storage
-    const storageKey = `saved_spots_${currentUser.id}`;
+    const storageKey = `saved_spots_${user?.id || 'guest'}`;
     const savedSpots = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
     // Simple duplicate check
