@@ -1,5 +1,5 @@
 import { LocationPayload } from "./PublicDataFetcher";
-import { resolveRegionUrl } from "./regionIndex";
+import { resolveRegionEntry, RegionEntry } from "./regionIndex";
 
 export interface CsvQueryResult {
     competitorsCount: number;
@@ -34,7 +34,8 @@ export class CsvDatasetProvider {
         };
     }
 
-    public async loadDataset(url: string, onProgress?: (count: number) => void): Promise<number> {
+    public async loadDataset(entry: RegionEntry, onProgress?: (count: number) => void): Promise<number> {
+        const url = entry.csvUrl;
         if (this.initPromise && this.loadedUrl === url) return this.initPromise;
 
         // Reset if loading a different region
@@ -44,6 +45,8 @@ export class CsvDatasetProvider {
         }
 
         this.loadedUrl = url;
+        const sizeMb = (entry.fileSize / (1024 * 1024)).toFixed(2);
+        console.log(`[CSV] Loading ${entry.name} data (${sizeMb} MB)...`);
         performance.mark('provider:csv_load:start');
 
         this.initPromise = new Promise((resolve, reject) => {
@@ -54,8 +57,8 @@ export class CsvDatasetProvider {
                     this.sectors = payload.sectors || [];
                     performance.mark('provider:csv_load:end');
                     performance.measure('provider:csv_load_time', 'provider:csv_load:start', 'provider:csv_load:end');
-                    const [m] = performance.getEntriesByName('provider:csv_load_time');
-                    console.log(`[Perf] provider:csv_load_time = ${m?.duration.toFixed(0)}ms (${payload.count.toLocaleString()} rows)`);
+                    const [m] = performance.getEntriesByName('provider:csv_load_time').slice(-1);
+                    console.log(`[Perf] provider:csv_load_time = ${m?.duration.toFixed(0)}ms | Region: ${entry.name} | Size: ${sizeMb}MB | Rows: ${payload.count.toLocaleString()}`);
                     resolve(payload.count);
                 } else if (type === 'PROGRESS' && onProgress) {
                     onProgress(payload.count);
@@ -77,9 +80,11 @@ export class CsvDatasetProvider {
      * On repeated calls with the same resolved URL, returns immediately (cached).
      */
     public async loadForLocation(lat: number, lng: number, onProgress?: (count: number) => void): Promise<number> {
-        const url = resolveRegionUrl(lat, lng);
-        console.log(`[CSV] Resolved region URL: ${url} for (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-        return this.loadDataset(url, onProgress);
+        const entry = await resolveRegionEntry(lat, lng);
+        if (!entry) {
+            return 0; // Skip loading if no manifest entry found
+        }
+        return this.loadDataset(entry, onProgress);
     }
 
     public async queryRadius(location: LocationPayload, radiusM: number, industryCode: string): Promise<CsvQueryResult> {

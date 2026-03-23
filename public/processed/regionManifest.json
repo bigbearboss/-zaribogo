@@ -1,0 +1,564 @@
+{
+    "regions": [
+        {
+            "id": "seoul_gangnam",
+            "csvUrl": "/processed/regions/seoul_gangnam.csv",
+            "name": "서울 강남구",
+            "fileSize": 17340892,
+            "latMin": 37.4691,
+            "latMax": 37.5339,
+            "lngMin": 127.0100,
+            "lngMax": 127.1001
+        },
+        {
+            "id": "seoul_gangdong",
+            "csvUrl": "/processed/regions/seoul_gangdong.csv",
+            "name": "서울 강동구",
+            "fileSize": 5089547,
+            "latMin": 37.5186,
+            "latMax": 37.5756,
+            "lngMin": 127.0929,
+            "lngMax": 127.1823
+        },
+        {
+            "id": "seoul_gangbuk",
+            "csvUrl": "/processed/regions/seoul_gangbuk.csv",
+            "name": "서울 강북구",
+            "fileSize": 3223480,
+            "latMin": 37.6129,
+            "latMax": 37.6783,
+            "lngMin": 126.9820,
+            "lngMax": 127.0350
+        },
+        {
+            "id": "seoul_gangseo",
+            "csvUrl": "/processed/regions/seoul_gangseo.csv",
+            "name": "서울 강서구",
+            "fileSize": 7012324,
+            "latMin": 37.5221,
+            "latMax": 37.5889,
+            "lngMin": 126.7982,
+            "lngMax": 126.8855
+        },
+        {
+            "id": "seoul_gwanak",
+            "csvUrl": "/processed/regions/seoul_gwanak.csv",
+            "name": "서울 관악구",
+            "fileSize": 5156995,
+            "latMin": 37.4546,
+            "latMax": 37.5141,
+            "lngMin": 126.9007,
+            "lngMax": 126.9878
+        },
+        {
+            "id": "seoul_gwangjin",
+            "csvUrl": "/processed/regions/seoul_gwangjin.csv",
+            "name": "서울 광진구",
+            "fileSize": 4793710,
+            "latMin": 37.5368,
+            "latMax": 37.5736,
+            "lngMin": 127.0617,
+            "lngMax": 127.1168
+        },
+        {
+            "id": "seoul_guro",
+            "csvUrl": "/processed/regions/seoul_guro.csv",
+            "name": "서울 구로구",
+            "fileSize": 4838586,
+            "latMin": 37.4791,
+            "latMax": 37.5315,
+            "lngMin": 126.8469,
+            "lngMax": 126.9117
+        },
+        {
+            "id": "seoul_geumcheon",
+            "csvUrl": "/processed/regions/seoul_geumcheon.csv",
+            "name": "서울 금천구",
+            "fileSize": 4853406,
+            "latMin": 37.4339,
+            "latMax": 37.4858,
+            "lngMin": 126.8743,
+            "lngMax": 126.9206
+        },
+        {
+            "id": "seoul_nowon",
+            "csvUrl": "/processed/regions/seoul_nowon.csv",
+            "name": "서울 노원구",
+            "fileSize": 4131542,
+            "latMin": 37.6146,
+            "latMax": 37.6875,
+            "lngMin": 127.0429,
+            "lngMax": 127.1101
+        },
+        {
+            "id": "seoul_dobong",
+            "csvUrl": "/processed/regions/seoul_dobong.csv",
+            "name": "서울 도봉구",
+            "fileSize": 2736423,
+            "latMin": 37.6324,
+            "latMax": 37.6926,
+            "lngMin": 127.0128,
+            "lngMax": 127.0542
+        },
+        {
+            "id": "seoul_dongdaemun",
+            "csvUrl": "/processed/regions/seoul_dongdaemun.csv",
+            "name": "서울 동대문구",
+            "fileSize": 4632542,
+            "latMin": 37.5611,
+            "latMax": 37.6056,
+            "lngMin": 127.0234,
+            "lngMax": 127.0770
+        },
+        {
+            "id": "seoul_dongjak",
+            "csvUrl": "/processed/regions/seoul_dongjak.csv",
+            "name": "서울 동작구",
+            "fileSize": 3696720,
+            "latMin": 37.4761,
+            "latMax": 37.5158,
+            "lngMin": 126.9043,
+            "lngMax": 126.9833
+        },
+        {
+            "id": "seoul_mapo",
+            "csvUrl": "/processed/regions/seoul_mapo.csv",
+            "name": "서울 마포구",
+            "fileSize": 8062255,
+            "latMin": 37.5351,
+            "latMax": 37.5885,
+            "lngMin": 126.8726,
+            "lngMax": 126.9637
+        },
+        {
+            "id": "seoul_seodaemun",
+            "csvUrl": "/processed/regions/seoul_seodaemun.csv",
+            "name": "서울 서대문구",
+            "fileSize": 3775812,
+            "latMin": 37.5556,
+            "latMax": 37.6061,
+            "lngMin": 126.9041,
+            "lngMax": 126.9686
+        },
+        {
+            "id": "seoul_seocho",
+            "csvUrl": "/processed/regions/seoul_seocho.csv",
+            "name": "서울 서초구",
+            "fileSize": 10560304,
+            "latMin": 37.4305,
+            "latMax": 37.5217,
+            "lngMin": 126.9811,
+            "lngMax": 127.0931
+        },
+        {
+            "id": "seoul_seongdong",
+            "csvUrl": "/processed/regions/seoul_seongdong.csv",
+            "name": "서울 성동구",
+            "fileSize": 4760474,
+            "latMin": 37.5346,
+            "latMax": 37.5717,
+            "lngMin": 127.0098,
+            "lngMax": 127.0732
+        },
+        {
+            "id": "seoul_seongbuk",
+            "csvUrl": "/processed/regions/seoul_seongbuk.csv",
+            "name": "서울 성북구",
+            "fileSize": 4186710,
+            "latMin": 37.5780,
+            "latMax": 37.6233,
+            "lngMin": 126.9835,
+            "lngMax": 127.0701
+        },
+        {
+            "id": "seoul_songpa",
+            "csvUrl": "/processed/regions/seoul_songpa.csv",
+            "name": "서울 송파구",
+            "fileSize": 9038816,
+            "latMin": 37.4686,
+            "latMax": 37.5397,
+            "lngMin": 127.0717,
+            "lngMax": 127.1584
+        },
+        {
+            "id": "seoul_yangcheon",
+            "csvUrl": "/processed/regions/seoul_yangcheon.csv",
+            "name": "서울 양천구",
+            "fileSize": 4145076,
+            "latMin": 37.5052,
+            "latMax": 37.5508,
+            "lngMin": 126.8226,
+            "lngMax": 126.8877
+        },
+        {
+            "id": "seoul_yeongdeungpo",
+            "csvUrl": "/processed/regions/seoul_yeongdeungpo.csv",
+            "name": "서울 영등포구",
+            "fileSize": 8057469,
+            "latMin": 37.4857,
+            "latMax": 37.5453,
+            "lngMin": 126.8822,
+            "lngMax": 126.9416
+        },
+        {
+            "id": "seoul_yongsan",
+            "csvUrl": "/processed/regions/seoul_yongsan.csv",
+            "name": "서울 용산구",
+            "fileSize": 4254901,
+            "latMin": 37.5081,
+            "latMax": 37.5549,
+            "lngMin": 126.9453,
+            "lngMax": 127.0156
+        },
+        {
+            "id": "seoul_eunpyeong",
+            "csvUrl": "/processed/regions/seoul_eunpyeong.csv",
+            "name": "서울 은평구",
+            "fileSize": 4242425,
+            "latMin": 37.5772,
+            "latMax": 37.6581,
+            "lngMin": 126.8843,
+            "lngMax": 126.9507
+        },
+        {
+            "id": "seoul_jongno",
+            "csvUrl": "/processed/regions/seoul_jongno.csv",
+            "name": "서울 종로구",
+            "fileSize": 5560278,
+            "latMin": 37.5659,
+            "latMax": 37.6174,
+            "lngMin": 126.9527,
+            "lngMax": 127.0230
+        },
+        {
+            "id": "seoul_jung",
+            "csvUrl": "/processed/regions/seoul_jung.csv",
+            "name": "서울 중구",
+            "fileSize": 6245402,
+            "latMin": 37.5460,
+            "latMax": 37.5708,
+            "lngMin": 126.9617,
+            "lngMax": 127.0267
+        },
+        {
+            "id": "seoul_jungnang",
+            "csvUrl": "/processed/regions/seoul_jungnang.csv",
+            "name": "서울 중랑구",
+            "fileSize": 3894956,
+            "latMin": 37.5709,
+            "latMax": 37.6199,
+            "lngMin": 127.0710,
+            "lngMax": 127.1155
+        },
+        {
+            "id": "gyeonggi_gwacheon",
+            "csvUrl": "/processed/regions/gyeonggi_gwacheon.csv",
+            "name": "경기 과천시",
+            "fileSize": 703301,
+            "latMin": 37.4039,
+            "latMax": 37.4639,
+            "lngMin": 126.9711,
+            "lngMax": 127.0345
+        },
+        {
+            "id": "gyeonggi_gwangmyeong",
+            "csvUrl": "/processed/regions/gyeonggi_gwangmyeong.csv",
+            "name": "경기 광명시",
+            "fileSize": 3008920,
+            "latMin": 37.4032,
+            "latMax": 37.4931,
+            "lngMin": 126.8301,
+            "lngMax": 126.8993
+        },
+        {
+            "id": "gyeonggi_gwangju",
+            "csvUrl": "/processed/regions/gyeonggi_gwangju.csv",
+            "name": "경기 광주시",
+            "fileSize": 4142074,
+            "latMin": 37.2729,
+            "latMax": 37.5323,
+            "lngMin": 127.1378,
+            "lngMax": 127.4421
+        },
+        {
+            "id": "gyeonggi_guri",
+            "csvUrl": "/processed/regions/gyeonggi_guri.csv",
+            "name": "경기 구리시",
+            "fileSize": 2810019,
+            "latMin": 37.5600,
+            "latMax": 37.6448,
+            "lngMin": 127.1068,
+            "lngMax": 127.1661
+        },
+        {
+            "id": "gyeonggi_gunpo",
+            "csvUrl": "/processed/regions/gyeonggi_gunpo.csv",
+            "name": "경기 군포시",
+            "fileSize": 2496057,
+            "latMin": 37.3116,
+            "latMax": 37.3781,
+            "lngMin": 126.8771,
+            "lngMax": 126.9622
+        },
+        {
+            "id": "gyeonggi_gimpo",
+            "csvUrl": "/processed/regions/gyeonggi_gimpo.csv",
+            "name": "경기 김포시",
+            "fileSize": 6233028,
+            "latMin": 37.5822,
+            "latMax": 37.7702,
+            "lngMin": 126.5249,
+            "lngMax": 126.8007
+        },
+        {
+            "id": "gyeonggi_namyangju",
+            "csvUrl": "/processed/regions/gyeonggi_namyangju.csv",
+            "name": "경기 남양주시",
+            "fileSize": 8810699,
+            "latMin": 37.5143,
+            "latMax": 37.7700,
+            "lngMin": 127.0999,
+            "lngMax": 127.3760
+        },
+        {
+            "id": "gyeonggi_dongducheon",
+            "csvUrl": "/processed/regions/gyeonggi_dongducheon.csv",
+            "name": "경기 동두천시",
+            "fileSize": 1135873,
+            "latMin": 37.8639,
+            "latMax": 37.9735,
+            "lngMin": 127.0110,
+            "lngMax": 127.1387
+        },
+        {
+            "id": "gyeonggi_siheung",
+            "csvUrl": "/processed/regions/gyeonggi_siheung.csv",
+            "name": "경기 시흥시",
+            "fileSize": 6081204,
+            "latMin": 37.3128,
+            "latMax": 37.4719,
+            "lngMin": 126.6731,
+            "lngMax": 126.8756
+        },
+        {
+            "id": "gyeonggi_anseong",
+            "csvUrl": "/processed/regions/gyeonggi_anseong.csv",
+            "name": "경기 안성시",
+            "fileSize": 2693155,
+            "latMin": 36.9035,
+            "latMax": 37.1423,
+            "lngMin": 127.1068,
+            "lngMax": 127.5148
+        },
+        {
+            "id": "gyeonggi_yangju",
+            "csvUrl": "/processed/regions/gyeonggi_yangju.csv",
+            "name": "경기 양주시",
+            "fileSize": 3156605,
+            "latMin": 37.6725,
+            "latMax": 37.9353,
+            "lngMin": 126.9102,
+            "lngMax": 127.1167
+        },
+        {
+            "id": "gyeonggi_yangpyeong",
+            "csvUrl": "/processed/regions/gyeonggi_yangpyeong.csv",
+            "name": "경기 양평군",
+            "fileSize": 2076656,
+            "latMin": 37.3735,
+            "latMax": 37.6552,
+            "lngMin": 127.3143,
+            "lngMax": 127.8081
+        },
+        {
+            "id": "gyeonggi_yeoju",
+            "csvUrl": "/processed/regions/gyeonggi_yeoju.csv",
+            "name": "경기 여주시",
+            "fileSize": 1709530,
+            "latMin": 37.1519,
+            "latMax": 37.4362,
+            "lngMin": 127.4182,
+            "lngMax": 127.7660
+        },
+        {
+            "id": "gyeonggi_yeoncheon",
+            "csvUrl": "/processed/regions/gyeonggi_yeoncheon.csv",
+            "name": "경기 연천군",
+            "fileSize": 682064,
+            "latMin": 37.9411,
+            "latMax": 38.2312,
+            "lngMin": 126.8267,
+            "lngMax": 127.1608
+        },
+        {
+            "id": "gyeonggi_osan",
+            "csvUrl": "/processed/regions/gyeonggi_osan.csv",
+            "name": "경기 오산시",
+            "fileSize": 2740144,
+            "latMin": 37.1257,
+            "latMax": 37.1992,
+            "lngMin": 127.0050,
+            "lngMax": 127.0955
+        },
+        {
+            "id": "gyeonggi_uiwang",
+            "csvUrl": "/processed/regions/gyeonggi_uiwang.csv",
+            "name": "경기 의왕시",
+            "fileSize": 1276819,
+            "latMin": 37.3018,
+            "latMax": 37.4070,
+            "lngMin": 126.9319,
+            "lngMax": 127.0300
+        },
+        {
+            "id": "gyeonggi_uijeongbu",
+            "csvUrl": "/processed/regions/gyeonggi_uijeongbu.csv",
+            "name": "경기 의정부시",
+            "fileSize": 5235273,
+            "latMin": 37.6894,
+            "latMax": 37.7765,
+            "lngMin": 127.0057,
+            "lngMax": 127.1208
+        },
+        {
+            "id": "gyeonggi_icheon",
+            "csvUrl": "/processed/regions/gyeonggi_icheon.csv",
+            "name": "경기 이천시",
+            "fileSize": 3110281,
+            "latMin": 37.0439,
+            "latMax": 37.3492,
+            "lngMin": 127.3348,
+            "lngMax": 127.6368
+        },
+        {
+            "id": "gyeonggi_paju",
+            "csvUrl": "/processed/regions/gyeonggi_paju.csv",
+            "name": "경기 파주시",
+            "fileSize": 6011958,
+            "latMin": 37.6943,
+            "latMax": 38.0044,
+            "lngMin": 126.6771,
+            "lngMax": 127.0123
+        },
+        {
+            "id": "gyeonggi_pyeongtaek",
+            "csvUrl": "/processed/regions/gyeonggi_pyeongtaek.csv",
+            "name": "경기 평택시",
+            "fileSize": 8054559,
+            "latMin": 36.9144,
+            "latMax": 37.1396,
+            "lngMin": 126.7921,
+            "lngMax": 127.1537
+        },
+        {
+            "id": "gyeonggi_pocheon",
+            "csvUrl": "/processed/regions/gyeonggi_pocheon.csv",
+            "name": "경기 포천시",
+            "fileSize": 2625201,
+            "latMin": 37.7562,
+            "latMax": 38.1731,
+            "lngMin": 127.0969,
+            "lngMax": 127.4225
+        },
+        {
+            "id": "gyeonggi_hanam",
+            "csvUrl": "/processed/regions/gyeonggi_hanam.csv",
+            "name": "경기 하남시",
+            "fileSize": 4219716,
+            "latMin": 37.4724,
+            "latMax": 37.5805,
+            "lngMin": 127.1404,
+            "lngMax": 127.2768
+        },
+        {
+            "id": "gyeonggi_hwaseong",
+            "csvUrl": "/processed/regions/gyeonggi_hwaseong.csv",
+            "name": "경기 화성시",
+            "fileSize": 11485773,
+            "latMin": 37.0260,
+            "latMax": 37.2913,
+            "lngMin": 126.5413,
+            "lngMax": 127.1491
+        },
+        {
+            "id": "gyeonggi_gapyeong",
+            "csvUrl": "/processed/regions/gyeonggi_gapyeong.csv",
+            "name": "경기 가평군",
+            "fileSize": 1658460,
+            "latMin": 37.5883,
+            "latMax": 38.0273,
+            "lngMin": 127.2824,
+            "lngMax": 127.5992
+        },
+        {
+            "id": "gyeonggi_suwon",
+            "csvUrl": "/processed/regions/gyeonggi_suwon.csv",
+            "name": "경기 수원시",
+            "fileSize": 15654715,
+            "latMin": 37.2292,
+            "latMax": 37.3383,
+            "lngMin": 126.9333,
+            "lngMax": 127.0882
+        },
+        {
+            "id": "gyeonggi_seongnam",
+            "csvUrl": "/processed/regions/gyeonggi_seongnam.csv",
+            "name": "경기 성남시",
+            "fileSize": 12668227,
+            "latMin": 37.3354,
+            "latMax": 37.4737,
+            "lngMin": 127.0360,
+            "lngMax": 127.1858
+        },
+        {
+            "id": "gyeonggi_goyang",
+            "csvUrl": "/processed/regions/gyeonggi_goyang.csv",
+            "name": "경기 고양시",
+            "fileSize": 14026485,
+            "latMin": 37.5777,
+            "latMax": 37.7471,
+            "lngMin": 126.6803,
+            "lngMax": 126.9599
+        },
+        {
+            "id": "gyeonggi_yongin",
+            "csvUrl": "/processed/regions/gyeonggi_yongin.csv",
+            "name": "경기 용인시",
+            "fileSize": 12841282,
+            "latMin": 37.0869,
+            "latMax": 37.3710,
+            "lngMin": 127.0255,
+            "lngMax": 127.4202
+        },
+        {
+            "id": "gyeonggi_bucheon",
+            "csvUrl": "/processed/regions/gyeonggi_bucheon.csv",
+            "name": "경기 부천시",
+            "fileSize": 10090433,
+            "latMin": 37.4604,
+            "latMax": 37.5521,
+            "lngMin": 126.7420,
+            "lngMax": 126.8334
+        },
+        {
+            "id": "gyeonggi_ansan",
+            "csvUrl": "/processed/regions/gyeonggi_ansan.csv",
+            "name": "경기 안산시",
+            "fileSize": 9122892,
+            "latMin": 37.1118,
+            "latMax": 37.3711,
+            "lngMin": 126.3910,
+            "lngMax": 126.9370
+        },
+        {
+            "id": "gyeonggi_anyang",
+            "csvUrl": "/processed/regions/gyeonggi_anyang.csv",
+            "name": "경기 안양시",
+            "fileSize": 7746478,
+            "latMin": 37.3618,
+            "latMax": 37.4356,
+            "lngMin": 126.8820,
+            "lngMax": 126.9811
+        }
+    ]
+}

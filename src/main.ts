@@ -6,7 +6,6 @@ import { DataSource } from "./engine/dataMergeRules";
 import { applyModeToDocument, conditionalLog, isQaModeActive, isTestRunnerActive } from "./engine/appMode";
 import { loadKakaoMap } from "./services/kakaoMapLoader";
 import { KakaoMapManager, KakaoPlaceResult } from "./map/KakaoMapManager";
-import { initKakaoMapDebug } from "./features/map/initKakaoMapDebug";
 import { AIService } from "./engine/AIService";
 import type { AIInput } from "./engine/types";
 
@@ -1364,9 +1363,6 @@ function handleLocationSelect(lat: number, lng: number, label: string, source: L
     debouncedAnalysis();
 };
 
-// 1. Initialize Debug Map (Static/Reference)
-initKakaoMapDebug('kakaoMapDebugContainer');
-
 // 2. Initialize Interactive Sidebar Map
 loadKakaoMap()
     .then(() => {
@@ -1479,7 +1475,7 @@ function updateJudgmentUI(analysis: RiskAnalysis) {
         }
 
         reportLocationHeader.innerHTML = `
-            ${currentUser?.isPro ? '<span class="pro-result-label">💎 프리미엄 판단 결정</span>' : ''}
+            ${currentUser?.isPro ? '<span class="pro-result-label">💎 프리미엄 판단 결과</span>' : ''}
             <div class="report-lead-text">자리보고의 판단 결정입니다</div>
             <span class="context-icon">📍</span>
             <span class="report-location-text">${address} | ${sectorLabel}</span>

@@ -23,7 +23,7 @@ export class RadiusMap {
         `;
 
         // Background Radius Circle
-        svgContent += `<circle class="map-radius-circle" cx="${centerX}" cy="${centerY}" r="${viewRadius}" />`;
+        svgContent += `<circle class="map-radius-circle" cx="${centerX}" cy="${centerY}" r="${viewRadius}" fill="none" stroke="var(--glass-border)" stroke-width="1" />`;
 
         // Scale indicator
         svgContent += `<text x="${centerX}" y="${centerY + viewRadius + 20}" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-weight="600">RADIUS: ${radiusM}m</text>`;
@@ -32,18 +32,18 @@ export class RadiusMap {
         const displayPOI = Math.min(totalPOI, 150);
         for (let i = 0; i < displayPOI; i++) {
             const { x, y } = this.getRandomPoint(centerX, centerY, viewRadius);
-            svgContent += `<circle class="map-poi" cx="${x}" cy="${y}" r="1.5" />`;
+            svgContent += `<circle class="map-poi" cx="${x}" cy="${y}" r="1.5" fill="var(--text-muted)" opacity="0.4" />`;
         }
 
         // Competitors (Highlighted)
         const displayComp = Math.min(competitors, 40);
         for (let i = 0; i < displayComp; i++) {
             const { x, y } = this.getRandomPoint(centerX, centerY, viewRadius);
-            svgContent += `<circle class="map-competitor" cx="${x}" cy="${y}" r="3.5" />`;
+            svgContent += `<circle class="map-competitor" cx="${x}" cy="${y}" r="3.5" fill="var(--accent-red)" filter="url(#poiGlow)" />`;
         }
 
         // Center (Our Store)
-        svgContent += `<circle class="map-center" cx="${centerX}" cy="${centerY}" r="6" />`;
+        svgContent += `<circle class="map-center" cx="${centerX}" cy="${centerY}" r="6" fill="var(--accent-primary)" />`;
         svgContent += `<circle cx="${centerX}" cy="${centerY}" r="12" fill="none" stroke="var(--accent-primary)" stroke-width="1" opacity="0.3">
             <animate attributeName="r" from="6" to="15" dur="1.5s" repeatCount="indefinite" />
             <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite" />

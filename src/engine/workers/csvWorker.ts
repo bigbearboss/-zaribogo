@@ -33,30 +33,36 @@ const INTERNAL_TO_CSV_CODE: Record<string, string> = {
     snack: 'I2', noodle: 'I2', bbq: 'I2',
     korean: 'I2', japanese: 'I2', chinese: 'I2',
     western: 'I2', buffet: 'I2', brunch: 'I2',
+    delivery: 'I2', fast_food: 'I2', qsr: 'I2',
 
     // RETAIL / 소매 → G2
     convenience: 'G2', supermarket: 'G2', clothing: 'G2',
     fashion: 'G2', accessories: 'G2', electronics: 'G2',
     cosmetics: 'G2', pharmacy: 'G2', bookstore: 'G2',
     flower: 'G2', gift: 'G2', toy: 'G2',
-    sport: 'G2', outdoor: 'G2',
+    sport: 'G2', outdoor: 'G2', apparel: 'G2',
+    fruit: 'G2', veg: 'G2', butcher: 'G2', stationery: 'G2',
+    pet: 'G2',
 
     // HEALTHCARE / 보건의료 → Q1
     clinic: 'Q1', dental: 'Q1', hospital: 'Q1',
     medical: 'Q1', beauty: 'Q1', skin: 'Q1',
-    spa: 'Q1',
+    spa: 'Q1', healthcare: 'Q1', doctor: 'Q1',
 
     // BEAUTY / 수리·개인 → S2
     hair: 'S2', nail: 'S2', massage: 'S2',
-    laundry: 'S2', repair: 'S2',
+    laundry: 'S2', repair: 'S2', salon: 'S2',
+    studio: 'S2', beauty_service: 'S2',
 
     // EDUCATION / 교육 → P1
     edu: 'P1', academy: 'P1', tutoring: 'P1',
     language: 'P1', art_class: 'P1', music_class: 'P1',
+    school: 'P1', library: 'P1',
 
     // FITNESS / 예술·스포츠 → R1
     gym: 'R1', pilates: 'R1', yoga: 'R1',
     fitness: 'R1', sport_club: 'R1', swimming: 'R1',
+    golf: 'R1', tennis: 'R1',
 };
 
 /** Resolve internal industryCode → CSV 대분류코드 for index lookup. */
@@ -95,16 +101,26 @@ function buildIndustryIndex() {
     for (const row of dataset) {
         if (!row.code) continue;
 
-        let list = industryIndex.get(row.code);
-        if (!list) {
-            list = [];
-            industryIndex.set(row.code, list);
+        // 1. Index by specific sub-category code (e.g., I21201)
+        const subCode = row.code;
+        if (!industryIndex.has(subCode)) {
+            industryIndex.set(subCode, []);
         }
-        list.push(row);
+        industryIndex.get(subCode)!.push(row);
 
-        // Also track unique names if available (metadata)
-        if (row.name && !uniqueSectors.has(row.code)) {
-            uniqueSectors.set(row.code, row.name);
+        // 2. Index by major category code (e.g., I2)
+        // Usually the first 2 characters of the subCode
+        const majorCode = subCode.substring(0, 2);
+        if (majorCode !== subCode) {
+            if (!industryIndex.has(majorCode)) {
+                industryIndex.set(majorCode, []);
+            }
+            industryIndex.get(majorCode)!.push(row);
+        }
+
+        // Also track unique names (only for sub-categories for display)
+        if (row.name && !uniqueSectors.has(subCode) && subCode.length > 2) {
+            uniqueSectors.set(subCode, row.name);
         }
     }
 
@@ -112,8 +128,8 @@ function buildIndustryIndex() {
     performance.mark('csv:index:build:end');
     performance.measure('csv:index_build_time', 'csv:index:build:start', 'csv:index:build:end');
     const [m] = performance.getEntriesByName('csv:index_build_time');
-    const codes = industryIndex.size;
-    console.log(`[Perf] csv:index_build_time = ${m?.duration.toFixed(1)}ms | ${codes} industry codes indexed`);
+    const entries = industryIndex.size;
+    console.log(`[CSV Worker] Index built: ${entries} code entries (Major + Sub) | Time: ${m?.duration.toFixed(1)}ms`);
 
     return Array.from(uniqueSectors.entries()).map(([code, name]) => ({ code, name }));
 }
@@ -123,6 +139,12 @@ self.onmessage = async (e: MessageEvent) => {
 
     if (type === 'LOAD_CSV') {
         const { url } = payload;
+
+        // Reset state for fresh regional load
+        dataset = [];
+        industryIndex.clear();
+        isLoaded = false;
+        indexReady = false;
 
         console.log(`[CSV Worker] Starting background load for ${url}`);
         performance.mark('csv:load:start');
@@ -148,18 +170,22 @@ self.onmessage = async (e: MessageEvent) => {
                 // CSV load timing
                 performance.mark('csv:load:end');
                 performance.measure('csv:load_time', 'csv:load:start', 'csv:load:end');
-                const [loadMeasure] = performance.getEntriesByName('csv:load_time');
+                const [loadMeasure] = performance.getEntriesByName('csv:load_time').slice(-1);
                 const loadMs = loadMeasure?.duration ?? 0;
-                console.log(`[Perf] csv:load_time = ${loadMs.toFixed(0)}ms | ${dataset.length.toLocaleString()} POIs`);
 
                 // Build industry index immediately after load
                 const sectors = buildIndustryIndex();
+                const [indexMeasure] = performance.getEntriesByName('csv:index_build_time').slice(-1);
+                const indexMs = indexMeasure?.duration ?? 0;
+
+                console.log(`[Perf] CSV Worker: Total ${loadMs.toFixed(0)}ms (Load+Parse) | Indexing ${indexMs.toFixed(0)}ms | Rows: ${dataset.length.toLocaleString()}`);
 
                 self.postMessage({
                     type: 'LOAD_COMPLETE',
                     payload: {
                         count: dataset.length,
                         loadTimeMs: loadMs,
+                        indexTimeMs: indexMs,
                         indexedCodes: industryIndex.size,
                         sectors
                     }
@@ -182,14 +208,14 @@ self.onmessage = async (e: MessageEvent) => {
 
         // ── P1: Resolve internal code → CSV 대분류코드, then pick index subset ──
         const csvCode = indexReady ? resolveIndexCode(industryCode) : null;
-        const searchTarget: PoiRecord[] =
-            (csvCode && industryIndex.has(csvCode))
-                ? industryIndex.get(csvCode)!
-                : dataset;
+        const hitIndex = csvCode && industryIndex.get(csvCode);
+        let searchTarget: PoiRecord[];
 
-        const usingIndex = searchTarget !== dataset;
-        if (!usingIndex && industryCode) {
-            console.warn(`[CSV Worker] No index entry for code="${industryCode}", falling back to full scan (${dataset.length.toLocaleString()} rows)`);
+        if (hitIndex) {
+            searchTarget = hitIndex;
+        } else {
+            console.warn(`[CSV Worker] Index miss for code="${industryCode}" (resolved: "${csvCode ?? 'null'}"). Falling back to full scan (${dataset.length} records).`);
+            searchTarget = dataset;
         }
 
         let competitorsCount = 0;
@@ -239,7 +265,7 @@ self.onmessage = async (e: MessageEvent) => {
         const [qMeasure] = performance.getEntriesByName('csv:query_time').slice(-1);
         const queryMs = qMeasure?.duration ?? 0;
         console.log(
-            `[Perf] csv:query_time(r=${radiusM}m, code=${industryCode}, via=${usingIndex ? 'index' : 'fullscan'}, subset=${searchTarget.length.toLocaleString()}) = ${queryMs.toFixed(1)}ms` +
+            `[Perf] csv:query_time(r=${radiusM}m, code=${industryCode}, via=${searchTarget === dataset ? 'fullscan' : 'index'}, subset=${searchTarget.length.toLocaleString()}) = ${queryMs.toFixed(1)}ms` +
             ` → ${competitorsCount} comps / ${poiTotalCount} POIs`
         );
 
