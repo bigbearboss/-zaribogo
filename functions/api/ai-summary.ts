@@ -116,8 +116,6 @@ JSON 형식:
             signal: controller.signal
         });
 
-        clearTimeout(timeoutId);
-
         if (!response.ok) {
             const errorData = await response.text();
             return new Response(JSON.stringify({ error: `OpenAI API Error: ${response.status}`, details: errorData }), {
@@ -127,18 +125,32 @@ JSON 형식:
         }
 
         const aiData: any = await response.json();
-        const content = aiData.choices[0].message.content;
+        const content = aiData?.choices?.[0]?.message?.content;
 
-        // Return the JSON content directly as the response
-        return new Response(content, {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
+        if (!content) {
+            throw new Error("Empty or malformed response from OpenAI");
+        }
+
+        // 5. JSON Validation & Re-formatting
+        try {
+            const parsed = JSON.parse(content);
+            return new Response(JSON.stringify(parsed), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            });
+        } catch (parseErr) {
+            console.error("[AI Proxy] JSON Parse Error:", parseErr, "Content:", content);
+            throw new Error("AI response was not valid JSON");
+        }
 
     } catch (err: any) {
-        return new Response(JSON.stringify({ error: "Internal Server Error", message: err.message }), {
-            status: 500,
+        const errorName = err.name === 'AbortError' ? 'TimeoutError' : 'InternalServerError';
+        const status = err.name === 'AbortError' ? 504 : 500;
+        return new Response(JSON.stringify({ error: errorName, message: err.message }), {
+            status,
             headers: { "Content-Type": "application/json" },
         });
+    } finally {
+        clearTimeout(timeoutId);
     }
 };
