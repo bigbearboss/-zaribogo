@@ -43,15 +43,28 @@ export class KakaoMapManager {
     // ──────────────────────────────────────────────────────────
 
     init(containerId: string, lat: number, lng: number): void {
+        console.log(`[KakaoMap] Initializing on #${containerId} at (${lat}, ${lng})`);
+
         const kakao = window.kakao;
+        if (!kakao || !kakao.maps) {
+            console.error('[KakaoMap] window.kakao.maps is not available during init.');
+            return;
+        }
+
         const container = document.getElementById(containerId);
         if (!container) {
-            console.warn(`[KakaoMap] Container #${containerId} not found.`);
+            console.error(`[KakaoMap] Container #${containerId} not found in DOM.`);
             return;
         }
 
         const center = new kakao.maps.LatLng(lat, lng);
-        this.map = new kakao.maps.Map(container, { center, level: 4 });
+        try {
+            this.map = new kakao.maps.Map(container, { center, level: 4 });
+            console.log('[KakaoMap] Google-style interactive map instance created successfully.');
+        } catch (err) {
+            console.error('[KakaoMap] Failed to create Map instance:', err);
+            return;
+        }
 
         // Services
         this.ps = new kakao.maps.services.Places();
@@ -61,6 +74,7 @@ export class KakaoMapManager {
         kakao.maps.event.addListener(this.map, 'click', (e: any) => {
             const clickedLat = e.latLng.getLat();
             const clickedLng = e.latLng.getLng();
+            console.log(`[KakaoMap] Map clicked: ${clickedLat}, ${clickedLng}`);
             this._reverseGeocode(clickedLat, clickedLng);
         });
     }

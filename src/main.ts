@@ -1363,21 +1363,26 @@ function handleLocationSelect(lat: number, lng: number, label: string, source: L
     debouncedAnalysis();
 };
 
+console.log('[Main] App starting...');
+
 // 2. Initialize Interactive Sidebar Map
+console.log('[Main] Requesting Kakao Map SDK...');
 loadKakaoMap()
     .then(() => {
+        console.log('[Main] SDK Loaded. Initializing Map Manager...');
         mapManager.init('kakaoMapContainer', currentLocation.lat, currentLocation.lng);
         mapManager.setMarker(currentLocation.lat, currentLocation.lng, currentRadius);
         mapManager.onLocationSelect = handleLocationSelect;
 
         // ── Phase 16 Initialization ───────────────────────────────────────────
+        console.log('[Main] Initializing secondary features...');
         initSectors();
         setupProductActions();
         renderHistory();
 
         // Restore from URL if present
         if (!restoreStateFromUrl()) {
-            // If no URL state, trigger initial analysis for default location
+            console.log('[Main] No URL state found, triggering default analysis.');
             debouncedAnalysis();
         }
 
@@ -1391,13 +1396,15 @@ loadKakaoMap()
         async function doSearch() {
             const query = searchInput?.value.trim();
             if (!query || !resultsListEl) return;
+            console.log(`[Search] Query: ${query}`);
 
             // Hybrid search: Start with keyword (places), then try address
             const keywordResults = await mapManager.searchKeyword(query);
             const addressResults = await mapManager.searchAddress(query);
 
-            // Merge results (simple concat, dedupe by ID if necessary)
+            // Merge results
             searchResults = [...keywordResults, ...addressResults].slice(0, 10);
+            console.log(`[Search] Found ${searchResults.length} results.`);
 
             if (searchResults.length === 0) {
                 resultsListEl.innerHTML = '<li class="kakao-no-result">검색 결과가 없습니다.</li>';
@@ -1424,6 +1431,7 @@ loadKakaoMap()
             const r = searchResults[idx];
             if (!r) return;
 
+            console.log(`[Search] Result selected: ${r.placeName}`);
             handleLocationSelect(r.lat, r.lng, r.placeName, 'keyword_search');
             resultsListEl.style.display = 'none';
             if (searchInput) searchInput.value = r.placeName;
@@ -1440,8 +1448,8 @@ loadKakaoMap()
         });
     })
     .catch((err: Error) => {
-        console.warn('[KakaoMap] Failed to load interactive map:', err.message);
-        KakaoMapManager.showError('kakaoMapContainer', '지도를 불러올 수 없습니다.');
+        console.error('[Main] Map initialization stack failed:', err);
+        KakaoMapManager.showError('kakaoMapContainer', `지도를 불러올 수 없습니다: ${err.message}`);
     });
 
 // Ensure radius toggle updates the map circle
