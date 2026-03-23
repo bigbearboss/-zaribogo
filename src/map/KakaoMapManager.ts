@@ -1,0 +1,190 @@
+/**
+ * KakaoMapManager.ts
+ * ──────────────────────────────────────────────────────────────
+ * Encapsulates all Kakao Maps JavaScript API interactions:
+ *   - Dynamic SDK loading (with services library)
+ *   - Map initialization
+ *   - Single marker management
+ *   - Radius circle
+ *   - Keyword place search
+ *   - Click-to-select location
+ *   - Graceful error display
+ *
+ * Usage:
+ *   const mgr = new KakaoMapManager();
+ *   await KakaoMapManager.loadSdk(apiKey);
+ *   mgr.init('mapContainer', 37.5665, 126.9780);
+ *   mgr.onLocationSelect = (lat, lng, label) => { ... };
+ */
+
+export interface KakaoPlaceResult {
+    placeName: string;
+    addressName: string;
+    roadAddressName: string;
+    lat: number;
+    lng: number;
+    id: string;
+}
+
+type LocationSelectCallback = (lat: number, lng: number, label: string) => void;
+
+export class KakaoMapManager {
+    private map: any = null;
+    private marker: any = null;
+    private circle: any = null;
+    private ps: any = null;
+    private geocoder: any = null;
+
+    /** Called whenever a location is selected (map click or search result). */
+    onLocationSelect: LocationSelectCallback | null = null;
+
+    // ──────────────────────────────────────────────────────────
+    // 2. Map Initialization
+    // ──────────────────────────────────────────────────────────
+
+    init(containerId: string, lat: number, lng: number): void {
+        const kakao = window.kakao;
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.warn(`[KakaoMap] Container #${containerId} not found.`);
+            return;
+        }
+
+        const center = new kakao.maps.LatLng(lat, lng);
+        this.map = new kakao.maps.Map(container, { center, level: 4 });
+
+        // Services
+        this.ps = new kakao.maps.services.Places();
+        this.geocoder = new kakao.maps.services.Geocoder();
+
+        // Click-to-select
+        kakao.maps.event.addListener(this.map, 'click', (e: any) => {
+            const clickedLat = e.latLng.getLat();
+            const clickedLng = e.latLng.getLng();
+            this._reverseGeocode(clickedLat, clickedLng);
+        });
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // 3. Marker + Circle
+    // ──────────────────────────────────────────────────────────
+
+    setMarker(lat: number, lng: number, radiusM: number): void {
+        const kakao = window.kakao;
+        if (!this.map) return;
+
+        const pos = new kakao.maps.LatLng(lat, lng);
+
+        // Marker
+        if (this.marker) {
+            this.marker.setPosition(pos);
+        } else {
+            this.marker = new kakao.maps.Marker({ position: pos, map: this.map });
+        }
+
+        // Circle
+        const circleOptions: any = {
+            center: pos,
+            radius: radiusM,
+            strokeWeight: 2,
+            strokeColor: '#6366f1',
+            strokeOpacity: 0.8,
+            strokeStyle: 'solid',
+            fillColor: '#6366f1',
+            fillOpacity: 0.08,
+        };
+        if (this.circle) {
+            this.circle.setPosition(pos);
+            this.circle.setRadius(radiusM);
+        } else {
+            this.circle = new kakao.maps.Circle({ ...circleOptions, map: this.map });
+        }
+
+        // Pan map to marker
+        this.map.setCenter(pos);
+    }
+
+    /** Update only the radius circle (e.g., when user changes radius selector). */
+    updateRadius(radiusM: number): void {
+        if (this.circle) this.circle.setRadius(radiusM);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // 4. Keyword Search
+    // ──────────────────────────────────────────────────────────
+
+    searchKeyword(query: string): Promise<KakaoPlaceResult[]> {
+        const kakao = window.kakao;
+        return new Promise((resolve) => {
+            if (!this.ps || !query.trim()) { resolve([]); return; }
+
+            this.ps.keywordSearch(query, (results: any[], status: any) => {
+                if (status !== kakao.maps.services.Status.OK) { resolve([]); return; }
+                const places: KakaoPlaceResult[] = results.map(r => ({
+                    placeName: r.place_name,
+                    addressName: r.address_name,
+                    roadAddressName: r.road_address_name,
+                    lat: parseFloat(r.y),
+                    lng: parseFloat(r.x),
+                    id: r.id,
+                }));
+                resolve(places);
+            }, { size: 10 });
+        });
+    }
+
+    /** Search for exact addresses (geocoding). */
+    searchAddress(query: string): Promise<KakaoPlaceResult[]> {
+        const kakao = window.kakao;
+        return new Promise((resolve) => {
+            if (!this.geocoder || !query.trim()) { resolve([]); return; }
+
+            this.geocoder.addressSearch(query, (results: any[], status: any) => {
+                if (status !== kakao.maps.services.Status.OK) { resolve([]); return; }
+                const places: KakaoPlaceResult[] = results.map(r => ({
+                    placeName: r.address_name, // Address search results use address as name
+                    addressName: r.address_name,
+                    roadAddressName: r.road_address?.address_name || r.address?.address_name || '',
+                    lat: parseFloat(r.y),
+                    lng: parseFloat(r.x),
+                    id: 'addr_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                }));
+                resolve(places);
+            });
+        });
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // 5. Reverse Geocoding (map click → address)
+    // ──────────────────────────────────────────────────────────
+
+    private _reverseGeocode(lat: number, lng: number): void {
+        const kakao = window.kakao;
+        if (!this.geocoder) { this._emitSelect(lat, lng, `${lat.toFixed(5)}, ${lng.toFixed(5)}`); return; }
+
+        this.geocoder.coord2Address(lng, lat, (result: any[], status: any) => {
+            const label = (status === kakao.maps.services.Status.OK && result[0])
+                ? (result[0].road_address?.address_name || result[0].address?.address_name || '선택한 위치')
+                : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            this._emitSelect(lat, lng, label);
+        });
+    }
+
+    private _emitSelect(lat: number, lng: number, label: string): void {
+        this.onLocationSelect?.(lat, lng, label);
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // 6. Error Display
+    // ──────────────────────────────────────────────────────────
+
+    static showError(containerId: string, message: string): void {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = `
+            <div class="kakao-map-error">
+                <span class="kakao-map-error-icon">🗺️</span>
+                <p>${message}</p>
+            </div>`;
+    }
+}

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자리보고 | 창업 전, 자리부터 보고 결정하세요</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+    <!-- External Libraries (Phase 16) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+
+<body data-theme="dark">
+    <!-- ── Landing Page Section ──────────────────────────── -->
+    <section id="landingPage" class="landing-page">
+        <div class="landing-hero">
+            <div class="landing-nav">
+                <div class="logo">
+                    <span class="logo-icon">🔍</span>
+                    <span class="logo-text">자리보고</span>
+                </div>
+            </div>
+            <div class="hero-main">
+                <h1>이 자리, 해도 될까?</h1>
+                <p>창업 전에, 자리부터 보고 결정하세요</p>
+                <button class="btn-start-app btn-primary-glam">무료로 판단해보기</button>
+            </div>
+        </div>
+
+        <div class="landing-section problem-section">
+            <div class="container">
+                <h2>데이터는 많지만, 결정은 어렵습니다</h2>
+                <p>초보 창업자는 방대한 정보 속에서 어디서부터 시작해야 할지 모릅니다.</p>
+                <div class="problem-visual">
+                    <div class="problem-card">복잡한 상권 데이터</div>
+                    <div class="problem-card">예상 매출 불확실성</div>
+                    <div class="problem-card">높은 초기 리스크</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-section solution-section">
+            <div class="container">
+                <h2>자리보고는 복잡한 데이터를<br>하나의 결론으로 정리합니다</h2>
+                <div class="solution-grid">
+                    <div class="solution-item">
+                        <div class="sol-icon">🎯</div>
+                        <h3>결론</h3>
+                        <p>진입 여부를 명확하게 판단해 드립니다.</p>
+                    </div>
+                    <div class="solution-item">
+                        <div class="sol-icon">💡</div>
+                        <h3>이유</h3>
+                        <p>왜 그런 판단인지 데이터로 증명합니다.</p>
+                    </div>
+                    <div class="solution-item">
+                        <div class="sol-icon">🚀</div>
+                        <h3>행동</h3>
+                        <p>지금 바로 실행할 수 있는 전략을 제안합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-section features-section">
+            <div class="container">
+                <h2>주요 기능</h2>
+                <div class="feature-rows">
+                    <div class="feature-row">
+                        <div class="feat-text">
+                            <h3>🗺️ 지도 기반 정밀 판단</h3>
+                            <p>실제 지도 위에서 반경 내 상권을 실시간으로 판단합니다.</p>
+                        </div>
+                    </div>
+                    <div class="feature-row reverse">
+                        <div class="feat-text">
+                            <h3>⚖️ 후보지 비교 기능</h3>
+                            <p>두 자리를 놓고 고민 중이라면? 한눈에 비교하고 결정하세요.</p>
+                        </div>
+                    </div>
+                    <div class="feature-row">
+                        <div class="feat-text">
+                            <h3>✨ AI 판단 요약</h3>
+                            <p>복잡한 지표를 AI가 알기 쉽게 설명해 드립니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-cta-bottom">
+            <h2>지금 궁금한 자리가 있나요?</h2>
+            <button class="btn-start-app btn-primary-glam">지금 자리 판단하기</button>
+        </div>
+    </section>
+
+    <div id="app" class="hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <header class="app-header">
+                <div class="logo">
+                    <span class="logo-icon">🔍</span>
+                    <span class="logo-text">자리보고</span>
+                </div>
+                <div class="header-tagline">이 자리, 해도 될까?</div>
+
+                <!-- Auth Section (Phase 27) -->
+                <div id="authContainer" class="auth-container">
+                    <button id="btnLogin" class="btn-auth-lite">로그인</button>
+                    <div id="userInfo" class="user-info hidden">
+                        <span id="proBadge" class="pro-badge hidden">PRO 사용자</span>
+                        <span id="userEmail" class="user-email"></span>
+                        <button id="btnLogout" class="btn-auth-logout">로그아웃</button>
+                    </div>
+
+                    <div id="upgradeContainer" class="upgrade-container">
+                        <button id="btnUpgrade" class="btn-upgrade-pro hidden">결정까지 확인하기</button>
+                        <div id="proBenefits" class="pro-benefits-list hidden">
+                            <h6>Pro에서 확인할 수 있는 것</h6>
+                            <ul>
+                                <li>✨ 최종 진입 판단 강화 판단</li>
+                                <li>🔍 숨겨진 리스크 정밀 진단</li>
+                                <li>⚖️ 비교 기반 최적 입지 추천</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="hero-section">
+                <div class="hero-content">
+                    <h1>이 자리, 해도 될까?</h1>
+                    <p>창업 전에, 자리부터 보고 결정하세요</p>
+                </div>
+            </section>
+
+            <div class="header-top">
+                <div class="theme-toggle-wrapper" id="themeToggle">
+                    <div class="theme-toggle-knob" id="themeKnob">🌙</div>
+                </div>
+            </div>
+            <div class="scenario-toggle-container">
+                <div class="scenario-toggle" id="scenarioToggle">
+                    <button class="scenario-btn" data-scenario="conservative">보수</button>
+                    <button class="scenario-btn active" data-scenario="base">기본</button>
+                    <button class="scenario-btn" data-scenario="aggressive">공격</button>
+                </div>
+            </div>
+            <div class="radius-toggle-container">
+                <label>📍 자리 판단 반경 설정</label>
+                <div class="radius-toggle" id="radiusToggle">
+                    <button class="btn-toggle" data-radius="300">300m</button>
+                    <button class="btn-toggle active" data-radius="500">500m</button>
+                    <button class="btn-toggle" data-radius="1000">1000m</button>
+                </div>
+            </div>
+
+            <!-- ── 카카오 지도 영역 ───────────────────────────────── -->
+            <div id="kakaoMapSection">
+                <!-- 키워드 검색 -->
+                <div id="kakaoSearchBox">
+                    <input id="kakaoSearchInput" type="text" placeholder="지도에서 위치 검색... (예: 강남역)">
+                    <button id="kakaoSearchBtn" type="button">🔍</button>
+                </div>
+                <!-- 검색 결과 드롭다운 -->
+                <ul id="kakaoSearchResults"></ul>
+                <!-- 지도 컨테이너 -->
+                <div id="kakaoMapContainer"></div>
+                <!-- 선택된 위치 표시 -->
+                <div id="kakaoSelectedAddr">
+                    <span id="kakaoSelectedPin">📍</span>
+                    <span id="kakaoSelectedLabel">서울시 중구 (기본 위치)</span>
+                </div>
+
+                <!-- ── 최근 검색 기록 ───────────────────────────────── -->
+                <div class="kakao-history-section">
+                    <div class="input-field history-field">
+                        <label>🕒 최근 확인한 자리</label>
+                    </div>
+                    <div id="kakaoRecentHistory" class="history-container">
+                        <!-- History chips injected by main.ts -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="location-box">
+                <input type="text" placeholder="주소 또는 건물명으로 검색..." id="locationSearch">
+                <span>📍</span>
+            </div>
+
+            <div class="sector-search-container" id="sectorSearchContainer">
+                <div class="sector-dropdown-trigger" id="businessTypeTrigger">
+                    <span id="selectedSectorLabel">업종을 선택하세요...</span>
+                    <span>🏢</span>
+                </div>
+                <div class="sector-dropdown-content hidden" id="businessTypeDropdown">
+                    <div class="sector-search-input-box">
+                        <input type="text" id="sectorSearchInput" placeholder="업종 검색 (예: 카페, 의류...)">
+                    </div>
+                    <div class="sector-list-wrapper">
+                        <div class="sector-group-label">✨ 추천 업종</div>
+                        <div id="recommendedSectors" class="sector-group-list">
+                            <!-- Populated by main.ts -->
+                        </div>
+                        <div class="sector-group-label">📋 전체 업종</div>
+                        <div id="allSectors" class="sector-group-list">
+                            <div class="sector-item-hint">데이터 로드 중...</div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="businessType" value="">
+            </div>
+
+            <nav class="input-nav">
+
+                <!-- ── 🤖 자동 채움 항목 ──────────────────────────────────── -->
+                <div class="input-group">
+                    <h3>📈 상권 자동 판단 <span class="field-badge badge-auto">🤖 자동</span></h3>
+                    <p class="section-hint">위치·반경·업종을 기준으로 자동으로 조회됩니다. 직접 수정할 수 없습니다.</p>
+                    <div class="input-grid">
+                        <div class="input-field input-auto-filled">
+                            <label>반경 내 세대 수</label>
+                            <input type="number" id="householdCount" readonly placeholder="판단 후 자동 표시">
+                        </div>
+                        <div class="input-item">
+                            <label>📍 인구수 (500m)</label>
+                            <input type="number" id="officeBuildingCount" readonly placeholder="판단 후 자동 표시">
+                        </div>
+                        <div class="input-item">
+                            <label>🏢 동일 업종 수</label>
+                            <input type="number" id="competitorCount" readonly placeholder="판단 후 자동 표시">
+                        </div>
+                        <div class="input-field input-auto-filled">
+                            <label>상권 활성도</label>
+                            <select id="marketActivity" disabled>
+                                <option value="low">낮음</option>
+                                <option value="moderate" selected>보통</option>
+                                <option value="high">높음</option>
+                                <option value="booming">매우 활발</option>
+                            </select>
+                        </div>
+                    </div>
+                    </section>
+
+                    <!-- ── ✏️ 직접 입력 항목 (필수) ─────────────────────────── -->
+                    <section class="nested-group">
+                        <h3>💰 임대 조건 <span class="field-badge badge-required">✏️ 직접 입력</span></h3>
+                        <div class="input-grid">
+                            <div class="input-field">
+                                <label>월 임대료 <span class="field-unit">원/월</span></label>
+                                <input type="number" id="rent" value="2500000" placeholder="예: 2,500,000">
+                                <p class="field-hint">실제 계약 금액 또는 예정 금액을 입력하세요. 판단의 핵심 지표입니다.</p>
+                            </div>
+                            <div class="input-field">
+                                <label>보증금 <span class="field-unit">원</span></label>
+                                <input type="number" id="deposit" value="50000000" placeholder="예: 50,000,000">
+                                <p class="field-hint">초기 자본 회수 기간 계산에 사용됩니다.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="nested-group">
+                        <h3>👥 인력 및 인건비 <span class="field-badge badge-required">✏️ 직접 입력</span></h3>
+                        <div class="input-grid">
+                            <div class="input-field">
+                                <label>파트타임 직원 수 <span class="field-unit">명</span></label>
+                                <input type="number" id="albiCount" value="3" placeholder="예: 2">
+                                <p class="field-hint">주 15시간 이상 근무 예정 파트타임 인원을 입력하세요.</p>
+                            </div>
+                            <div class="input-field">
+                                <label>정규 직원 수 <span class="field-unit">명</span></label>
+                                <input type="number" id="managerCount" value="1" placeholder="예: 1">
+                                <p class="field-hint">점주 본인도 포함해 입력하세요.</p>
+                            </div>
+                        </div>
+                        <div class="input-field">
+                            <label>월 인건비 합계 <span class="field-unit">원/월</span></label>
+                            <input type="number" id="laborCost" value="7500000" placeholder="예: 5,000,000">
+                            <p class="field-hint">직접 입력 시 인원 수 기반 추정보다 정확한 판단이 가능합니다.</p>
+                        </div>
+                    </section>
+
+                    <!-- ── 🔧 선택 입력 — 고급 설정 (기본 접힘) ──────────────── -->
+                    <details class="advanced-settings">
+                        <summary>
+                            <span>⚙️ 고급 설정</span>
+                            <span class="field-badge badge-optional">🔧 선택</span>
+                            <span class="advanced-hint">입력하면 판단 정확도가 높아집니다</span>
+                        </summary>
+
+                        <section class="nested-group">
+                            <h3>🏢 상가 상세 정보</h3>
+                            <div class="input-grid">
+                                <div class="input-field">
+                                    <label>매장 면적 <span class="field-unit">m²</span></label>
+                                    <input type="number" id="area" value="66" placeholder="예: 66">
+                                </div>
+                                <div class="input-field">
+                                    <label>영업 층수</label>
+                                    <select id="floor">
+                                        <option value="B1">지하 1층</option>
+                                        <option value="1" selected>1층</option>
+                                        <option value="2">2층</option>
+                                        <option value="3+">3층 이상</option>
+                                    </select>
+                                    <p class="field-hint">1층 외 층수는 유동인구 판단에 영향을 줍니다.</p>
+                                </div>
+                            </div>
+                            <div class="input-grid">
+                                <div class="input-field">
+                                    <label>월 관리비 <span class="field-unit">원/월</span></label>
+                                    <input type="number" id="maintenanceFee" value="300000" placeholder="없으면 0 입력">
+                                </div>
+                                <div class="input-field">
+                                    <label>권리금 <span class="field-unit">원</span></label>
+                                    <input type="number" id="premium" value="20000000" placeholder="없으면 0 입력">
+                                </div>
+                            </div>
+                            <div class="input-field checkbox-field">
+                                <input type="checkbox" id="hasParking">
+                                <label for="hasParking">전용 주차 가능</label>
+                                <p class="field-hint">전용 주차 공간이 있으면 체크하세요.</p>
+                            </div>
+                        </section>
+
+                        <section class="nested-group">
+                            <h3>⚙️ 매출·수익 지표</h3>
+                            <div class="input-grid">
+                                <div class="input-field">
+                                    <label>마진율 <span class="field-unit">%</span></label>
+                                    <input type="number" id="margin" step="1" placeholder="입력하지 않으면 업종 평균 자동 적용">
+                                </div>
+                                <div class="input-field">
+                                    <label>고객 1인당 평균 구매액 <span class="field-unit">원</span></label>
+                                    <input type="number" id="ticketPrice" placeholder="입력하지 않으면 업종 평균 자동 적용">
+                                </div>
+                            </div>
+                            <p class="input-hint">입력하지 않아도 업종 표준 데이터로 판단합니다. 직접 입력 시 더 정확합니다.</p>
+                        </section>
+
+                        <section class="nested-group">
+                            <h3>💼 대출 정보</h3>
+                            <div class="input-grid">
+                                <div class="input-field">
+                                    <label>사업 관련 대출액 <span class="field-unit">원</span></label>
+                                    <input type="number" id="loanAmount" placeholder="없으면 생략 가능">
+                                </div>
+                                <div class="input-field">
+                                    <label>연 이자율 <span class="field-unit">%</span></label>
+                                    <input type="number" id="interestRate" step="0.1" placeholder="예: 4.5">
+                                </div>
+                            </div>
+                        </section>
+                    </details>
+
+            </nav>
+
+            <button id="startAnalysis" class="btn-primary">자리 판단하기</button>
+        </aside>
+
+
+        <main class="dashboard">
+            <!-- ── Kakao Map MVP Debug Section ──────────────────────────── -->
+            <section id="kakaoMapDebugSection" class="dashboard-card"
+                style="margin-bottom: 24px; padding: 0; overflow: hidden;">
+                <div id="kakaoMapDebugContainer"></div>
+                <div class="debug-info-overlay">
+                    <span>Kakao Map MVP Debug Mode</span>
+                </div>
+            </section>
+
+            <div id="estimationBanner" class="estimation-banner hidden">
+                ⚠️ 일부 데이터는 추정값이 포함되어 있습니다. 결정은 참고용으로 활용하세요.
+            </div>
+
+            <!-- ── Decision Helper Area (Phase 25) ──────────────────────── -->
+            <section id="decisionHelperArea" class="decision-helper-section hidden">
+                <div class="decision-header-row">
+                    <div class="decision-main-badge" id="mainDecisionBadge">판단 대기 중</div>
+                    <div class="cta-message">이 위치를 저장하고 나중에 다시 확인해보세요</div>
+                    <button id="btnSaveSpot" class="btn-save-spot highlight" title="내 자리로 저장">
+                        <span class="icon">⭐</span>
+                        <span class="label">결정 저장하기</span>
+                    </button>
+                </div>
+
+                <div class="decision-content-grid">
+                    <div class="decision-reasons-card">
+                        <h5>💡 왜 이런 판단인가요?</h5>
+                        <ul id="decisionReasonList" class="decision-list">
+                            <li>자리를 선택하면 이곳에 주요 근거가 표시됩니다.</li>
+                        </ul>
+                    </div>
+                    <div class="decision-actions-card">
+                        <h5>🚀 지금 어떤 행동이 필요한가요?</h5>
+                        <ul id="decisionActionList" class="decision-list highlight">
+                            <li>자리를 선택하면 구체적인 제안이 이곳에 표시됩니다.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            <div class="supporting-data-separator">
+                <span>자리보고의 상세 판단 데이터</span>
+            </div>
+
+            <section class="main-score" id="scoreBox">
+                <label>자리보고 판단 지수 (CRI)</label>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" viewBox="0 0 200 110">
+                        <defs>
+                            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-primary)" />
+                                <stop offset="100%" stop-color="var(--accent-secondary)" />
+                            </linearGradient>
+                        </defs>
+                        <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12"
+                            stroke-linecap="round" />
+                        <path class="gauge-fill" id="gaugePath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
+                            stroke-width="12" stroke-linecap="round" stroke="url(#gaugeGradient)" />
+                    </svg>
+                    <div class="gauge-content">
+                        <div class="score-display" id="compositeScore">--</div>
+                        <div class="score-label">점</div>
+                    </div>
+                    <div class="stability-distance" id="stabilityDistance">
+                        <!-- Dynamic stability distance info -->
+                    </div>
+                    <div class="tier-label" id="riskTier">판단 대기 중</div>
+                    <div id="finalJudgmentBadge" class="final-judgment-badge hidden">--</div>
+                    <p class="cri-disclaimer">
+                        * CRI는 절대 수치가 아닌 상대적 위험 지표입니다. 가장 중요한 기준은 <strong>안정권(35점)</strong> 대비 변화 추이입니다.
+                    </p>
+                    <div id="criEstimationBadge" class="estimation-badge-mini hidden">⚠️ 추정 데이터 포함</div>
+
+                    <!-- ── 자리보고 메타 정보 ─────────────────────────────────── -->
+                    <div class="analysis-meta" id="analysisMeta">
+                        <span class="meta-item"><span class="meta-label">판단 반경:</span> <span
+                                id="metaRadius">--</span></span>
+                        <span class="meta-item"><span class="meta-label">데이터 출처:</span> <span
+                                id="metaSource">--</span></span>
+                        <span class="meta-item"><span class="meta-label">최종 판단 시각:</span> <span
+                                id="metaTime">--</span></span>
+                    </div>
+            </section>
+
+            <!-- ── 자리보고 판단 리포트 ────────────────────────── -->
+            <section id="judgmentReport" class="dashboard-card interpretation-report hidden">
+                <div class="report-location-context" id="reportLocationHeader">
+                    <span id="proResultLabel" class="pro-result-label hidden">💎 프리미엄 판단 결정</span>
+                    <span class="context-icon">📍</span>
+                    <span id="reportLocationText">위치를 선택해주세요</span>
+                    <span class="context-coords" id="reportCoordsText"></span>
+                </div>
+
+                <div class="report-header">
+                    <div id="reportStatusBadge" class="status-badge">판단 중...</div>
+                    <h3 id="reportSummary">자리를 선택하여 판단을 시작하세요.</h3>
+                </div>
+
+                <div class="report-breakdown" id="reportBreakdown">
+                    <div class="breakdown-item">
+                        <label>경쟁 강도</label>
+                        <div class="breakdown-bar-bg">
+                            <div id="barCompetition" class="breakdown-bar-fill"></div>
+                        </div>
+                        <span id="valCompetition" class="breakdown-val">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <label>수요 지표</label>
+                        <div class="breakdown-bar-bg">
+                            <div id="barDemand" class="breakdown-bar-fill"></div>
+                        </div>
+                        <span id="valDemand" class="breakdown-val">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <label>업종 다양성</label>
+                        <div class="breakdown-bar-bg">
+                            <div id="barDiversity" class="breakdown-bar-fill"></div>
+                        </div>
+                        <span id="valDiversity" class="breakdown-val">--</span>
+                    </div>
+                </div>
+
+                <div class="report-grid">
+                    <div class="report-column">
+                        <label>🚩 핵심 판단 결정</label>
+                        <ul id="reportReasons" class="report-list">
+                            <!-- Populated by main.ts -->
+                        </ul>
+                    </div>
+                    <div class="report-column">
+                        <label>🚀 전략 및 실행 제안</label>
+                        <ul id="reportActions" class="report-list highlight">
+                            <!-- Populated by main.ts -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ── 리포트 액션 (Phase 16) ────────────────────────── -->
+                <div class="report-product-actions">
+                    <button id="btnShare" class="btn-action btn-outline">
+                        <span>🔗</span> 판단 링크 복사
+                    </button>
+                    <button id="btnDownload" class="btn-action btn-primary">
+                        <span>📥</span> 리포트 이미지 저장
+                    </button>
+                </div>
+            </section>
+
+            <!-- Legacy comparisonOverlay removed -->
+
+            <section class="diagnosis-grid">
+                <div class="diagnosis-card">
+                    <h4>재무적 압박</h4>
+                    <div class="layer-score" id="fScore">--</div>
+                    <p id="fExp">--</p>
+                </div>
+                <div class="diagnosis-card">
+                    <h4>시장 및 주변</h4>
+                    <div class="layer-score" id="mScore">--</div>
+                    <p id="mExp">--</p>
+                </div>
+            </section>
+
+            <section class="radius-comparison-section">
+                <h4>📊 반경별 리스크 비교</h4>
+                <div class="comparison-grid" id="radiusComparison">
+                    <!-- Populated by main.ts -->
+                </div>
+            </section>
+
+            <section class="map-visualization-section">
+                <h4>📍 상권 반경 밀도 시각화</h4>
+                <div class="map-container-mock" id="radiusMap">
+                    <!-- RadiusMap.ts will render SVG here -->
+                </div>
+            </section>
+
+            <section class="evidence-section">
+                <div class="section-header-row">
+                    <h4>🔍 판단 근거 카드</h4>
+                    <div id="evidenceEstimationBadge" class="estimation-badge-mini hidden">⚠️ 일부 지표 추정됨</div>
+                </div>
+                <div class="evidence-grid" id="evidenceContainer">
+                    <!-- Populated by main.ts -->
+                </div>
+            </section>
+
+            <section class="confidence-section">
+                <div class="confidence-card">
+                    <div class="conf-header">
+                        <h4>데이터 신뢰도 <span id="confidenceLabel" class="conf-label">-</span></h4>
+                        <div class="conf-score" id="confidenceScore">0.00</div>
+                    </div>
+                    <div class="conf-bar-bg">
+                        <div class="conf-bar-fill" id="confidenceBar"></div>
+                    </div>
+                    <div class="source-summary" id="sourceSummary">
+                        <!-- Populated by main.ts -->
+                    </div>
+                </div>
+            </section>
+            <section class="radius-comparison-section">
+                <div class="section-header-row">
+                    <h4>⚖️ 반경별 유리한 지점 비교</h4>
+                    <span class="comp-description">어느 범위가 가장 영업하기 좋을까요?</span>
+                </div>
+                <div id="radiusComparison" class="radius-comparison-grid"></div>
+                <div id="comparisonSummary" class="comparison-summary-box hidden"></div>
+            </section>
+
+            <div class="llm-card" id="llmCard" style="display: none;">
+                <div class="ai-header">
+                    <h4>✨ AI 종합 인사이트</h4>
+                    <span class="ai-badge">🤖 AI 참고 요약 (데이터 기반 해석)</span>
+                </div>
+                <div class="llm-content" id="llmContent">인사이트를 생성 중입니다...</div>
+            </div>
+
+            <section id="adjustmentContainer" class="diagnosis-card guidance-panel"
+                style="display: none; border: 1px dashed var(--accent-yellow); background: rgba(251, 191, 36, 0.05);">
+                <h4>💡 <span style="color: var(--accent-yellow);">안정권 진입을 위한 1차 조정 가이드라인</span></h4>
+                <div id="adjustmentContent" style="padding-top: 10px;">
+                    <!-- Adjustments will be inserted here -->
+                </div>
+            </section>
+
+            <!-- ── 인페이지 비교 섹션 (Phase 24) ────────────────────────── -->
+            <section id="comparisonSection" class="dashboard-card comparison-section hidden">
+                <div class="comp-header">
+                    <h3>⚖️ 어디가 더 나은 선택일까?</h3>
+                    <p class="comp-hint">선택한 최근 판단 지표 2개를 상세 비교합니다.</p>
+                </div>
+                <div id="comparisonContent" class="comp-content">
+                    <div class="comp-invite">여러 후보 중 어디가 더 유리한지 확인해보세요</div>
+                    <!-- Dynamic comparison table & conclusion -->
+                </div>
+            </section>
+
+            <section class="diagnosis-card guidance-panel">
+                <h4>지금 바로 할 수 있는 것</h4>
+                <ul id="actionGuidance" class="guidance-list">
+                    <li style="color: var(--text-muted); font-size: 0.85rem;">판단이 완료되면 여기에 실천 가능한 조치들이 표시됩니다.</li>
+                </ul>
+
+                <!-- ── CTA Actions ────────────────────────────────────────── -->
+                <div class="cta-group" id="ctaGroup">
+                    <button id="btnSaveLocation" class="cta-btn primary">
+                        <span class="icon">💾</span> 이 위치 저장
+                    </button>
+                    <button id="btnCompareHistory" class="cta-btn secondary">
+                        <span class="icon">⚖️</span> 다른 후보와 비교
+                    </button>
+                    <button id="btnReanalyze" class="cta-btn secondary">
+                        <span class="icon">🔄</span> 조건 변경 후 재판단
+                    </button>
+                </div>
+            </section>
+
+            <footer>
+                <div class="disclaimer">💡 CRI는 확률이 아닌 상대적 위험 지표입니다. 참고용으로 활용하세요.</div>
+                &copy; 2026 자리보고. 소상공인 성공을 위한 지능형 판단 시스템.
+            </footer>
+        </main>
+
+        <!-- QA Mode Floating Button & Panel (hidden in user mode via CSS) -->
+        <button id="qaToggleBtn" class="qa-toggle-btn" data-qa-only>⚙️ QA</button>
+        <div id="qaPanel" class="qa-panel hidden" data-qa-only>
+            <h4>[QA 샌드박스] 10대 입지 기반 시뮬레이터</h4>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">선택 지역의 가상 환경으로 데이터를 덮어씌웁니다.
+            </p>
+            <div class="qa-btn-grid" id="qaScenarioContainer">
+                <!-- QA Buttons will be bounded via TS -->
+            </div>
+            <button id="qaCloseBtn" class="qa-close-btn">닫기</button>
+        </div>
+
+        <!-- Test Runner Panel (/?mode=test only) -->
+        <div id="testRunnerPanel" class="test-runner-panel" data-test-only>
+            <div class="test-runner-header">
+                <span class="test-runner-title">🧪 RISK-X Validation Suite</span>
+                <span id="testRunnerStatus" class="test-runner-status">대기 중</span>
+                <button id="runAllTestsBtn" class="run-all-btn">▶ Run All Tests (10)</button>
+            </div>
+            <div id="testRunnerResults" class="test-runner-results">
+                <p class="test-runner-placeholder">Run All Tests를 눌러 10개 케이스를 검증하세요.</p>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+</body>
+
+</html>
