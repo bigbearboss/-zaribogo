@@ -104,7 +104,7 @@ JSON 형식:
                 Authorization: `Bearer ${env.OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "gpt-4.1-mini",
                 messages: [
                     { role: "system", content: "You are a professional real estate analyzer. You must output only a valid JSON object following the specified schema. No conversational text." },
                     { role: "user", content: prompt }
