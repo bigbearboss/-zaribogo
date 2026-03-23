@@ -11,6 +11,7 @@
 | `VITE_KAKAO_MAP_APP_KEY` | 카카오맵 JavaScript 키 | 개발자 센터 등록 필수 |
 | `VITE_ODCLOUD_API_KEY` | 공공데이터포털 API 키 | Encoding 키 권장 |
 | `VITE_AI_PROXY_URL` | AI 요약 프록시 엔드포인트 | `/api/ai-summary` (기본값) |
+| `OPENAI_API_KEY` | OpenAI API 키 | Cloudflare Functions 전용 (서버 측) |
 
 ## 2. 빌드 및 배포
 

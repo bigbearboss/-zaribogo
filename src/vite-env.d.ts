@@ -7,7 +7,7 @@ interface ImportMetaEnv {
     readonly VITE_ODCLOUD_API_KEY: string;
     readonly VITE_ODCLOUD_BASE_URL: string;
     readonly VITE_KAKAO_MAP_APP_KEY: string;
-    // more env variables...
+    readonly VITE_AI_PROXY_URL?: string;
 }
 
 interface ImportMeta {
