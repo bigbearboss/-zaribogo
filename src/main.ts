@@ -274,15 +274,22 @@ function renderRecommendedSectors() {
 
 function renderAllSectors(filter = '') {
     if (!elements.allSectors) return;
-    const all = csvProvider.sectors;
+
+    // Get all static profiles instead of relying on the region-specific CSV load state.
+    const all = RiskEngine.getAllProfiles();
 
     if (all.length === 0) {
-        elements.allSectors.innerHTML = `<div class="sector-item-hint">자리를 먼저 선택하여<br>데이터를 로드해 주세요.</div>`;
+        elements.allSectors.innerHTML = `<div class="sector-item-hint">업종 데이터를 불러오는 중 오류가 발생했습니다.</div>`;
         return;
     }
 
+    // Filter by name (ko/en) or internal code
     const filtered = filter
-        ? all.filter(s => s.name.includes(filter) || s.code.includes(filter))
+        ? all.filter(s =>
+            (s.display_name_ko && s.display_name_ko.includes(filter)) ||
+            (s.display_name_en && s.display_name_en.toLowerCase().includes(filter.toLowerCase())) ||
+            (s.internal_code && s.internal_code.includes(filter))
+        )
         : all.slice(0, 50); // Show top 50 by default to avoid lag
 
     if (filtered.length === 0) {
@@ -291,7 +298,7 @@ function renderAllSectors(filter = '') {
     }
 
     elements.allSectors.innerHTML = filtered.map(s =>
-        `<div class="sector-item" data-code="${s.code}">${s.name}</div>`
+        `<div class="sector-item" data-code="${s.internal_code}">${s.display_name_ko}</div>`
     ).join('');
 
     elements.allSectors.querySelectorAll('.sector-item').forEach(item => {

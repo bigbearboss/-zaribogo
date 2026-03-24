@@ -11,6 +11,10 @@ export class RiskEngine {
         return (industryProfiles as any[]).find((p: any) => p.internal_code === code) || industryProfiles[0];
     }
 
+    static getAllProfiles() {
+        return industryProfiles as any[];
+    }
+
     static analyze(
         financial: FinancialData,
         market: MarketData,
