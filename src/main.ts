@@ -689,6 +689,7 @@ async function ensureCsvLoaded(lat: number, lng: number) {
         conditionalLog(`[CSV] Dataset ready: ${count.toLocaleString()} POIs loaded.`);
     } catch (err) {
         console.warn('[CSV] Dataset load failed, will use RealPublicDataProvider only.', err);
+        alert('해당 지역의 상세 데이터(CSV)를 불러오지 못했습니다. 실시간 공공 데이터만 사용하여 분석을 진행합니다.');
     }
 }
 
