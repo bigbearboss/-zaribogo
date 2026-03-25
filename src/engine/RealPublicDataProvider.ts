@@ -8,11 +8,6 @@ type DistrictMetadataResponse = {
   districtPoiCount: number;
 };
 
-type PoiSupplementResponse = {
-  competitorsCount: number;
-  poiTotalCount: number;
-};
-
 export class RealPublicDataProvider implements PublicDataProvider {
   private fallbackProvider = new MockPublicDataProvider();
   private cache: Map<string, Promise<PublicDataResult>> = new Map();
@@ -32,6 +27,7 @@ export class RealPublicDataProvider implements PublicDataProvider {
     }
 
     const cacheKey = this.getCacheKey(location, radius, industryCode);
+
     if (this.cache.has(cacheKey)) {
       console.log(`[Perf] api: cache hit for key=${cacheKey}`);
       return this.cache.get(cacheKey)!;
@@ -52,7 +48,6 @@ export class RealPublicDataProvider implements PublicDataProvider {
         return result;
       })
       .catch((err) => {
-        // 실패 Promise가 캐시에 남지 않게 제거
         this.cache.delete(cacheKey);
         throw err;
       });
@@ -88,26 +83,16 @@ export class RealPublicDataProvider implements PublicDataProvider {
       },
     };
 
-    const [poiSupplementResult, distResult] = await Promise.allSettled([
-      this.fetchPoiSupplementEndpoint(location, radius, industryCode, 2000),
-      this.fetchDistrictMetadataEndpoint(location, 2000),
-    ]);
+    let distResult: DistrictMetadataResponse | null = null;
 
-    if (poiSupplementResult.status === "fulfilled") {
-      const { poiTotalCount } = poiSupplementResult.value;
-
-      if (typeof poiTotalCount === "number" && poiTotalCount > 0) {
-        result.poiTotalCount = poiTotalCount;
-        result._sources!.poiTotalCount = DataSource.PUBLIC_DATA;
-      } else {
-        console.warn("[PublicData] POI supplement returned 0, keeping fallback value.");
-      }
-    } else {
-      console.warn("[PublicData] POI supplement failed, using fallback.", poiSupplementResult.reason);
+    try {
+      distResult = await this.fetchDistrictMetadataEndpoint(location, 2000);
+    } catch (err) {
+      console.warn("[PublicData] District metadata failed, using fallback.", err);
     }
 
-    if (distResult.status === "fulfilled") {
-      const { cityName, districtName, districtPoiCount } = distResult.value;
+    if (distResult) {
+      const { cityName, districtName, districtPoiCount } = distResult;
 
       if (districtPoiCount > 0) {
         result.cityName = cityName;
@@ -117,84 +102,9 @@ export class RealPublicDataProvider implements PublicDataProvider {
       } else {
         console.warn("[PublicData] District metadata returned 0, keeping fallback value.");
       }
-    } else {
-      console.warn("[PublicData] District metadata failed, using fallback.", distResult.reason);
     }
 
     return result;
-  }
-
-  /**
-   * 현재 이 endpoint는 실제 "반경 내 경쟁 업종 수" 계산이 아니라,
-   * ODCloud dataset의 총량성 지표를 보조적으로 읽어오는 용도다.
-   * 이름을 바꿔서 오해를 줄인다.
-   */
-  private async fetchPoiSupplementEndpoint(
-    location: LocationPayload,
-    radius: number,
-    industryCode: string,
-    timeoutMs: number
-  ): Promise<PoiSupplementResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const baseUrl = import.meta.env.VITE_ODCLOUD_BASE_URL || "https://api.odcloud.kr/api";
-      const apiKey = import.meta.env.VITE_ODCLOUD_API_KEY;
-
-      if (!apiKey || !apiKey.trim()) {
-        throw new Error("VITE_ODCLOUD_API_KEY is missing");
-      }
-
-      const encodedKey = encodeURIComponent(apiKey);
-
-      const apiUrl =
-        `${baseUrl}/15012005/v1/uddi:a38be9dc-51a8-422c-a2b1-6b04313f8087` +
-        `?page=1&perPage=1&serviceKey=${encodedKey}`;
-
-      console.log("[ODCLOUD] POI supplement request", {
-        apiUrl,
-        location,
-        radius,
-        industryCode,
-      });
-
-      const response = await fetch(apiUrl, {
-        signal: controller.signal,
-      });
-
-      const rawText = await response.text();
-      clearTimeout(timeoutId);
-
-      console.log("[API RAW] POI Supplement:", rawText);
-
-      if (!response.ok) {
-        throw new Error(
-          `POI supplement API responded with status ${response.status}: ${rawText}`
-        );
-      }
-
-      const data = JSON.parse(rawText);
-
-      const matchCount = data?.matchCount;
-      const totalCount = data?.totalCount;
-      const itemsList = data?.data;
-
-      return {
-        competitorsCount: 0,
-        poiTotalCount:
-          typeof matchCount === "number"
-            ? matchCount
-            : typeof totalCount === "number"
-              ? totalCount
-              : Array.isArray(itemsList)
-                ? itemsList.length
-                : 0,
-      };
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      throw error;
-    }
   }
 
   /**
@@ -247,7 +157,7 @@ export class RealPublicDataProvider implements PublicDataProvider {
         districtName: targetRow?.["읍면동"] || "",
         districtPoiCount: targetRow?.["업소수"] ? Number(targetRow["업소수"]) : 0,
       };
-    } catch (error: any) {
+    } catch (error) {
       clearTimeout(timeoutId);
       throw error;
     }
@@ -271,6 +181,7 @@ export class RealPublicDataProvider implements PublicDataProvider {
         diversityIndex: "industry_default",
         ageShare20_39: "industry_default",
         volatilityProxy: "industry_default",
+        districtPoiCount: "industry_default",
       } as any,
     };
 
