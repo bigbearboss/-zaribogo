@@ -4,7 +4,10 @@ export class AIService {
   private static readonly PROXY_URL =
     import.meta.env.VITE_AI_PROXY_URL || "/api/ai-summary";
 
-  private static readonly TIMEOUT_MS = 10000; // 10s timeout
+  private static readonly SUPABASE_ANON_KEY =
+    import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+  private static readonly TIMEOUT_MS = 10000;
 
   static async generateSummary(input: AIInput): Promise<AIAnalysisResult | null> {
     const controller = new AbortController();
@@ -16,12 +19,19 @@ export class AIService {
         return null;
       }
 
+      if (!this.SUPABASE_ANON_KEY) {
+        console.error("[AI] Missing VITE_SUPABASE_ANON_KEY.");
+        return null;
+      }
+
       console.log("[AI] Sending request to proxy:", this.PROXY_URL);
 
       const response = await fetch(this.PROXY_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          apikey: this.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${this.SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify(input),
         signal: controller.signal,
@@ -36,6 +46,7 @@ export class AIService {
           proxyUrl: this.PROXY_URL,
           body: errorBody,
         });
+
         throw new Error(
           `AI Proxy responded with status ${response.status}: ${errorBody}`
         );
