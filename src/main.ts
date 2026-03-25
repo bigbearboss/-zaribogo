@@ -639,7 +639,17 @@ async function renderAIInsights(
   analysis: RiskAnalysis,
   pData: any
 ): Promise<AIAnalysisResult | null> {
-  if (!elements.llmCard || !elements.llmContent) return null;
+  console.log("[AI Debug] renderAIInsights called", {
+    hasLlmCard: !!elements.llmCard,
+    hasLlmContent: !!elements.llmContent,
+    cri: analysis?.cri,
+    pData,
+  });
+
+  if (!elements.llmCard || !elements.llmContent) {
+    console.warn("[AI Debug] Missing llmCard or llmContent. AI request skipped.");
+    return null;
+  }
 
   const aiInput: AIInput = {
     industry: elements.selectedSectorLabel?.textContent || "선택 업종",
@@ -666,6 +676,8 @@ async function renderAIInsights(
     },
   };
 
+  console.log("[AI Debug] About to call AIService.generateSummary", aiInput);
+
   elements.llmCard.style.display = "block";
   elements.llmCard.innerHTML = `
         <div class="ai-header">
@@ -679,6 +691,8 @@ async function renderAIInsights(
 
   const contentEl = document.getElementById("llmContent") as HTMLElement;
   const result = await AIService.generateSummary(aiInput);
+
+  console.log("[AI Debug] AIService result", result);
 
   if (!result) {
     elements.llmCard.style.display = "none";
@@ -710,7 +724,9 @@ async function renderAIInsights(
             </div>
         `;
   }
+
   return result;
+}
 }
 
 const csvProvider = new CsvDatasetProvider();
