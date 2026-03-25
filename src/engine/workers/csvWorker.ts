@@ -1,87 +1,28 @@
 import Papa from 'papaparse';
-import { INDUSTRY_KEYWORDS } from '../data/industry-keywords';
+import { INDUSTRY_RULES } from '../data/industryMatcher';
 
 interface PoiRecord {
   lat: number;
   lng: number;
-  code: string;       // sub-category code or fallback major code
-  majorCode: string;  // major category code like I2, G2, S2
-  name: string;       // sub-category name or fallback major category name
+  shopName: string;
+
+  majorCode: string;
+  majorName: string;
+
+  middleCode: string;
+  middleName: string;
+
+  subCode: string;
+  subName: string;
 }
 
 let dataset: PoiRecord[] = [];
 let isLoaded = false;
 
-// ── Industry code index ────────────────────────────────────────
-// Maps CSV code (major + sub) → PoiRecord[]
+// 인덱스는 대분류/중분류/소분류 모두 잡아둔다
 const industryIndex: Map<string, PoiRecord[]> = new Map();
 let indexReady = false;
 
-/**
- * Internal service code → CSV 대분류코드
- * This is only for narrowing search scope, not final competitor exact-match.
- */
-const INTERNAL_TO_CSV_CODE: Record<string, string> = {
-  // FNB / 음식 → I2
-  cafe: 'I2', bakery: 'I2', dessert: 'I2',
-  restaurant: 'I2', bar: 'I2', pub: 'I2',
-  chicken: 'I2', pizza: 'I2', burger: 'I2',
-  snack: 'I2', noodle: 'I2', bbq: 'I2',
-  korean: 'I2', japanese: 'I2', chinese: 'I2',
-  western: 'I2', buffet: 'I2', brunch: 'I2',
-  delivery: 'I2', fast_food: 'I2', qsr: 'I2',
-
-  // RETAIL / 소매 → G2
-  convenience: 'G2', supermarket: 'G2', clothing: 'G2',
-  fashion: 'G2', accessories: 'G2', electronics: 'G2',
-  cosmetics: 'G2', pharmacy: 'G2', bookstore: 'G2',
-  flower: 'G2', gift: 'G2', toy: 'G2',
-  sport: 'G2', outdoor: 'G2', apparel: 'G2',
-  fruit: 'G2', veg: 'G2', butcher: 'G2', stationery: 'G2',
-  pet: 'G2',
-
-  // HEALTHCARE / 보건의료 → Q1
-  clinic: 'Q1', dental: 'Q1', hospital: 'Q1',
-  medical: 'Q1', beauty: 'Q1', skin: 'Q1',
-  spa: 'Q1', healthcare: 'Q1', doctor: 'Q1',
-
-  // BEAUTY / 수리·개인 → S2
-  hair: 'S2', nail: 'S2', massage: 'S2',
-  laundry: 'S2', repair: 'S2', salon: 'S2',
-  studio: 'S2', beauty_service: 'S2',
-
-  // EDUCATION / 교육 → P1
-  edu: 'P1', academy: 'P1', tutoring: 'P1',
-  language: 'P1', art_class: 'P1', music_class: 'P1',
-  school: 'P1', library: 'P1',
-
-  // FITNESS / 예술·스포츠 → R1
-  gym: 'R1', pilates: 'R1', yoga: 'R1',
-  fitness: 'R1', sport_club: 'R1', swimming: 'R1',
-  golf: 'R1', tennis: 'R1',
-};
-
-function resolveIndexCode(industryCode: string): string | null {
-  if (!industryCode) return null;
-
-  // direct if already csv code
-  if (industryIndex.has(industryCode)) return industryCode;
-
-  for (const [prefix, csvCode] of Object.entries(INTERNAL_TO_CSV_CODE)) {
-    if (industryCode.startsWith(prefix)) return csvCode;
-  }
-
-  return null;
-}
-
-function matchesIndustryName(rowName: string, industryCode: string): boolean {
-  const keywords = INDUSTRY_KEYWORDS[industryCode] ?? [];
-  if (!rowName || keywords.length === 0) return false;
-
-  return keywords.some((keyword) => rowName.includes(keyword));
-}
-
-// Haversine distance in meters
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
   const p1 = lat1 * Math.PI / 180;
@@ -98,32 +39,27 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * c;
 }
 
+function pushToIndex(key: string, row: PoiRecord) {
+  if (!key) return;
+  if (!industryIndex.has(key)) {
+    industryIndex.set(key, []);
+  }
+  industryIndex.get(key)!.push(row);
+}
+
 function buildIndustryIndex() {
   performance.mark('csv:index:build:start');
   industryIndex.clear();
+
   const uniqueSectors: Map<string, string> = new Map();
 
   for (const row of dataset) {
-    if (!row.code) continue;
+    pushToIndex(row.majorCode, row);
+    pushToIndex(row.middleCode, row);
+    pushToIndex(row.subCode, row);
 
-    // 1) sub-category code index
-    const subCode = row.code;
-    if (!industryIndex.has(subCode)) {
-      industryIndex.set(subCode, []);
-    }
-    industryIndex.get(subCode)!.push(row);
-
-    // 2) major category code index
-    const majorCode = row.majorCode || subCode.substring(0, 2);
-    if (majorCode && majorCode !== subCode) {
-      if (!industryIndex.has(majorCode)) {
-        industryIndex.set(majorCode, []);
-      }
-      industryIndex.get(majorCode)!.push(row);
-    }
-
-    if (row.name && !uniqueSectors.has(subCode) && subCode.length > 2) {
-      uniqueSectors.set(subCode, row.name);
+    if (row.subCode && row.subName && !uniqueSectors.has(row.subCode)) {
+      uniqueSectors.set(row.subCode, row.subName);
     }
   }
 
@@ -132,13 +68,71 @@ function buildIndustryIndex() {
   performance.mark('csv:index:build:end');
   performance.measure('csv:index_build_time', 'csv:index:build:start', 'csv:index:build:end');
   const [m] = performance.getEntriesByName('csv:index_build_time').slice(-1);
-  const entries = industryIndex.size;
-
   console.log(
-    `[CSV Worker] Index built: ${entries} code entries (Major + Sub) | Time: ${m?.duration.toFixed(1)}ms`
+    `[CSV Worker] Index built: ${industryIndex.size} code entries (Major + Middle + Sub) | Time: ${m?.duration.toFixed(1)}ms`
   );
 
   return Array.from(uniqueSectors.entries()).map(([code, name]) => ({ code, name }));
+}
+
+function normalizeText(text: string): string {
+  return (text || '').replace(/\s+/g, '').trim();
+}
+
+function matchesIndustry(row: PoiRecord, industryCode: string): boolean {
+  const rule = INDUSTRY_RULES[industryCode];
+  if (!rule) return false;
+
+  // 1순위: 소분류코드 exact
+  if (rule.subCodes?.includes(row.subCode)) return true;
+
+  // 2순위: 중분류코드
+  if (rule.middleCodes?.includes(row.middleCode)) return true;
+
+  // 3순위: 대분류코드
+  if (rule.majorCodes?.includes(row.majorCode)) {
+    // 대분류만 같으면 너무 넓으니 키워드 있으면 같이 확인
+    if (rule.keywords && rule.keywords.length > 0) {
+      const haystack = normalizeText(
+        `${row.shopName} ${row.majorName} ${row.middleName} ${row.subName}`
+      );
+      return rule.keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+    }
+    return true;
+  }
+
+  // 4순위: 키워드 fallback
+  if (rule.keywords && rule.keywords.length > 0) {
+    const haystack = normalizeText(
+      `${row.shopName} ${row.majorName} ${row.middleName} ${row.subName}`
+    );
+    return rule.keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+  }
+
+  return false;
+}
+
+function getCandidateSet(industryCode: string): PoiRecord[] {
+  const rule = INDUSTRY_RULES[industryCode];
+  if (!rule || !indexReady) return dataset;
+
+  // 가장 좁은 인덱스부터 사용
+  for (const subCode of rule.subCodes ?? []) {
+    const hit = industryIndex.get(subCode);
+    if (hit) return hit;
+  }
+
+  for (const middleCode of rule.middleCodes ?? []) {
+    const hit = industryIndex.get(middleCode);
+    if (hit) return hit;
+  }
+
+  for (const majorCode of rule.majorCodes ?? []) {
+    const hit = industryIndex.get(majorCode);
+    if (hit) return hit;
+  }
+
+  return dataset;
 }
 
 self.onmessage = async (e: MessageEvent) => {
@@ -161,20 +155,21 @@ self.onmessage = async (e: MessageEvent) => {
       skipEmptyLines: true,
       chunk: (results) => {
         const chunkData = (results.data as any[])
-          .map((row: any) => {
-            const subCode = row['상권업종소분류코드'] || '';
-            const majorCode =
-              row['상권업종대분류코드'] || (subCode ? subCode.substring(0, 2) : '');
+          .map((row: any) => ({
+            lat: parseFloat(row['위도']),
+            lng: parseFloat(row['경도']),
+            shopName: row['상호명'] || '',
 
-            return {
-              lat: parseFloat(row['위도']),
-              lng: parseFloat(row['경도']),
-              code: subCode || majorCode || '',
-              majorCode,
-              name: row['상권업종소분류명'] || row['상권업종대분류명'] || '',
-            };
-          })
-          .filter((r: any) => !isNaN(r.lat) && !isNaN(r.lng));
+            majorCode: row['상권업종대분류코드'] || '',
+            majorName: row['상권업종대분류명'] || '',
+
+            middleCode: row['상권업종중분류코드'] || '',
+            middleName: row['상권업종중분류명'] || '',
+
+            subCode: row['상권업종소분류코드'] || '',
+            subName: row['상권업종소분류명'] || '',
+          }))
+          .filter((r: PoiRecord) => !isNaN(r.lat) && !isNaN(r.lng));
 
         dataset.push(...chunkData);
         self.postMessage({ type: 'PROGRESS', payload: { count: dataset.length } });
@@ -211,7 +206,9 @@ self.onmessage = async (e: MessageEvent) => {
         self.postMessage({ type: 'ERROR', payload: err.message });
       },
     });
-  } else if (type === 'QUERY_RADIUS') {
+  }
+
+  if (type === 'QUERY_RADIUS') {
     if (!isLoaded) {
       self.postMessage({ type: 'ERROR', payload: 'Dataset not loaded yet.' });
       return;
@@ -220,43 +217,42 @@ self.onmessage = async (e: MessageEvent) => {
     const { id, lat, lng, radiusM, industryCode } = payload;
     performance.mark(`csv:query:start:${id}`);
 
-    const csvCode = indexReady ? resolveIndexCode(industryCode) : null;
-    const hitIndex = csvCode ? industryIndex.get(csvCode) : null;
-    const searchTarget: PoiRecord[] = hitIndex ?? dataset;
-
-    if (!hitIndex) {
-      console.warn(
-        `[CSV Worker] Index miss for code="${industryCode}" (resolved: "${csvCode ?? 'null'}"). Falling back to full scan (${dataset.length} records).`
-      );
-    }
-
-    let competitorsCount = 0;
-    let poiTotalCount = 0;
-    const codeCounts: Record<string, number> = {};
+    const candidateSet = getCandidateSet(industryCode);
 
     const latDegreeDist = 111000;
     const lngDegreeDist = 111000 * Math.cos(lat * Math.PI / 180);
     const latRadiusDeg = radiusM / latDegreeDist;
     const lngRadiusDeg = radiusM / lngDegreeDist;
 
-    for (let i = 0; i < searchTarget.length; i++) {
-      const row = searchTarget[i];
+    let poiTotalCount = 0;
+    let competitorsCount = 0;
+    const codeCounts: Record<string, number> = {};
+
+    // 1) 전체 POI 수는 전체 dataset 기준
+    for (let i = 0; i < dataset.length; i++) {
+      const row = dataset[i];
 
       if (Math.abs(row.lat - lat) > latRadiusDeg) continue;
       if (Math.abs(row.lng - lng) > lngRadiusDeg) continue;
 
       const dist = getDistance(lat, lng, row.lat, row.lng);
       if (dist <= radiusM) {
-        // 반경 내 전체 POI 수
         poiTotalCount++;
+        codeCounts[row.subCode || row.middleCode || row.majorCode] =
+          (codeCounts[row.subCode || row.middleCode || row.majorCode] || 0) + 1;
+      }
+    }
 
-        // 다양성 지표용 카운트
-        codeCounts[row.code] = (codeCounts[row.code] || 0) + 1;
+    // 2) 경쟁점포 수는 후보군 기준
+    for (let i = 0; i < candidateSet.length; i++) {
+      const row = candidateSet[i];
 
-        // 경쟁 업종 수는 내부 코드 ↔ CSV 이름 키워드 매칭으로 판단
-        if (matchesIndustryName(row.name, industryCode)) {
-          competitorsCount++;
-        }
+      if (Math.abs(row.lat - lat) > latRadiusDeg) continue;
+      if (Math.abs(row.lng - lng) > lngRadiusDeg) continue;
+
+      const dist = getDistance(lat, lng, row.lat, row.lng);
+      if (dist <= radiusM && matchesIndustry(row, industryCode)) {
+        competitorsCount++;
       }
     }
 
@@ -273,18 +269,16 @@ self.onmessage = async (e: MessageEvent) => {
     const [qMeasure] = performance.getEntriesByName('csv:query_time').slice(-1);
     const queryMs = qMeasure?.duration ?? 0;
 
-    console.log('[Industry Mapping Debug]', {
+    console.log('[Industry Matching Debug]', {
       industryCode,
-      resolvedCsvCode: csvCode,
-      keywords: INDUSTRY_KEYWORDS[industryCode] ?? [],
-      via: searchTarget === dataset ? 'fullscan' : 'index',
-      subsetCount: searchTarget.length,
-      competitorsCount,
+      candidateSetSize: candidateSet.length,
       poiTotalCount,
+      competitorsCount,
+      rule: INDUSTRY_RULES[industryCode] ?? null,
     });
 
     console.log(
-      `[Perf] csv:query_time(r=${radiusM}m, code=${industryCode}, via=${searchTarget === dataset ? 'fullscan' : 'index'}, subset=${searchTarget.length.toLocaleString()}) = ${queryMs.toFixed(1)}ms` +
+      `[Perf] csv:query_time(r=${radiusM}m, code=${industryCode}, via=${candidateSet === dataset ? 'fullscan' : 'indexed'}, subset=${candidateSet.length.toLocaleString()}) = ${queryMs.toFixed(1)}ms` +
       ` → ${competitorsCount} comps / ${poiTotalCount} POIs`
     );
 
