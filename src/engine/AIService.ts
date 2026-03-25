@@ -14,6 +14,13 @@ export class AIService {
     const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
 
     try {
+      console.log("[AI DEBUG] PROXY_URL =", this.PROXY_URL);
+      console.log("[AI DEBUG] SUPABASE_ANON_KEY exists =", !!this.SUPABASE_ANON_KEY);
+      console.log("[AI DEBUG] Header preview =", {
+        apikey: this.SUPABASE_ANON_KEY,
+        authorization: `Bearer ${this.SUPABASE_ANON_KEY}`,
+      });
+
       if (!this.PROXY_URL) {
         console.error("[AI] Missing VITE_AI_PROXY_URL.");
         return null;
@@ -23,8 +30,6 @@ export class AIService {
         console.error("[AI] Missing VITE_SUPABASE_ANON_KEY.");
         return null;
       }
-
-      console.log("[AI] Sending request to proxy:", this.PROXY_URL);
 
       const response = await fetch(this.PROXY_URL, {
         method: "POST",
@@ -46,17 +51,12 @@ export class AIService {
           proxyUrl: this.PROXY_URL,
           body: errorBody,
         });
-
         throw new Error(
           `AI Proxy responded with status ${response.status}: ${errorBody}`
         );
       }
 
       const data = await response.json();
-
-      if (!data || typeof data !== "object") {
-        throw new Error("Invalid response format from AI Proxy");
-      }
 
       return {
         oneLineSummary: data.oneLineSummary || "상권 요약을 불러올 수 없습니다.",
@@ -70,9 +70,7 @@ export class AIService {
       clearTimeout(timeoutId);
 
       if (error.name === "AbortError") {
-        console.error("[AI] Request timed out after 10s.", {
-          proxyUrl: this.PROXY_URL,
-        });
+        console.error("[AI] Request timed out after 10s.");
       } else {
         console.error("[AI] Error generating summary:", error);
       }
