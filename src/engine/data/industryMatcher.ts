@@ -173,7 +173,7 @@ export const INDUSTRY_RULES: Record<string, IndustryRule> = {
 
   flower_shop: {
     majorCodes: G2,
-    keywords: ["꽃집", "꽃", "플라워", "화원", "화훼", "플로리스트", "florist", "flower"],
+    keywords: ["꽃집", "플라워샵", "화원", "플로리스트", "florist"],
   },
 
   pet_supplies_shop: {
