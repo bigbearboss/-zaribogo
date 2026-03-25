@@ -1,7 +1,7 @@
-export const onRequestPost: PagesFunction = async (context) => {
+export const onRequestPost = async (context: any) => {
   try {
     const body = await context.request.json();
-    const apiKey = context.env.OPENAI_API_KEY;
+    const apiKey = context.env?.OPENAI_API_KEY;
 
     if (!apiKey) {
       return new Response(
@@ -33,7 +33,7 @@ ${JSON.stringify(body, null, 2)}
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
