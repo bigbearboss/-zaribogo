@@ -116,50 +116,47 @@ export async function getManifest(): Promise<RegionEntry[]> {
  */
 export async function resolveRegionEntry(lat: number, lng: number): Promise<RegionEntry | null> {
   const entries = await getManifest();
+  if (!entries.length) return null;
 
-  const matched = entries.filter((entry) => {
-    return (
-      lat >= entry.latMin &&
-      lat <= entry.latMax &&
-      lng >= entry.lngMin &&
-      lng <= entry.lngMax
+  let bestEntry: RegionEntry | null = null;
+  let minDist = Infinity;
+
+  for (const entry of entries) {
+    const centerLat = (entry.latMin + entry.latMax) / 2;
+    const centerLng = (entry.lngMin + entry.lngMax) / 2;
+
+    const dist = Math.sqrt(
+      Math.pow(lat - centerLat, 2) +
+      Math.pow(lng - centerLng, 2)
     );
-  });
 
-  if (matched.length === 0) {
+    if (dist < minDist) {
+      minDist = dist;
+      bestEntry = entry;
+    }
+  }
+
+  if (!bestEntry) {
     console.warn(
-      `[regionIndex] No region match for (${lat.toFixed(6)}, ${lng.toFixed(6)}). Falling back to API-only mode.`
+      `[regionIndex] No region match for (${lat.toFixed(6)}, ${lng.toFixed(6)}).`
     );
     return null;
   }
 
-  const sorted = [...matched].sort((a, b) => getBoxArea(a) - getBoxArea(b));
-  const best = sorted[0];
-
   const baseUrl = import.meta.env.VITE_CSV_BASE_URL || "";
   const resolved = {
-    ...best,
-    csvUrl: joinBaseUrl(baseUrl, best.csvUrl),
+    ...bestEntry,
+    csvUrl: joinBaseUrl(baseUrl, bestEntry.csvUrl),
   };
 
-  console.log("[regionIndex] Match candidates", {
+  console.log("[regionIndex] Nearest region selected", {
     lat,
     lng,
-    matchCount: matched.length,
-    candidates: sorted.slice(0, 5).map((entry) => ({
-      name: entry.name,
-      csvUrl: entry.csvUrl,
-      area: getBoxArea(entry),
-      latMin: entry.latMin,
-      latMax: entry.latMax,
-      lngMin: entry.lngMin,
-      lngMax: entry.lngMax,
-    })),
     selected: {
       name: resolved.name,
       csvUrl: resolved.csvUrl,
-      area: getBoxArea(best),
     },
+    minDist,
   });
 
   return resolved;
