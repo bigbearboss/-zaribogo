@@ -4,8 +4,11 @@ export class AIService {
   private static readonly PROXY_URL =
     import.meta.env.VITE_AI_PROXY_URL || "/api/ai-summary";
 
-  private static readonly SUPABASE_ANON_KEY =
+  private static readonly SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+  private static readonly SUPABASE_LEGACY_ANON_KEY =
+    import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY || "";
 
   private static readonly TIMEOUT_MS = 10000;
 
@@ -15,10 +18,17 @@ export class AIService {
 
     try {
       console.log("[AI DEBUG] PROXY_URL =", this.PROXY_URL);
-      console.log("[AI DEBUG] SUPABASE_ANON_KEY exists =", !!this.SUPABASE_ANON_KEY);
+      console.log(
+        "[AI DEBUG] SUPABASE_PUBLISHABLE_KEY exists =",
+        !!this.SUPABASE_PUBLISHABLE_KEY
+      );
+      console.log(
+        "[AI DEBUG] SUPABASE_LEGACY_ANON_KEY exists =",
+        !!this.SUPABASE_LEGACY_ANON_KEY
+      );
       console.log("[AI DEBUG] Header preview =", {
-        apikey: this.SUPABASE_ANON_KEY,
-        authorization: `Bearer ${this.SUPABASE_ANON_KEY}`,
+        apikey: this.SUPABASE_PUBLISHABLE_KEY,
+        authorization: `Bearer ${this.SUPABASE_LEGACY_ANON_KEY}`,
       });
 
       if (!this.PROXY_URL) {
@@ -26,8 +36,13 @@ export class AIService {
         return null;
       }
 
-      if (!this.SUPABASE_ANON_KEY) {
+      if (!this.SUPABASE_PUBLISHABLE_KEY) {
         console.error("[AI] Missing VITE_SUPABASE_ANON_KEY.");
+        return null;
+      }
+
+      if (!this.SUPABASE_LEGACY_ANON_KEY) {
+        console.error("[AI] Missing VITE_SUPABASE_LEGACY_ANON_KEY.");
         return null;
       }
 
@@ -35,8 +50,8 @@ export class AIService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: this.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${this.SUPABASE_ANON_KEY}`,
+          apikey: this.SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${this.SUPABASE_LEGACY_ANON_KEY}`,
         },
         body: JSON.stringify(input),
         signal: controller.signal,
@@ -51,12 +66,17 @@ export class AIService {
           proxyUrl: this.PROXY_URL,
           body: errorBody,
         });
+
         throw new Error(
           `AI Proxy responded with status ${response.status}: ${errorBody}`
         );
       }
 
       const data = await response.json();
+
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid response format from AI Proxy");
+      }
 
       return {
         oneLineSummary: data.oneLineSummary || "상권 요약을 불러올 수 없습니다.",
