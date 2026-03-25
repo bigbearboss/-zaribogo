@@ -26,7 +26,7 @@ import { historyService } from "./services/HistoryService";
 import { PublicDataFetcher } from "./engine/PublicDataFetcher";
 import { RealPublicDataProvider } from "./engine/RealPublicDataProvider";
 import { CsvDatasetProvider } from "./engine/CsvDatasetProvider";
-import { getzeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
+import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
 
