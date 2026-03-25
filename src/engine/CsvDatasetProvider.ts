@@ -1,5 +1,9 @@
 import { LocationPayload } from "./PublicDataFetcher";
-import { resolveRegionEntry, RegionEntry } from "./regionIndex";
+import {
+  resolveRegionEntry,
+  resolveRegionEntryByName,
+  RegionEntry,
+} from "./regionIndex";
 
 export interface CsvQueryResult {
   competitorsCount: number;
@@ -51,7 +55,6 @@ export class CsvDatasetProvider {
       return this.initPromise;
     }
 
-    // Reset if loading a different region
     if (this.loadedUrl && this.loadedUrl !== url) {
       console.log(`[CSV] Region switch: ${this.loadedUrl} → ${url}`);
       this.initPromise = null;
@@ -65,10 +68,10 @@ export class CsvDatasetProvider {
       url,
       sizeMb,
       bounds: {
-        minLat: (entry as any).minLat,
-        maxLat: (entry as any).maxLat,
-        minLng: (entry as any).minLng,
-        maxLng: (entry as any).maxLng,
+        latMin: entry.latMin,
+        latMax: entry.latMax,
+        lngMin: entry.lngMin,
+        lngMax: entry.lngMax,
       },
     });
 
@@ -88,6 +91,7 @@ export class CsvDatasetProvider {
             "provider:csv_load:start",
             "provider:csv_load:end"
           );
+
           const [m] = performance.getEntriesByName("provider:csv_load_time").slice(-1);
 
           console.log(
@@ -112,34 +116,49 @@ export class CsvDatasetProvider {
   }
 
   /**
-   * Resolves the best regional CSV for the given coordinate and loads it.
-   * On repeated calls with the same resolved URL, returns immediately (cached).
+   * Preferred flow:
+   * 1) resolve by regionNameHint if available
+   * 2) fallback to coordinate-based region resolution
    */
   public async loadForLocation(
     lat: number,
     lng: number,
+    regionNameHint?: string,
     onProgress?: (count: number) => void
   ): Promise<number> {
-    const entry = await resolveRegionEntry(lat, lng);
+    let entry: RegionEntry | null = null;
+
+    if (regionNameHint) {
+      entry = await resolveRegionEntryByName(regionNameHint);
+    }
+
+    if (!entry) {
+      entry = await resolveRegionEntry(lat, lng);
+    }
 
     console.log("[Region Resolve Debug]", {
       requestedLat: lat,
       requestedLng: lng,
+      regionNameHint: regionNameHint ?? null,
       resolvedRegion: entry?.name ?? null,
       resolvedCsvUrl: entry?.csvUrl ?? null,
       resolvedFileSize: entry?.fileSize ?? null,
       resolvedBounds: entry
         ? {
-            minLat: (entry as any).minLat,
-            maxLat: (entry as any).maxLat,
-            minLng: (entry as any).minLng,
-            maxLng: (entry as any).maxLng,
+            latMin: entry.latMin,
+            latMax: entry.latMax,
+            lngMin: entry.lngMin,
+            lngMax: entry.lngMax,
           }
         : null,
     });
 
     if (!entry) {
-      console.warn("[CSV] No region entry resolved for location.", { lat, lng });
+      console.warn("[CSV] No region entry resolved for location.", {
+        lat,
+        lng,
+        regionNameHint,
+      });
       return 0;
     }
 
@@ -168,8 +187,8 @@ export class CsvDatasetProvider {
           `provider:csv_query:start:${id}`,
           `provider:csv_query:end:${id}`
         );
-        const [m] = performance.getEntriesByName("provider:csv_query_time").slice(-1);
 
+        const [m] = performance.getEntriesByName("provider:csv_query_time").slice(-1);
         console.log(
           `[Perf] provider:csv_query_time(r=${radiusM}m) = ${m?.duration.toFixed(1)}ms`
         );
@@ -198,7 +217,6 @@ export class CsvDatasetProvider {
         },
       });
 
-      // Timeout in case worker hangs
       setTimeout(() => {
         if (this.rejects.has(id)) {
           this.rejects.get(id)!(new Error("CSV Worker query timeout (5s)"));
