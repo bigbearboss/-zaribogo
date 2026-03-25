@@ -118,6 +118,44 @@ export async function resolveRegionEntry(lat: number, lng: number): Promise<Regi
   const entries = await getManifest();
   if (!entries.length) return null;
 
+  // 1️⃣ bbox 안에 있는 지역 먼저 찾기
+  const matched = entries.filter((entry) => {
+    return (
+      lat >= entry.latMin &&
+      lat <= entry.latMax &&
+      lng >= entry.lngMin &&
+      lng <= entry.lngMax
+    );
+  });
+
+  // 2️⃣ bbox 매칭 있으면 → 가장 "bbox 중앙에 가까운 것"
+  if (matched.length > 0) {
+    let best = matched[0];
+    let minDist = Infinity;
+
+    for (const entry of matched) {
+      const centerLat = (entry.latMin + entry.latMax) / 2;
+      const centerLng = (entry.lngMin + entry.lngMax) / 2;
+
+      const dist = Math.sqrt(
+        Math.pow(lat - centerLat, 2) +
+        Math.pow(lng - centerLng, 2)
+      );
+
+      if (dist < minDist) {
+        minDist = dist;
+        best = entry;
+      }
+    }
+
+    const baseUrl = import.meta.env.VITE_CSV_BASE_URL || "";
+    return {
+      ...best,
+      csvUrl: joinBaseUrl(baseUrl, best.csvUrl),
+    };
+  }
+
+  // 3️⃣ bbox에도 없으면 → 전체 중 가장 가까운 지역
   let bestEntry: RegionEntry | null = null;
   let minDist = Infinity;
 
@@ -136,30 +174,13 @@ export async function resolveRegionEntry(lat: number, lng: number): Promise<Regi
     }
   }
 
-  if (!bestEntry) {
-    console.warn(
-      `[regionIndex] No region match for (${lat.toFixed(6)}, ${lng.toFixed(6)}).`
-    );
-    return null;
-  }
+  if (!bestEntry) return null;
 
   const baseUrl = import.meta.env.VITE_CSV_BASE_URL || "";
-  const resolved = {
+  return {
     ...bestEntry,
     csvUrl: joinBaseUrl(baseUrl, bestEntry.csvUrl),
   };
-
-  console.log("[regionIndex] Nearest region selected", {
-    lat,
-    lng,
-    selected: {
-      name: resolved.name,
-      csvUrl: resolved.csvUrl,
-    },
-    minDist,
-  });
-
-  return resolved;
 }
 
 /**
