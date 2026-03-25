@@ -116,19 +116,32 @@ export class CsvDatasetProvider {
   }
 
   /**
-   * Preferred flow:
-   * 1) resolve by regionNameHint if available
-   * 2) fallback to coordinate-based region resolution
+   * Backward-compatible signatures:
+   * 1) loadForLocation(lat, lng, onProgress)
+   * 2) loadForLocation(lat, lng, regionNameHint, onProgress)
    */
   public async loadForLocation(
     lat: number,
     lng: number,
-    regionNameHint?: string,
+    regionNameHintOrProgress?: string | ((count: number) => void),
     onProgress?: (count: number) => void
   ): Promise<number> {
+    let regionNameHint: string | undefined;
+    let progressHandler: ((count: number) => void) | undefined;
+
+    if (typeof regionNameHintOrProgress === "function") {
+      // old signature: loadForLocation(lat, lng, onProgress)
+      progressHandler = regionNameHintOrProgress;
+      regionNameHint = undefined;
+    } else {
+      // new signature: loadForLocation(lat, lng, regionNameHint, onProgress)
+      regionNameHint = regionNameHintOrProgress;
+      progressHandler = onProgress;
+    }
+
     let entry: RegionEntry | null = null;
 
-    if (regionNameHint) {
+    if (regionNameHint && regionNameHint.trim()) {
       entry = await resolveRegionEntryByName(regionNameHint);
     }
 
@@ -162,7 +175,7 @@ export class CsvDatasetProvider {
       return 0;
     }
 
-    return this.loadDataset(entry, onProgress);
+    return this.loadDataset(entry, progressHandler);
   }
 
   public async queryRadius(
