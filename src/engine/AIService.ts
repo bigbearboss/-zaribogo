@@ -4,8 +4,11 @@ export class AIService {
   private static readonly PROXY_URL =
     import.meta.env.VITE_AI_PROXY_URL || "/api/ai-summary";
 
-  private static readonly SUPABASE_ANON_KEY =
+  private static readonly SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+  private static readonly SUPABASE_LEGACY_ANON_KEY =
+    import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY || "";
 
   private static readonly TIMEOUT_MS = 10000;
 
@@ -14,24 +17,41 @@ export class AIService {
     const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
 
     try {
+      console.log("[AI DEBUG] PROXY_URL =", this.PROXY_URL);
+      console.log(
+        "[AI DEBUG] SUPABASE_PUBLISHABLE_KEY exists =",
+        !!this.SUPABASE_PUBLISHABLE_KEY
+      );
+      console.log(
+        "[AI DEBUG] SUPABASE_LEGACY_ANON_KEY exists =",
+        !!this.SUPABASE_LEGACY_ANON_KEY
+      );
+      console.log("[AI DEBUG] Header preview =", {
+        apikey: this.SUPABASE_PUBLISHABLE_KEY,
+        authorization: `Bearer ${this.SUPABASE_LEGACY_ANON_KEY}`,
+      });
+
       if (!this.PROXY_URL) {
         console.error("[AI] Missing VITE_AI_PROXY_URL.");
         return null;
       }
 
-      if (!this.SUPABASE_ANON_KEY) {
+      if (!this.SUPABASE_PUBLISHABLE_KEY) {
         console.error("[AI] Missing VITE_SUPABASE_ANON_KEY.");
         return null;
       }
 
-      console.log("[AI] Sending request to proxy:", this.PROXY_URL);
+      if (!this.SUPABASE_LEGACY_ANON_KEY) {
+        console.error("[AI] Missing VITE_SUPABASE_LEGACY_ANON_KEY.");
+        return null;
+      }
 
       const response = await fetch(this.PROXY_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: this.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${this.SUPABASE_ANON_KEY}`,
+          apikey: this.SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${this.SUPABASE_LEGACY_ANON_KEY}`,
         },
         body: JSON.stringify(input),
         signal: controller.signal,
@@ -70,9 +90,7 @@ export class AIService {
       clearTimeout(timeoutId);
 
       if (error.name === "AbortError") {
-        console.error("[AI] Request timed out after 10s.", {
-          proxyUrl: this.PROXY_URL,
-        });
+        console.error("[AI] Request timed out after 10s.");
       } else {
         console.error("[AI] Error generating summary:", error);
       }
