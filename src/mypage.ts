@@ -81,32 +81,74 @@ async function initMypage() {
     initTheme();
     
     // Wait for auth state to resolve
-    authService.onAuthStateChange(async (user) => {
-        if (!user) {
-            // Redirect to main and trigger login
+    async function initMypage() {
+    setupEventListeners();
+    initTheme();
+    showLoading();
+
+    try {
+        // 1) 페이지 최초 진입 시에는 Supabase 세션 기준으로 안정적으로 확인
+        const { data, error } = await supabase.auth.getUser();
+
+        if (error) {
+            console.error('[mypage auth error]', error);
             window.location.href = '/';
             return;
         }
-        
-        state.user = user;
-        showLoading();
-        
-        try {
-            await Promise.all([
-                fetchProfile(),
-                fetchCredits(),
-                fetchRecentReports()
-            ]);
-            
-            updateDashboardUI();
-            updateProfileUI();
-            hideLoading();
-            switchView('dashboard');
-        } catch (error) {
-            console.error('Failed to initialize mypage:', error);
-            showError('데이터를 불러오는데 실패했습니다.');
+
+        const user = data.user;
+
+        if (!user) {
+            window.location.href = '/';
+            return;
         }
-    });
+
+        state.user = user;
+
+        await Promise.all([
+            fetchProfile(),
+            fetchCredits(),
+            fetchRecentReports()
+        ]);
+
+        updateDashboardUI();
+        updateProfileUI();
+        hideLoading();
+        switchView('dashboard');
+
+        // 2) 초기 진입이 끝난 뒤에만 auth 상태 변경 구독
+        authService.onAuthStateChange(async (nextUser) => {
+            if (!nextUser) {
+                window.location.href = '/';
+                return;
+            }
+
+            // 같은 유저면 굳이 다시 초기화하지 않음
+            if (state.user?.id === nextUser.id) return;
+
+            state.user = nextUser;
+            showLoading();
+
+            try {
+                await Promise.all([
+                    fetchProfile(),
+                    fetchCredits(),
+                    fetchRecentReports()
+                ]);
+
+                updateDashboardUI();
+                updateProfileUI();
+                hideLoading();
+                switchView('dashboard');
+            } catch (innerError) {
+                console.error('Failed to refresh mypage after auth change:', innerError);
+                showError('데이터를 다시 불러오는데 실패했습니다.');
+            }
+        });
+    } catch (error) {
+        console.error('Failed to initialize mypage:', error);
+        showError('데이터를 불러오는데 실패했습니다.');
+    }
 }
 
 // ==========================================
