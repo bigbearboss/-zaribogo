@@ -175,7 +175,7 @@ async function fetchCredits() {
         .single();
         
     if (error && error.code !== 'PGRST116') throw error;
-    state.credits = data || { total_credits: 5, used_credits: 0 };
+    state.credits = data || { total_credits: 2, used_credits: 0 };
 }
 
 async function fetchRecentReports() {
@@ -333,7 +333,7 @@ function setupEventListeners() {
         });
     });
 
-    const goMain = () => window.location.href = '/';
+    const goMain = () => window.location.href = '/index.html';
     DOM.logoToMain.addEventListener('click', goMain);
     DOM.btnBackToMain.addEventListener('click', goMain);
     DOM.btnAnalyzeNow.addEventListener('click', goMain);
