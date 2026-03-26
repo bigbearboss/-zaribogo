@@ -1880,11 +1880,18 @@ elements.btnLogin?.addEventListener("click", login);
 elements.btnLogout?.addEventListener("click", logout);
 elements.btnUpgrade?.addEventListener("click", upgradeToPro);
 
+document.getElementById("closeUpgradeModalBtn")?.addEventListener("click", () => {
+  document.getElementById("upgradeModal")?.classList.add("hidden");
+});
+
+document.getElementById("goPricingBtn")?.addEventListener("click", () => {
+  window.location.href = "/pricing.html";
+});
+
 authService.onAuthStateChange(() => {
   updateAuthUI();
   renderHistory();
 });
-
 elements.btnSaveSpot?.addEventListener("click", () => {
   const user = authService.getUser();
   if (!user) {
