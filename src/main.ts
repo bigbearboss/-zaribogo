@@ -888,8 +888,9 @@ async function getUserCreditStatus(userId: string) {
     .single();
 
   if (error) {
-    throw new Error("크레딧 정보를 불러올 수 없습니다. 다시 시도해주세요.");
-  }
+  console.error("[usage_credits select error]", error);
+  throw new Error(`크레딧 정보를 불러올 수 없습니다. (${error.message})`);
+}
 
   const totalCredits = data?.total_credits ?? 0;
   const usedCredits = data?.used_credits ?? 0;
@@ -973,14 +974,20 @@ async function consumeCredit(userId: string) {
 }
 
 async function handleStartAnalysisClick() {
-  const user = authService.getUser();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
-  if (!user) {
-    if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
-      login();
-    }
-    return;
+if (authError) {
+  throw new Error(`로그인 정보를 확인할 수 없습니다. (${authError.message})`);
+}
+
+const user = authData.user;
+
+if (!user) {
+  if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
+    login();
   }
+  return;
+}
 
   const btn = elements.startAnalysis;
   if (btn) {
