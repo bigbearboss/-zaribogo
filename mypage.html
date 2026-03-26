@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자리보고 | 마이페이지</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css">
+    <link rel="stylesheet" href="./src/mypage.css">
+</head>
+<body data-theme="dark">
+    <div id="app">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <header class="app-header">
+                <div class="logo cursor-pointer" id="logoToMain">
+                    <span class="logo-icon">🔍</span>
+                    <span class="logo-text">자리보고</span>
+                </div>
+                <div class="header-tagline">마이페이지 &amp; 분석 결과</div>
+            </header>
+
+            <nav class="mypage-nav">
+                <a href="#dashboard" class="nav-link active" data-target="dashboard">
+                    <span class="nav-icon">📊</span> 대시보드
+                </a>
+                <a href="#reports" class="nav-link" data-target="reports">
+                    <span class="nav-icon">📁</span> 내 분석 리스트
+                </a>
+                <a href="#profile" class="nav-link" data-target="profile">
+                    <span class="nav-icon">👤</span> 프로필 설정
+                </a>
+            </nav>
+
+            <div class="header-top mypage-theme-toggle">
+                <div class="theme-toggle-wrapper" id="themeToggle">
+                    <div class="theme-toggle-knob" id="themeKnob">🌙</div>
+                </div>
+            </div>
+
+            <button id="btnBackToMain" class="btn-primary mt-auto">새 창업 상권 분석하기</button>
+        </aside>
+
+        <main class="dashboard mypage-main">
+            <!-- Loading State -->
+            <div id="loadingState" class="state-container hidden">
+                <div class="spinner"></div>
+                <p>데이터를 불러오는 중입니다...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="state-container hidden">
+                <div class="error-icon">⚠️</div>
+                <p id="errorMessage">데이터를 불러오는데 실패했습니다.</p>
+                <button id="btnRetry" class="btn-action btn-outline">다시 시도</button>
+            </div>
+
+            <!-- View: Dashboard -->
+            <section id="view-dashboard" class="mypage-view active">
+                <div class="mypage-header">
+                    <h2 id="greetingMsg">안녕하세요! 👋</h2>
+                    <p class="text-muted">현재 분석 크레딧과 최근 분석 결과를 확인하세요.</p>
+                </div>
+
+                <div class="credit-widget">
+                    <div class="credit-info">
+                        <h3>잔여 분석 횟수 (크레딧)</h3>
+                        <div class="credit-amount">
+                            <span id="creditUsed">0</span> / <span id="creditTotal">5</span> 회
+                        </div>
+                        <p class="credit-hint" id="creditResetDate">다음 충전일: -</p>
+                    </div>
+                    <div class="credit-action">
+                        <button id="btnAnalyzeNow" class="btn-primary-glam">지금 분석하러 가기</button>
+                    </div>
+                </div>
+
+                <div class="recent-reports-section">
+                    <div class="section-header-row">
+                        <h3>최근 분석 내역</h3>
+                        <button class="btn-text" id="btnViewAllReports">전체보기 ➔</button>
+                    </div>
+                    <div id="recentReportsList" class="reports-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                    <!-- Empty State for Recent -->
+                    <div id="emptyRecentState" class="empty-state hidden">
+                        <div class="empty-icon">🗺️</div>
+                        <p>아직 진행하신 상권 분석이 없어요.</p>
+                        <button id="btnStartFirst" class="btn-action btn-primary mt-3">첫 번째 분석 시작하기</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Reports List -->
+            <section id="view-reports" class="mypage-view hidden">
+                <div class="mypage-header">
+                    <h2>내 분석 리스트</h2>
+                    <p class="text-muted">과거에 분석한 모든 상권 리포트를 확인할 수 있습니다.</p>
+                </div>
+                
+                <div class="reports-filter">
+                    <input type="text" id="searchInput" placeholder="상권명 또는 업종으로 검색..." class="input-text">
+                </div>
+
+                <div id="allReportsList" class="reports-list-container">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Empty State for All -->
+                <div id="emptyAllState" class="empty-state hidden">
+                    <div class="empty-icon">📉</div>
+                    <p>분석 결과가 없습니다.</p>
+                </div>
+            </section>
+
+            <!-- View: Profile -->
+            <section id="view-profile" class="mypage-view hidden">
+                <div class="mypage-header">
+                    <h2>프로필 설정</h2>
+                    <p class="text-muted">계정 정보 확인 및 로그아웃</p>
+                </div>
+
+                <div class="profile-card">
+                    <div class="profile-info-row">
+                        <label>이메일</label>
+                        <span id="profileEmail">-</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <label>이름</label>
+                        <span id="profileName">-</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <label>요금제</label>
+                        <span id="profilePlan" class="badge-plan">Free</span>
+                    </div>
+                    <div class="profile-actions">
+                        <button id="btnLogout" class="btn-auth-logout">로그아웃</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Report Detail (Reused Layout or Modal to display JSON) -->
+            <section id="view-report-detail" class="mypage-view hidden">
+                 <div class="mypage-header detail-header">
+                    <button id="btnBackToList" class="btn-text">⬅ 목록으로 돌아가기</button>
+                    <h2 id="detailTitle">-</h2>
+                    <p class="text-muted" id="detailDate">-</p>
+                </div>
+
+                <!-- Result content will be injected or we can use the main app's report structure if we copy it -->
+                <div id="reportDetailContent" class="report-detail-wrapper">
+                    <pre id="rawJsonContainer" class="json-viewer"></pre>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script type="module" src="./src/mypage.ts"></script>
+</body>
+</html>
