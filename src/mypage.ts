@@ -79,27 +79,21 @@ const DOM = {
 async function initMypage() {
     setupEventListeners();
     initTheme();
-    
-    // Wait for auth state to resolve
-    async function initMypage() {
-    setupEventListeners();
-    initTheme();
     showLoading();
 
     try {
-        // 1) 페이지 최초 진입 시에는 Supabase 세션 기준으로 안정적으로 확인
         const { data, error } = await supabase.auth.getUser();
 
         if (error) {
             console.error('[mypage auth error]', error);
-            window.location.href = '/';
+            window.location.href = '/index.html';
             return;
         }
 
         const user = data.user;
 
         if (!user) {
-            window.location.href = '/';
+            window.location.href = '/index.html';
             return;
         }
 
@@ -116,14 +110,12 @@ async function initMypage() {
         hideLoading();
         switchView('dashboard');
 
-        // 2) 초기 진입이 끝난 뒤에만 auth 상태 변경 구독
         authService.onAuthStateChange(async (nextUser) => {
             if (!nextUser) {
-                window.location.href = '/';
+                window.location.href = '/index.html';
                 return;
             }
 
-            // 같은 유저면 굳이 다시 초기화하지 않음
             if (state.user?.id === nextUser.id) return;
 
             state.user = nextUser;
