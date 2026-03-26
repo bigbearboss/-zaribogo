@@ -637,8 +637,32 @@
                 <p class="test-runner-placeholder">Run All Tests를 눌러 10개 케이스를 검증하세요.</p>
             </div>
         </div>
+            <div id="testRunnerPanel" class="test-runner-panel" data-test-only>
+            <div class="test-runner-header">
+                <span class="test-runner-title">🧪 RISK-X Validation Suite</span>
+                <span id="testRunnerStatus" class="test-runner-status">대기 중</span>
+                <button id="runAllTestsBtn" class="run-all-btn">▶ Run All Tests (10)</button>
+            </div>
+            <div id="testRunnerResults" class="test-runner-results">
+                <p class="test-runner-placeholder">Run All Tests를 눌러 10개 케이스를 검증하세요.</p>
+            </div>
+        </div>
     </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>무료 분석 2회를 모두 사용했어요</h2>
+            <p>
+                더 많은 후보지를 비교하려면 프리미엄 플랜이 필요해요.
+            </p>
+            <div class="modal-actions">
+                <button id="goPricingBtn" class="btn-primary">플랜 보기</button>
+                <button id="closeUpgradeModalBtn" class="btn-secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="./src/main.ts"></script>
 </body>
-
 </html>
