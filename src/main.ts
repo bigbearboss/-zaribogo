@@ -27,6 +27,7 @@ import { PublicDataFetcher } from "./engine/PublicDataFetcher";
 import { RealPublicDataProvider } from "./engine/RealPublicDataProvider";
 import { CsvDatasetProvider } from "./engine/CsvDatasetProvider";
 import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
+import { supabase } from "./services/supabase";
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
 
@@ -874,11 +875,154 @@ function renderRadiusComparison(comparison: any[], activeRadius: number) {
   }
 }
 
+type RunAnalysisOptions = {
+  persist?: boolean;
+  userId?: string;
+};
+
+async function getUserCreditStatus(userId: string) {
+  const { data, error } = await supabase
+    .from("usage_credits")
+    .select("total_credits, used_credits")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    throw new Error("크레딧 정보를 불러올 수 없습니다. 다시 시도해주세요.");
+  }
+
+  const totalCredits = data?.total_credits ?? 0;
+  const usedCredits = data?.used_credits ?? 0;
+  const remainingCredits = Math.max(totalCredits - usedCredits, 0);
+
+  return {
+    totalCredits,
+    usedCredits,
+    remainingCredits,
+  };
+}
+
+function showUpgradeModal() {
+  const modal = document.getElementById("upgradeModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  } else {
+    alert("무료 분석 2회를 모두 사용했어요.\n프리미엄 플랜이 필요합니다.");
+  }
+}
+
+async function saveAnalysisResultToSupabase(params: {
+  userId: string;
+  location: LocationState;
+  businessTypeCode: string;
+  businessTypeLabel: string;
+  analysis: RiskAnalysis;
+  aiResult: AIAnalysisResult;
+}) {
+  const { userId, location, businessTypeCode, businessTypeLabel, analysis, aiResult } = params;
+
+  const normalizedResult = {
+    oneLineSummary: aiResult?.oneLineSummary ?? "",
+    keyRisks: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
+    recommendedActions: Array.isArray(aiResult?.recommendedActions)
+      ? aiResult.recommendedActions
+      : [],
+    precautions: aiResult?.precautions ?? "",
+    cri: analysis.cri,
+    riskTier: analysis.riskTier,
+    confidenceScore: analysis.confidenceScore,
+    location: {
+      lat: location.lat,
+      lng: location.lng,
+      address: location.address,
+      placeName: location.placeName,
+    },
+    industry: {
+      code: businessTypeCode,
+      label: businessTypeLabel,
+    },
+    savedAt: new Date().toISOString(),
+  };
+
+  const reportTitle = `[${businessTypeLabel}] ${location.placeName || location.address} 분석 리포트`;
+
+  const { error } = await supabase.from("analysis_results").insert([
+    {
+      user_id: userId,
+      title: reportTitle,
+      location: location.placeName || location.address,
+      business_type: businessTypeCode,
+      result_data: normalizedResult,
+      is_favorite: false,
+    },
+  ]);
+
+  if (error) {
+    throw new Error(`분석 결과 저장 실패: ${error.message}`);
+  }
+}
+
+async function consumeCredit(userId: string) {
+  const { error } = await supabase.rpc("increment_used_credit", {
+    user_id_input: userId,
+  });
+
+  if (error) {
+    throw new Error(`크레딧 차감 실패: ${error.message}`);
+  }
+}
+
+async function handleStartAnalysisClick() {
+  const user = authService.getUser();
+
+  if (!user) {
+    if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
+      login();
+    }
+    return;
+  }
+
+  const btn = elements.startAnalysis;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "권한 확인 중...";
+  }
+
+  try {
+    const credit = await getUserCreditStatus(user.id);
+
+    if (credit.remainingCredits <= 0) {
+      showUpgradeModal();
+      return;
+    }
+
+    resetSaveButton();
+
+    await runAnalysis({
+      persist: true,
+      userId: user.id,
+    });
+
+    alert("분석이 완료되었어요. 마이페이지에서 결과를 확인할 수 있습니다.");
+    window.location.href = "/mypage.html#reports";
+  } catch (error: any) {
+    console.error("[handleStartAnalysisClick] Error:", error);
+    alert(error?.message || "분석 처리 중 문제가 발생했습니다.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "자리 판단하기";
+    }
+  }
+}
+
+
 const debouncedAnalysis = debounce(runAnalysis, 500);
 
-async function runAnalysis() {
-  const startTime = Date.now();
-  const analysisId = `analysis_${Date.now()} `;
+async function runAnalysis(options: RunAnalysisOptions = {}) {
+  const { persist = false, userId } = options;
+
+  const analysisId = `analysis_${Date.now()}`;
   performance.mark(`${analysisId}: start`);
 
   const rent = getNum("rent", 0);
@@ -925,8 +1069,9 @@ async function runAnalysis() {
   if (pData) {
     if (elements.householdCount) elements.householdCount.value = pData.households.toString();
     if (elements.competitorCount) elements.competitorCount.value = pData.competitorsCount.toString();
-    if (elements.officeBuildingCount)
+    if (elements.officeBuildingCount) {
       elements.officeBuildingCount.value = Math.round(pData.poiTotalCount * 0.1).toString();
+    }
 
     if (elements.marketActivity) {
       const vol = pData.volatilityProxy;
@@ -988,11 +1133,13 @@ async function runAnalysis() {
     demographicGrowthRate: 1.2,
     vacancyRate: 5,
   };
+
   const cData: CompetitionData = {
     competitorProximity: 1,
     marketSaturationIndex: 30,
     pricingPower: 60,
   };
+
   const sData: StabilityData = {
     leaseRemainingYears: 5,
     ownershipStructure: "Leased",
@@ -1039,6 +1186,7 @@ async function runAnalysis() {
         ? "공공 API 데이터"
         : "기본 추정치";
   }
+
   if (elements.metaTime) {
     elements.metaTime.textContent = new Date().toLocaleTimeString("ko-KR", {
       hour: "2-digit",
@@ -1057,8 +1205,7 @@ async function runAnalysis() {
   if (elements.gaugePath) {
     const fullLength = 251.3;
     const offset = fullLength * (1 - analysis.cri / 100);
-    (elements.gaugePath as unknown as SVGPathElement).style.strokeDashoffset =
-      offset.toString();
+    (elements.gaugePath as unknown as SVGPathElement).style.strokeDashoffset = offset.toString();
   }
 
   if (elements.compositeScore) {
@@ -1104,6 +1251,7 @@ async function runAnalysis() {
       themeColor = "#ef4444";
       secondaryColor = "#f87171";
     }
+
     document.documentElement.style.setProperty("--accent-primary", themeColor);
     document.documentElement.style.setProperty("--accent-secondary", secondaryColor);
   }
@@ -1116,10 +1264,13 @@ async function runAnalysis() {
     RadiusMap.render(elements.radiusMap, currentRadius, pData.competitorsCount, pData.poiTotalCount);
   }
 
-  if (elements.confidenceScore)
+  if (elements.confidenceScore) {
     elements.confidenceScore.textContent = analysis.confidenceScore.toFixed(2);
-  if (elements.confidenceBar)
+  }
+
+  if (elements.confidenceBar) {
     elements.confidenceBar.style.width = `${analysis.confidenceScore * 100}%`;
+  }
 
   if (elements.confidenceLabel) {
     let text = "낮음 (추정 데이터 기반 판단)";
@@ -1184,69 +1335,93 @@ async function runAnalysis() {
       };
       const fmtMan = (n: number) => `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
       const fmtPct = (r: number) => `${Math.round(Math.abs(r) * 100)}%`;
-      const deltaLabel = (item: typeof adjs[0]) =>
+      const deltaLabel = (item: (typeof adjs)[0]) =>
         item.delta < 0
           ? `▼ ${fmtMan(item.delta)} (${fmtPct(item.deltaRate)})`
           : `▲ ${fmtMan(item.delta)} (${fmtPct(item.deltaRate)})`;
-      const deltaClass = (item: typeof adjs[0]) =>
+      const deltaClass = (item: (typeof adjs)[0]) =>
         item.delta < 0 ? "adj-delta-reduce" : "adj-delta-increase";
 
       elements.adjustmentContent.innerHTML = `
-                <div class="adj-header">
-                    <span class="adj-header-title">💡 1차 조정 가이드라인</span>
-                    <span class="adj-header-badge">참고용</span>
-                </div>
-                <p class="adj-disclaimer">현재 입력값과 추정 데이터 기준의 가이드라인입니다. 실제 상황에 맞게 직접 판단하세요.</p>
-                <div class="adj-items">
-                    ${adjs
-                      .map(
-                        (item) => `
-                    <div class="adj-item">
-                        <div class="adj-item-top">
-                            <span class="adj-priority-num">${item.priority}</span>
-                            <span class="adj-icon">${ICONS[item.type] || "📌"}</span>
-                            <span class="adj-label">${item.label}${
-                              item.isEstimated
-                                ? ' <span class="adj-estimated">(추정)</span>'
-                                : ""
-                            }</span>
-                        </div>
-                        <div class="adj-values">
-                            <span class="adj-current">${Math.round(
-                              item.current / 10_000
-                            ).toLocaleString()}만원</span>
-                            <span class="adj-arrow">→</span>
-                            <span class="adj-target">${Math.round(
-                              item.target / 10_000
-                            ).toLocaleString()}만원</span>
-                            <span class="${deltaClass(item)}">${deltaLabel(item)}</span>
-                        </div>
-                        <p class="adj-desc">${item.description}</p>
-                    </div>
-                    `
-                      )
-                      .join("")}
-                </div>
-                <p class="adj-footer">※ 3가지 중 1~2가지를 동시에 개선할 수 있다면 안정 구간 진입 가능성이 높아집니다.</p>
-            `;
+        <div class="adj-header">
+          <span class="adj-header-title">💡 1차 조정 가이드라인</span>
+          <span class="adj-header-badge">참고용</span>
+        </div>
+        <p class="adj-disclaimer">현재 입력값과 추정 데이터 기준의 가이드라인입니다. 실제 상황에 맞게 직접 판단하세요.</p>
+        <div class="adj-items">
+          ${adjs
+            .map(
+              (item) => `
+            <div class="adj-item">
+              <div class="adj-item-top">
+                <span class="adj-priority-num">${item.priority}</span>
+                <span class="adj-icon">${ICONS[item.type] || "📌"}</span>
+                <span class="adj-label">${item.label}${
+                  item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
+                }</span>
+              </div>
+              <div class="adj-values">
+                <span class="adj-current">${Math.round(item.current / 10_000).toLocaleString()}만원</span>
+                <span class="adj-arrow">→</span>
+                <span class="adj-target">${Math.round(item.target / 10_000).toLocaleString()}만원</span>
+                <span class="${deltaClass(item)}">${deltaLabel(item)}</span>
+              </div>
+              <p class="adj-desc">${item.description}</p>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+        <p class="adj-footer">※ 3가지 중 1~2가지를 동시에 개선할 수 있다면 안정 구간 진입 가능성이 높아집니다.</p>
+      `;
     } else {
       elements.adjustmentContainer.style.display = "none";
     }
   }
 
-  renderAIInsights(analysis, pData).then((aiResult) => {
+  if (persist) {
+    if (elements.llmCard) {
+      elements.llmCard.style.display = "block";
+    }
+
+    const aiResult = await renderAIInsights(analysis, pData);
+
+    if (!aiResult) {
+      throw new Error("AI 요약 생성에 실패했습니다.");
+    }
+
     const industry = {
       code: industryCode,
       name: elements.selectedSectorLabel?.textContent || "선택 업종",
     };
-    saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
-  });
+
+    await saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
+
+    if (!userId) {
+      throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
+    }
+
+    await saveAnalysisResultToSupabase({
+      userId,
+      location: currentLocation,
+      businessTypeCode: industryCode,
+      businessTypeLabel: industry.name,
+      analysis,
+      aiResult,
+    });
+
+    await consumeCredit(userId);
+  } else {
+    if (elements.llmCard) {
+      elements.llmCard.style.display = "none";
+    }
+  }
 
   lastAnalysisResult = analysis;
 }
 
 elements.startAnalysis?.addEventListener("click", () => {
-  runAnalysis();
+  handleStartAnalysisClick();
 });
 
 elements.businessType?.addEventListener("change", () => {
@@ -1759,5 +1934,3 @@ function resetSaveButton() {
   const label = elements.btnSaveSpot?.querySelector(".label");
   if (label) label.textContent = "내 자리 저장";
 }
-
-elements.startAnalysis?.addEventListener("click", resetSaveButton);
