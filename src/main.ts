@@ -31,7 +31,7 @@ import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
 import { supabase } from "./services/supabase";
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
-import admCodeMap from "./engine/data/admCodeMap.json";
+import admCodeMap from "./engine/data/admCodeMap.ts";
 
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
