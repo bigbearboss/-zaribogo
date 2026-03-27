@@ -207,7 +207,7 @@ if (!admCd) {
   console.warn("[SGIS] admCd is missing on location payload");
 }
 
-    if (admCd) {
+   if (admCd) {
   const population = await this.fetchFloatingPopulation(admCd);
 
   if (population) {
@@ -215,7 +215,16 @@ if (!admCd) {
 
     fallbackData.population = population;
 
-    fallbackData._sources.population = DataSource.PUBLIC_DATA;
+    fallbackData._sources = {
+      competitorsCount: fallbackData._sources?.competitorsCount ?? DataSource.INDUSTRY_DEFAULT,
+      poiTotalCount: fallbackData._sources?.poiTotalCount ?? DataSource.INDUSTRY_DEFAULT,
+      households: fallbackData._sources?.households ?? DataSource.INDUSTRY_DEFAULT,
+      population: DataSource.PUBLIC_DATA,
+      diversityIndex: fallbackData._sources?.diversityIndex ?? DataSource.INDUSTRY_DEFAULT,
+      ageShare20_39: fallbackData._sources?.ageShare20_39 ?? DataSource.INDUSTRY_DEFAULT,
+      volatilityProxy: fallbackData._sources?.volatilityProxy ?? DataSource.INDUSTRY_DEFAULT,
+      districtPoiCount: fallbackData._sources?.districtPoiCount ?? DataSource.INDUSTRY_DEFAULT,
+    };
   }
 }
     
