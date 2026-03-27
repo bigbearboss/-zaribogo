@@ -9,6 +9,7 @@ export enum RiskTier {
     CRITICAL_STRUCTURAL_RISK = "심각한 구조적 위기",
 }
 
+
 export interface LayerResult {
     score: number;
     weight: number;
