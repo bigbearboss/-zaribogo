@@ -32,6 +32,7 @@ import { supabase } from "./services/supabase";
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
 
+
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
 
