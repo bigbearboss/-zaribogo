@@ -142,8 +142,14 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
       `x_coor=${lng}&y_coor=${lat}&accessToken=${token}`;
 
     const res = await fetch(url);
-    const data = await res.json();
 
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("[SGIS] resolveAdmCd failed:", res.status, errorText);
+      return null;
+    }
+
+    const data = await res.json();
     const admCd = data?.features?.[0]?.properties?.adm_cd ?? null;
 
     console.log("[SGIS] resolved admCd:", admCd);
