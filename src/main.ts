@@ -376,10 +376,42 @@ interface LocationState {
   admCd?: string;
 }
 
-function normalizeRegionName(value?: string): string {
-  return (value || "").replace(/\s+/g, "").trim();
+function normalizeSidoName(value?: string): string {
+  return (value || "")
+    .replace(/\s+/g, "")
+    .replace("특별자치시", "")
+    .replace("특별자치도", "")
+    .replace("특별시", "")
+    .replace("광역시", "")
+    .replace(/도$/, "")
+    .trim();
 }
 
+function normalizeSigunguName(value?: string): string {
+  return (value || "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function normalizeDongName(value?: string): string {
+  return (value || "")
+    .replace(/\s+/g, "")
+    .replace(/\(.+\)$/g, "")
+    .trim();
+}
+
+
+const admCodeMapIndex = new Map(
+  (admCodeMap as any[]).map((row) => {
+    const key = [
+      normalizeSidoName(row.sidoName),
+      normalizeSigunguName(row.sigunguName),
+      normalizeDongName(row.dongName),
+    ].join("|");
+
+    return [key, row.admCd];
+  })
+);
 /**
  * 임시 매핑 함수
  * 다음 단계에서 실제 admCode 테이블(JSON/CSV) 연결 예정
@@ -389,25 +421,49 @@ function resolveAdmCdFromAddress(
   sigunguName?: string,
   dongName?: string
 ): string | undefined {
-  const sido = normalizeRegionName(sidoName);
-  const sigungu = normalizeRegionName(sigunguName);
-  const dong = normalizeRegionName(dongName);
+  const raw = {
+    sidoName: sidoName || "",
+    sigunguName: sigunguName || "",
+    dongName: dongName || "",
+  };
 
-  console.log("[ADM] resolve request", { sido, sigungu, dong });
+  const normalized = {
+    sido: normalizeSidoName(sidoName),
+    sigungu: normalizeSigunguName(sigunguName),
+    dong: normalizeDongName(dongName),
+  };
 
-  if (!sido || !sigungu || !dong) return undefined;
+  const key = `${normalized.sido}|${normalized.sigungu}|${normalized.dong}`;
 
-  const found = admCodeMap.find((row: any) => {
-    return (
-      normalizeRegionName(row.sidoName) === sido &&
-      normalizeRegionName(row.sigunguName) === sigungu &&
-      normalizeRegionName(row.dongName) === dong
-    );
-  });
+  console.log("[ADM DEBUG] raw =", JSON.stringify(raw));
+  console.log("[ADM DEBUG] normalized =", JSON.stringify({ ...normalized, key }));
 
-  console.log("[ADM] resolved admCd", found?.admCd);
+  if (!normalized.sido || !normalized.sigungu || !normalized.dong) {
+    console.warn("[ADM DEBUG] missing normalized region values");
+    return undefined;
+  }
 
-  return found?.admCd;
+  const admCd = admCodeMapIndex.get(key);
+
+  if (!admCd) {
+    const candidates = (admCodeMap as any[])
+      .filter(
+        (row) =>
+          normalizeSidoName(row.sidoName) === normalized.sido &&
+          normalizeSigunguName(row.sigunguName) === normalized.sigungu
+      )
+      .slice(0, 10)
+      .map((row) => ({
+        dongName: row.dongName,
+        admCd: row.admCd,
+      }));
+
+    console.warn("[ADM DEBUG] no exact match. candidates =", JSON.stringify(candidates));
+    return undefined;
+  }
+
+  console.log("[ADM] resolved admCd", admCd);
+  return admCd;
 }
 
 let currentScenario: "conservative" | "base" | "aggressive" = "base";
@@ -1715,6 +1771,8 @@ function handleLocationSelect(params: {
     dongName,
   } = params;
 
+
+  
   const admCd = resolveAdmCdFromAddress(sidoName, sigunguName, dongName);
 
   currentLocation = {
