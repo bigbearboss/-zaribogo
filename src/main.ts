@@ -217,8 +217,8 @@ function setupProductActions() {
   });
 
   elements.businessType?.addEventListener("change", () => {
-    runAnalysis();
-  });
+  resetAnalysisView();
+});
 }
 
 const RECOMMENDED_SECTORS = [
@@ -318,7 +318,7 @@ function selectSector(code: string, label: string) {
     el.classList.toggle("active", (el as HTMLElement).dataset.code === code);
   });
 
-  runAnalysis();
+  resetAnalysisView();
 }
 
 function syncUrlWithState(): void {
@@ -383,6 +383,47 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
   };
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function resetAnalysisView() {
+  lastAnalysisResult = null;
+
+  if (elements.judgmentReport) {
+    elements.judgmentReport.classList.add("hidden");
+  }
+
+  if (elements.decisionHelperArea) {
+    elements.decisionHelperArea.classList.add("hidden");
+  }
+
+  if (elements.llmCard) {
+    elements.llmCard.style.display = "none";
+  }
+
+  if (elements.comparisonSummary) {
+    elements.comparisonSummary.classList.add("hidden");
+  }
+
+  if (elements.estimationBanner) {
+    elements.estimationBanner.classList.add("hidden");
+  }
+}
+
+function showAnalysisProgress(message: string) {
+  if (!elements.judgmentReport) return;
+
+  elements.judgmentReport.classList.remove("hidden");
+  elements.judgmentReport.innerHTML = `
+    <div class="analysis-progress-card">
+      <div class="analysis-progress-badge">AI 분석 진행 중</div>
+      <h3>${message}</h3>
+      <p>입지 조건, 경쟁 환경, 수요 지표를 순차적으로 검토하고 있습니다.</p>
+    </div>
+  `;
 }
 
 async function saveToHistory(
@@ -976,18 +1017,18 @@ async function consumeCredit(userId: string) {
 async function handleStartAnalysisClick() {
   const { data: authData, error: authError } = await supabase.auth.getUser();
 
-if (authError) {
-  throw new Error(`로그인 정보를 확인할 수 없습니다. (${authError.message})`);
-}
-
-const user = authData.user;
-
-if (!user) {
-  if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
-    login();
+  if (authError) {
+    throw new Error(`로그인 정보를 확인할 수 없습니다. (${authError.message})`);
   }
-  return;
-}
+
+  const user = authData.user;
+
+  if (!user) {
+    if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
+      login();
+    }
+    return;
+  }
 
   const btn = elements.startAnalysis;
   if (btn) {
@@ -1005,6 +1046,19 @@ if (!user) {
 
     resetSaveButton();
 
+    showAnalysisProgress("선택하신 위치의 기본 입지 정보를 확인하고 있습니다.");
+    await wait(800);
+
+    showAnalysisProgress("선택하신 위치 인근 상권과 경쟁 환경을 분석하고 있습니다.");
+    await wait(900);
+
+    showAnalysisProgress("수익성, 배후 수요, 진입 리스크를 종합 판단하고 있습니다.");
+    await wait(900);
+
+    if (btn) {
+      btn.textContent = "최종 분석 결과 정리 중...";
+    }
+
     await runAnalysis({
       persist: true,
       userId: user.id,
@@ -1015,6 +1069,7 @@ if (!user) {
   } catch (error: any) {
     console.error("[handleStartAnalysisClick] Error:", error);
     alert(error?.message || "분석 처리 중 문제가 발생했습니다.");
+    resetAnalysisView();
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -1521,7 +1576,7 @@ elements.radiusToggle?.addEventListener("click", (e) => {
   btn.classList.add("active");
 
   currentRadius = Number(btn.getAttribute("data-radius"));
-  debouncedAnalysis();
+  resetAnalysisView();
 });
 
 ["margin", "visitRate", "ticketPrice", "repeatFactor", "baseRiskLine", "laborIntensity"].forEach(
@@ -1608,7 +1663,7 @@ function handleLocationSelect(
     address: currentLocation.address,
   });
 
-  debouncedAnalysis();
+  resetAnalysisView();
 }
 
 (window as any)._onHistorySelect = (loc: LocationState) => {
@@ -1621,7 +1676,7 @@ function handleLocationSelect(
   const searchInput = document.getElementById("kakaoSearchInput") as HTMLInputElement | null;
   if (searchInput) searchInput.value = loc.placeName || loc.address;
 
-  debouncedAnalysis();
+  resetAnalysisView();
 };
 
 console.log("[Main] App starting...");
@@ -1639,9 +1694,10 @@ loadKakaoMap()
     renderHistory();
 
     if (!restoreStateFromUrl()) {
-      console.log("[Main] No URL state found, triggering default analysis.");
-      debouncedAnalysis();
+      console.log("[Main] No URL state found.");
     }
+
+    resetAnalysisView();
 
     const searchInput = document.getElementById("kakaoSearchInput") as HTMLInputElement | null;
     const searchBtn = document.getElementById("kakaoSearchBtn") as HTMLButtonElement | null;
