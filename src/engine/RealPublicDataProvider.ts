@@ -200,10 +200,6 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
 
 let admCd = (location as any).admCd ?? null;
 
-if (!admCd && location.lat && location.lng) {
-  console.log("[SGIS] resolving admCd from coordinates...");
-  admCd = await this.resolveAdmCd(location.lat, location.lng);
-}
 // A 방식: 앞단에서 확정된 admCd를 받아서 사용
 console.log("[SGIS] incoming location:", location);
 console.log("[SGIS] incoming admCd:", admCd);
