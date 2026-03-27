@@ -409,6 +409,21 @@ function resolveAdmCdFromAddress(
   return found?.admCd;
 }
 
+let currentScenario: "conservative" | "base" | "aggressive" = "base";
+let currentRadius = 500;
+
+let currentLocation: LocationState = {
+  lat: 37.5657,
+  lng: 126.9769,
+  address: "서울특별시 중구 태평로1가 31",
+  placeName: "서울시청",
+  source: "default",
+  sidoName: "서울특별시",
+  sigunguName: "중구",
+  dongName: "태평로1가",
+  admCd: undefined,
+};
+
 const fieldSources: Record<string, any> = {
   margin: "industry_default",
   ticketPrice: "industry_default",
