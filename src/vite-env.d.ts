@@ -8,6 +8,9 @@ interface ImportMetaEnv {
     readonly VITE_ODCLOUD_BASE_URL: string;
     readonly VITE_KAKAO_MAP_APP_KEY: string;
     readonly VITE_AI_PROXY_URL?: string;
+    readonly VITE_SGIS_CONSUMER_KEY: string;
+    readonly VITE_SGIS_CONSUMER_SECRET: strign;
+    readonly VITE_SGIS_API_BASE_URL: string;
 }
 
 interface ImportMeta {
