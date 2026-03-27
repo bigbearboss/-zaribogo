@@ -3,6 +3,13 @@ import type { PublicDataResult } from "./types";
 export interface LocationPayload {
     lat: number;
     lng: number;
+    address?: string;
+    placeName?: string;
+    source?: "map_click" | "keyword_search" | "address_search" | "history" | "default" | "url_params";
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+    admCd?: string;
     qaScenario?: string; // e.g. "QA01", "QA02"...
 }
 
