@@ -160,26 +160,46 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
   }
 }
 
-    private async fetchFloatingPopulation(admCd: string): Promise<number | null> {
+   private async fetchFloatingPopulation(admCd: string): Promise<number | null> {
   try {
-    const token = await this.getSgisAccessToken();
-    const baseUrl =
-      import.meta.env.VITE_SGIS_API_BASE_URL || "https://sgisapi.mods.go.kr/OpenAPI3";
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey =
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY;
+
+    if (!supabaseUrl) {
+      throw new Error("VITE_SUPABASE_URL is missing");
+    }
+
+    if (!anonKey) {
+      throw new Error("Supabase anon/publishable key is missing");
+    }
 
     const url =
-      `${baseUrl}/stats/regiontotal.json?` +
-      `adm_cd=${admCd}&year=2022&accessToken=${token}`;
+      `${supabaseUrl}/functions/v1/sgis-regiontotal?` +
+      `admCd=${encodeURIComponent(admCd)}&year=2022`;
 
-    const res = await fetch(url);
-    const data = await res.json();
+    const res = await fetch(url, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+    });
 
-    const population = data?.result?.[0]?.tot_ppltn ?? null;
+    const text = await res.text();
 
-    console.log("[SGIS] floating population:", population);
+    if (!res.ok) {
+      throw new Error(`[SGIS proxy] ${res.status} ${text}`);
+    }
+
+    const data = JSON.parse(text);
+    const population = data?.population ?? null;
+
+    console.log("[SGIS proxy] floating population:", population);
 
     return population;
   } catch (err) {
-    console.error("[SGIS] population fetch error:", err);
+    console.error("[SGIS proxy] population fetch error:", err);
     return null;
   }
 }
