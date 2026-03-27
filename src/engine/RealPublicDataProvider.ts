@@ -130,6 +130,27 @@ private async getSgisAccessToken(): Promise<string> {
 
   return accessToken;
 }
+
+private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
+  try {
+    const token = await this.getSgisAccessToken();
+
+    const url = `${this.SGIS_BASE_URL}/boundary/hadmarea.geojson?x_coor=${lng}&y_coor=${lat}&accessToken=${token}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const admCd = data?.features?.[0]?.properties?.adm_cd ?? null;
+
+    console.log("[SGIS] resolved admCd:", admCd);
+
+    return admCd;
+  } catch (err) {
+    console.error("[SGIS] resolveAdmCd error:", err);
+    return null;
+  }
+}
+  
   
   private async doFetch(
     location: LocationPayload,
@@ -144,6 +165,15 @@ private async getSgisAccessToken(): Promise<string> {
       throw new Error("Critical Failure: Mock provider failed.");
     }
 
+let admCd = (location as any).admCd ?? null;
+
+if (!admCd && location.lat && location.lng) {
+  console.log("[SGIS] resolving admCd from coordinates...");
+  admCd = await this.resolveAdmCd(location.lat, location.lng);
+}
+
+console.log("[SGIS] incoming admCd:", admCd);
+    
 // A 방식: 앞단에서 확정된 admCd를 받아서 사용
 const admCd = (location as any).admCd ?? null;
 
@@ -154,17 +184,7 @@ console.log("[SGIS] incoming admCd:", admCd);
 if (!admCd) {
   console.warn("[SGIS] admCd is missing on location payload");
 }
-    if (admCd) {
-  try {
-    const token = await this.getSgisAccessToken();
-    console.log("[SGIS] token ready:", !!token, "admCd:", admCd);
-
-    // 다음 단계에서 여기부터 실제 SGIS API 호출 붙일 예정
-    // 예: regiontotal / mfratiosummary / residsummary
-  } catch (err) {
-    console.error("[SGIS] token or API prep failed:", err);
-  }
-}
+   
     
     const result: PublicDataResult = {
       ...fallbackData,
