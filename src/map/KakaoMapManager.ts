@@ -223,17 +223,19 @@ this.onLocationSelect?.(
         });
     }
 
-    type LocationSelectCallback = (
-  lat: number,
-  lng: number,
-  label: string,
-  meta?: {
-    sidoName?: string;
-    sigunguName?: string;
-    dongName?: string;
-  }
-) => void;
-
+    private _emitSelect(
+    lat: number,
+    lng: number,
+    label: string,
+    meta?: {
+        sidoName?: string;
+        sigunguName?: string;
+        dongName?: string;
+    }
+): void {
+    this.onLocationSelect?.(lat, lng, label, meta);
+}
+ 
     // ──────────────────────────────────────────────────────────
     // 6. Error Display
     // ──────────────────────────────────────────────────────────
