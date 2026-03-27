@@ -347,7 +347,14 @@ function restoreStateFromUrl(): boolean {
       elements.selectedSectorLabel.textContent = rec ? rec.name : `업종 코드: ${sector}`;
     }
 
-    handleLocationSelect(lat, lng, "공유된 위치", "url_params");
+    handleLocationSelect({
+  lat,
+  lng,
+  label: "공유된 위치",
+  source: "url_params",
+  address: "공유된 위치",
+  placeName: "공유된 위치",
+});
     return true;
   }
   return false;
@@ -359,6 +366,34 @@ interface LocationState {
   address: string;
   placeName: string;
   source: "map_click" | "keyword_search" | "address_search" | "history" | "default" | "url_params";
+  sidoName?: string;
+  sigunguName?: string;
+  dongName?: string;
+  admCd?: string;
+}
+
+function normalizeRegionName(value?: string): string {
+  return (value || "").replace(/\s+/g, "").trim();
+}
+
+/**
+ * 임시 매핑 함수
+ * 다음 단계에서 실제 admCode 테이블(JSON/CSV) 연결 예정
+ */
+function resolveAdmCdFromAddress(
+  sidoName?: string,
+  sigunguName?: string,
+  dongName?: string
+): string | undefined {
+  const sido = normalizeRegionName(sidoName);
+  const sigungu = normalizeRegionName(sigunguName);
+  const dong = normalizeRegionName(dongName);
+
+  console.log("[ADM] resolve request", { sido, sigungu, dong });
+
+  // TODO: 다음 단계에서 실제 행정동 코드 테이블과 연결
+  // 지금은 구조 연결 확인용이라 undefined 반환
+  return undefined;
 }
 
 let currentScenario: "conservative" | "base" | "aggressive" = "base";
@@ -370,6 +405,10 @@ let currentLocation: LocationState = {
   address: "서울특별시 중구 태평로1가 31",
   placeName: "서울시청",
   source: "default",
+  sidoName: "서울특별시",
+  sigunguName: "중구",
+  dongName: "태평로1가",
+  admCd: undefined,
 };
 
 const fieldSources: Record<string, any> = {
@@ -517,12 +556,14 @@ async function renderHistory() {
     });
 
     el.addEventListener("click", () => {
-      handleLocationSelect(
-        item.location.lat,
-        item.location.lng,
-        item.location.placeName || item.location.address,
-        "history"
-      );
+      handleLocationSelect({
+  lat: item.location.lat,
+  lng: item.location.lng,
+  label: item.location.placeName || item.location.address,
+  source: "history",
+  address: item.location.address,
+  placeName: item.location.placeName,
+});
     });
   });
 }
@@ -1632,18 +1673,41 @@ if (isTestRunnerActive()) {
 
 const mapManager = new KakaoMapManager();
 
-function handleLocationSelect(
-  lat: number,
-  lng: number,
-  label: string,
-  source: LocationState["source"] = "map_click"
-): void {
+function handleLocationSelect(params: {
+  lat: number;
+  lng: number;
+  label: string;
+  source?: LocationState["source"];
+  address?: string;
+  placeName?: string;
+  sidoName?: string;
+  sigunguName?: string;
+  dongName?: string;
+}): void {
+  const {
+    lat,
+    lng,
+    label,
+    source = "map_click",
+    address,
+    placeName,
+    sidoName,
+    sigunguName,
+    dongName,
+  } = params;
+
+  const admCd = resolveAdmCdFromAddress(sidoName, sigunguName, dongName);
+
   currentLocation = {
     lat,
     lng,
-    address: label,
-    placeName: label,
+    address: address || label,
+    placeName: placeName || label,
     source,
+    sidoName,
+    sigunguName,
+    dongName,
+    admCd,
   };
 
   mapManager.setMarker(lat, lng, currentRadius);
@@ -1661,6 +1725,10 @@ function handleLocationSelect(
     source,
     placeName: currentLocation.placeName,
     address: currentLocation.address,
+    sidoName: currentLocation.sidoName,
+    sigunguName: currentLocation.sigunguName,
+    dongName: currentLocation.dongName,
+    admCd: currentLocation.admCd,
   });
 
   resetAnalysisView();
@@ -1668,6 +1736,16 @@ function handleLocationSelect(
 
 (window as any)._onHistorySelect = (loc: LocationState) => {
   currentLocation = loc;
+  console.log("[HistorySelect] restored location", {
+  lat: loc.lat,
+  lng: loc.lng,
+  address: loc.address,
+  placeName: loc.placeName,
+  sidoName: loc.sidoName,
+  sigunguName: loc.sigunguName,
+  dongName: loc.dongName,
+  admCd: loc.admCd,
+});
   mapManager.setMarker(loc.lat, loc.lng, currentRadius);
 
   const labelEl = document.getElementById("kakaoSelectedLabel");
@@ -1686,7 +1764,21 @@ loadKakaoMap()
     console.log("[Main] SDK Loaded. Initializing Map Manager...");
     mapManager.init("kakaoMapContainer", currentLocation.lat, currentLocation.lng);
     mapManager.setMarker(currentLocation.lat, currentLocation.lng, currentRadius);
-    mapManager.onLocationSelect = handleLocationSelect;
+    mapManager.onLocationSelect = (
+  lat: number,
+  lng: number,
+  label: string,
+  source: LocationState["source"]
+) => {
+  handleLocationSelect({
+    lat,
+    lng,
+    label,
+    source,
+    address: label,
+    placeName: label,
+  });
+};
 
     console.log("[Main] Initializing secondary features...");
     initSectors();
@@ -1747,7 +1839,18 @@ loadKakaoMap()
       if (!r) return;
 
       console.log(`[Search] Result selected: ${r.placeName}`);
-      handleLocationSelect(r.lat, r.lng, r.placeName, "keyword_search");
+      handleLocationSelect({
+  lat: r.lat,
+  lng: r.lng,
+  label: r.placeName,
+  source: "keyword_search",
+  address: r.roadAddressName || r.addressName || r.placeName,
+  placeName: r.placeName,
+  // 다음 단계에서 KakaoMapManager 응답 확장 후 여기 채움
+  sidoName: (r as any).sidoName,
+  sigunguName: (r as any).sigunguName,
+  dongName: (r as any).dongName,
+});
       resultsListEl.style.display = "none";
       if (searchInput) searchInput.value = r.placeName;
     });
