@@ -394,25 +394,20 @@ function resolveAdmCdFromAddress(
 
   console.log("[ADM] resolve request", { sido, sigungu, dong });
 
-  // TODO: 다음 단계에서 실제 행정동 코드 테이블과 연결
-  // 지금은 구조 연결 확인용이라 undefined 반환
-  return undefined;
+  if (!sido || !sigungu || !dong) return undefined;
+
+  const found = admCodeMap.find((row: any) => {
+    return (
+      normalizeRegionName(row.sidoName) === sido &&
+      normalizeRegionName(row.sigunguName) === sigungu &&
+      normalizeRegionName(row.dongName) === dong
+    );
+  });
+
+  console.log("[ADM] resolved admCd", found?.admCd);
+
+  return found?.admCd;
 }
-
-let currentScenario: "conservative" | "base" | "aggressive" = "base";
-let currentRadius = 500;
-
-let currentLocation: LocationState = {
-  lat: 37.5657,
-  lng: 126.9769,
-  address: "서울특별시 중구 태평로1가 31",
-  placeName: "서울시청",
-  source: "default",
-  sidoName: "서울특별시",
-  sigunguName: "중구",
-  dongName: "태평로1가",
-  admCd: undefined,
-};
 
 const fieldSources: Record<string, any> = {
   margin: "industry_default",
