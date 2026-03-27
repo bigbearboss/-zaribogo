@@ -31,7 +31,7 @@ import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
 import { supabase } from "./services/supabase";
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
-import admCodeMap from "./engine/data/admCodeMap.json";
+import admCodeMap from "./engine/data/admCodeMap";
 
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
@@ -394,9 +394,19 @@ function resolveAdmCdFromAddress(
 
   console.log("[ADM] resolve request", { sido, sigungu, dong });
 
-  // TODO: 다음 단계에서 실제 행정동 코드 테이블과 연결
-  // 지금은 구조 연결 확인용이라 undefined 반환
-  return undefined;
+  if (!sido || !sigungu || !dong) return undefined;
+
+  const found = admCodeMap.find((row: any) => {
+    return (
+      normalizeRegionName(row.sidoName) === sido &&
+      normalizeRegionName(row.sigunguName) === sigungu &&
+      normalizeRegionName(row.dongName) === dong
+    );
+  });
+
+  console.log("[ADM] resolved admCd", found?.admCd);
+
+  return found?.admCd;
 }
 
 let currentScenario: "conservative" | "base" | "aggressive" = "base";
