@@ -144,13 +144,27 @@ private async getSgisAccessToken(): Promise<string> {
       throw new Error("Critical Failure: Mock provider failed.");
     }
 
-// 임시 테스트 코드
-    try {
-      const token = await this.getSgisAccessToken();
-      console.log("[TEST] SGIS token acquired:", !!token);
-    } catch (err) {
-      console.error("[TEST] SGIS token error:", err);
-    }
+// A 방식: 앞단에서 확정된 admCd를 받아서 사용
+const admCd = (location as any).admCd ?? null;
+
+console.log("[SGIS] incoming location:", location);
+console.log("[SGIS] incoming admCd:", admCd);
+
+// 아직 앞단 작업이 안 끝났으면 경고만 띄우고 넘어감
+if (!admCd) {
+  console.warn("[SGIS] admCd is missing on location payload");
+}
+    if (admCd) {
+  try {
+    const token = await this.getSgisAccessToken();
+    console.log("[SGIS] token ready:", !!token, "admCd:", admCd);
+
+    // 다음 단계에서 여기부터 실제 SGIS API 호출 붙일 예정
+    // 예: regiontotal / mfratiosummary / residsummary
+  } catch (err) {
+    console.error("[SGIS] token or API prep failed:", err);
+  }
+}
     
     const result: PublicDataResult = {
       ...fallbackData,
