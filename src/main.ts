@@ -1771,7 +1771,16 @@ loadKakaoMap()
     console.log("[Main] SDK Loaded. Initializing Map Manager...");
     mapManager.init("kakaoMapContainer", currentLocation.lat, currentLocation.lng);
     mapManager.setMarker(currentLocation.lat, currentLocation.lng, currentRadius);
-    mapManager.onLocationSelect = (lat: number, lng: number, label: string) => {
+   mapManager.onLocationSelect = (
+  lat: number,
+  lng: number,
+  label: string,
+  meta?: {
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+  }
+) => {
   handleLocationSelect({
     lat,
     lng,
@@ -1779,6 +1788,9 @@ loadKakaoMap()
     source: "map_click",
     address: label,
     placeName: label,
+    sidoName: meta?.sidoName,
+    sigunguName: meta?.sigunguName,
+    dongName: meta?.dongName,
   });
 };
 
@@ -1833,32 +1845,36 @@ loadKakaoMap()
       if (e.key === "Enter") doSearch();
     });
 
-    resultsListEl?.addEventListener("click", (e) => {
-      const item = (e.target as HTMLElement).closest(".kakao-result-item") as HTMLElement | null;
-      if (!item) return;
-      const idx = Number(item.dataset.idx);
-      const r = searchResults[idx];
-      if (!r) return;
+    resultsListEl?.addEventListener("click", async (e) => {
+  const item = (e.target as HTMLElement).closest(".kakao-result-item") as HTMLElement | null;
+  if (!item) return;
 
-      console.log("[Search Result Raw]", r);
-      
-      console.log(`[Search] Result selected: ${r.placeName}`);
-      handleLocationSelect({
-  lat: r.lat,
-  lng: r.lng,
-  label: r.placeName,
-  source: "keyword_search",
-  address: r.roadAddressName || r.addressName || r.placeName,
-  placeName: r.placeName,
-  // 다음 단계에서 KakaoMapManager 응답 확장 후 여기 채움
-  sidoName: (r as any).sidoName,
-  sigunguName: (r as any).sigunguName,
-  dongName: (r as any).dongName,
+  const idx = Number(item.dataset.idx);
+  const r = searchResults[idx];
+  if (!r) return;
+
+  console.log("[Search Result Raw]", r);
+
+  const meta = await mapManager.resolveAddressMeta(r.lat, r.lng);
+
+  console.log("[Search Result Resolved Meta]", meta);
+
+  console.log(`[Search] Result selected: ${r.placeName}`);
+  handleLocationSelect({
+    lat: r.lat,
+    lng: r.lng,
+    label: r.placeName,
+    source: "keyword_search",
+    address: meta.address || r.roadAddressName || r.addressName || r.placeName,
+    placeName: r.placeName,
+    sidoName: meta.sidoName,
+    sigunguName: meta.sigunguName,
+    dongName: meta.dongName,
+  });
+
+  resultsListEl.style.display = "none";
+  if (searchInput) searchInput.value = r.placeName;
 });
-      resultsListEl.style.display = "none";
-      if (searchInput) searchInput.value = r.placeName;
-    });
-
     renderHistory();
 
     document.addEventListener("click", (e) => {
