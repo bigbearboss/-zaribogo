@@ -134,8 +134,12 @@ private async getSgisAccessToken(): Promise<string> {
 private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
   try {
     const token = await this.getSgisAccessToken();
+    const baseUrl =
+      import.meta.env.VITE_SGIS_API_BASE_URL || "https://sgisapi.mods.go.kr/OpenAPI3";
 
-    const url = `${this.SGIS_BASE_URL}/boundary/hadmarea.geojson?x_coor=${lng}&y_coor=${lat}&accessToken=${token}`;
+    const url =
+      `${baseUrl}/boundary/hadmarea.geojson?` +
+      `x_coor=${lng}&y_coor=${lat}&accessToken=${token}`;
 
     const res = await fetch(url);
     const data = await res.json();
@@ -143,7 +147,6 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
     const admCd = data?.features?.[0]?.properties?.adm_cd ?? null;
 
     console.log("[SGIS] resolved admCd:", admCd);
-
     return admCd;
   } catch (err) {
     console.error("[SGIS] resolveAdmCd error:", err);
@@ -171,12 +174,7 @@ if (!admCd && location.lat && location.lng) {
   console.log("[SGIS] resolving admCd from coordinates...");
   admCd = await this.resolveAdmCd(location.lat, location.lng);
 }
-
-console.log("[SGIS] incoming admCd:", admCd);
-    
 // A 방식: 앞단에서 확정된 admCd를 받아서 사용
-const admCd = (location as any).admCd ?? null;
-
 console.log("[SGIS] incoming location:", location);
 console.log("[SGIS] incoming admCd:", admCd);
 
