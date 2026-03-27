@@ -57,13 +57,6 @@ export class RealPublicDataProvider implements PublicDataProvider {
     return fetchPromise;
   }
 
-  private async doFetch(
-    location: LocationPayload,
-    radius: number,
-    industryCode: string
-  ): Promise<PublicDataResult> {
-    let fallbackData: PublicDataResult;
-
 private async getSgisAccessToken(): Promise<string> {
   const now = Date.now();
 
@@ -137,6 +130,13 @@ private async getSgisAccessToken(): Promise<string> {
 
   return accessToken;
 }
+  
+  private async doFetch(
+    location: LocationPayload,
+    radius: number,
+    industryCode: string
+  ): Promise<PublicDataResult> {
+    let fallbackData: PublicDataResult;
     
     try {
       fallbackData = await this.fallbackProvider.fetchByRadius(location, radius, industryCode);
@@ -144,6 +144,14 @@ private async getSgisAccessToken(): Promise<string> {
       throw new Error("Critical Failure: Mock provider failed.");
     }
 
+// 임시 테스트 코드
+    try {
+      const token = await this.getSgisAccessToken();
+      console.log("[TEST] SGIS token acquired:", !!token);
+    } catch (err) {
+      console.error("[TEST] SGIS token error:", err);
+    }
+    
     const result: PublicDataResult = {
       ...fallbackData,
       _sources: {
