@@ -133,20 +133,21 @@ export interface AIInput {
 }
 
 export interface AnalysisHistoryItem {
-    location: {
-        lat: number;
-        lng: number;
-        address: string;
-        placeName: string;
-    };
-    industry: {
-        code: string;
-        name: string;
-    };
-    radius: number;
-    analysis: RiskAnalysis;
-    aiResult: AIAnalysisResult | null;
-    timestamp: number;
+  location: {
+    lat: number;
+    lng: number;
+    address: string;
+    placeName: string;
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+    admCd?: string;
+  };
+  industry: { code: string; name: string } | string;
+  radius: number;
+  analysis: RiskAnalysis;
+  aiResult: AIAnalysisResult | null;
+  timestamp: number;
 }
 
 export type EvidenceCategory = "competition" | "demand" | "volatility";
