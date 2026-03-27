@@ -1840,6 +1840,8 @@ loadKakaoMap()
       const r = searchResults[idx];
       if (!r) return;
 
+      console.log("[Search Result Raw]", r);
+      
       console.log(`[Search] Result selected: ${r.placeName}`);
       handleLocationSelect({
   lat: r.lat,
