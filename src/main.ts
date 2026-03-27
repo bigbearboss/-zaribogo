@@ -7,6 +7,8 @@ import type {
   StabilityData,
   AIAnalysisResult,
   AnalysisHistoryItem,
+  AIInput,
+  EvidenceCard,
 } from "./engine/types";
 import { RiskTier } from "./engine/types";
 import { RadiusMap } from "./engine/RadiusMap";
@@ -871,7 +873,6 @@ function applyProfile() {
   });
 }
 
-import { EvidenceCard } from "./engine/types";
 
 function renderEvidenceCards(cards: EvidenceCard[]) {
   if (!elements.evidenceContainer) return;
@@ -1764,17 +1765,12 @@ loadKakaoMap()
     console.log("[Main] SDK Loaded. Initializing Map Manager...");
     mapManager.init("kakaoMapContainer", currentLocation.lat, currentLocation.lng);
     mapManager.setMarker(currentLocation.lat, currentLocation.lng, currentRadius);
-    mapManager.onLocationSelect = (
-  lat: number,
-  lng: number,
-  label: string,
-  source: LocationState["source"]
-) => {
+    mapManager.onLocationSelect = (lat: number, lng: number, label: string) => {
   handleLocationSelect({
     lat,
     lng,
     label,
-    source,
+    source: "map_click",
     address: label,
     placeName: label,
   });
