@@ -36,6 +36,7 @@ import admCodeMap from "./engine/data/admCodeMap.json";
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
 
+
 const getEl = (id: string) => document.getElementById(id);
 const getVal = (id: string, defaultVal: string = "0") =>
   (getEl(id) as HTMLInputElement | HTMLSelectElement)?.value || defaultVal;
