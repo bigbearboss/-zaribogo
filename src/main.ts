@@ -1105,7 +1105,7 @@ async function handleStartAnalysisClick() {
       userId: user.id,
     });
 
-    alert("분석이 완료되었어요. 현재 화면에서 결과를 확인할 수 있습니다.");
+    alert("분석이 완료되었어요.");
   } catch (error: any) {
     console.error("[handleStartAnalysisClick] Error:", error);
     alert(error?.message || "분석 처리 중 문제가 발생했습니다.");
