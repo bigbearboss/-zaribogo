@@ -153,6 +153,30 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
     return null;
   }
 }
+
+    private async fetchFloatingPopulation(admCd: string): Promise<number | null> {
+  try {
+    const token = await this.getSgisAccessToken();
+    const baseUrl =
+      import.meta.env.VITE_SGIS_API_BASE_URL || "https://sgisapi.mods.go.kr/OpenAPI3";
+
+    const url =
+      `${baseUrl}/stats/regiontotal.json?` +
+      `adm_cd=${admCd}&year=2022&accessToken=${token}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    const population = data?.result?.[0]?.tot_ppltn ?? null;
+
+    console.log("[SGIS] floating population:", population);
+
+    return population;
+  } catch (err) {
+    console.error("[SGIS] population fetch error:", err);
+    return null;
+  }
+}
   
   
   private async doFetch(
@@ -182,7 +206,18 @@ console.log("[SGIS] incoming admCd:", admCd);
 if (!admCd) {
   console.warn("[SGIS] admCd is missing on location payload");
 }
-   
+
+    if (admCd) {
+  const population = await this.fetchFloatingPopulation(admCd);
+
+  if (population) {
+    console.log("[SGIS] applying real population:", population);
+
+    fallbackData.population = population;
+
+    fallbackData._sources.population = DataSource.PUBLIC_DATA;
+  }
+}
     
     const result: PublicDataResult = {
       ...fallbackData,
