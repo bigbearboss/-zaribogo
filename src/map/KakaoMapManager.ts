@@ -24,9 +24,23 @@ export interface KakaoPlaceResult {
     lat: number;
     lng: number;
     id: string;
+
+    // 🔥 추가
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
 }
 
-type LocationSelectCallback = (lat: number, lng: number, label: string) => void;
+type LocationSelectCallback = (
+  lat: number,
+  lng: number,
+  label: string,
+  meta?: {
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+  }
+) => void;
 
 export class KakaoMapManager {
     private map: any = null;
@@ -134,14 +148,19 @@ export class KakaoMapManager {
 
             this.ps.keywordSearch(query, (results: any[], status: any) => {
                 if (status !== kakao.maps.services.Status.OK) { resolve([]); return; }
-                const places: KakaoPlaceResult[] = results.map(r => ({
-                    placeName: r.place_name,
-                    addressName: r.address_name,
-                    roadAddressName: r.road_address_name,
-                    lat: parseFloat(r.y),
-                    lng: parseFloat(r.x),
-                    id: r.id,
-                }));
+               const places: KakaoPlaceResult[] = results.map(r => ({
+    placeName: r.place_name,
+    addressName: r.address_name,
+    roadAddressName: r.road_address_name,
+    lat: parseFloat(r.y),
+    lng: parseFloat(r.x),
+    id: r.id,
+
+    // 🔥 핵심
+    sidoName: r.address?.region_1depth_name,
+    sigunguName: r.address?.region_2depth_name,
+    dongName: r.address?.region_3depth_name,
+}));
                 resolve(places);
             }, { size: 10 });
         });
@@ -155,14 +174,23 @@ export class KakaoMapManager {
 
             this.geocoder.addressSearch(query, (results: any[], status: any) => {
                 if (status !== kakao.maps.services.Status.OK) { resolve([]); return; }
-                const places: KakaoPlaceResult[] = results.map(r => ({
-                    placeName: r.address_name, // Address search results use address as name
-                    addressName: r.address_name,
-                    roadAddressName: r.road_address?.address_name || r.address?.address_name || '',
-                    lat: parseFloat(r.y),
-                    lng: parseFloat(r.x),
-                    id: 'addr_' + Date.now() + Math.random().toString(36).substr(2, 5),
-                }));
+                const places: KakaoPlaceResult[] = results.map(r => {
+    const addr = r.address;
+
+    return {
+        placeName: r.address_name,
+        addressName: r.address_name,
+        roadAddressName: r.road_address?.address_name || r.address?.address_name || '',
+        lat: parseFloat(r.y),
+        lng: parseFloat(r.x),
+        id: 'addr_' + Date.now() + Math.random().toString(36).substr(2, 5),
+
+        // 🔥 핵심 추가
+        sidoName: addr?.region_1depth_name,
+        sigunguName: addr?.region_2depth_name,
+        dongName: addr?.region_3depth_name,
+    };
+});
                 resolve(places);
             });
         });
@@ -180,13 +208,31 @@ export class KakaoMapManager {
             const label = (status === kakao.maps.services.Status.OK && result[0])
                 ? (result[0].road_address?.address_name || result[0].address?.address_name || '선택한 위치')
                 : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            this._emitSelect(lat, lng, label);
+            const addr = result[0]?.address;
+
+this.onLocationSelect?.(
+    lat,
+    lng,
+    label,
+    {
+        sidoName: addr?.region_1depth_name,
+        sigunguName: addr?.region_2depth_name,
+        dongName: addr?.region_3depth_name,
+    }
+);
         });
     }
 
-    private _emitSelect(lat: number, lng: number, label: string): void {
-        this.onLocationSelect?.(lat, lng, label);
-    }
+    type LocationSelectCallback = (
+  lat: number,
+  lng: number,
+  label: string,
+  meta?: {
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+  }
+) => void;
 
     // ──────────────────────────────────────────────────────────
     // 6. Error Display
