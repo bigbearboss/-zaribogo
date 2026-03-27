@@ -452,7 +452,7 @@ function resolveAdmCdFromAddress(
           normalizeSidoName(row.sidoName) === normalized.sido &&
           normalizeSigunguName(row.sigunguName) === normalized.sigungu
       )
-      .slice(0, 10)
+      .slice(0, 20)
       .map((row) => ({
         dongName: row.dongName,
         admCd: row.admCd,
