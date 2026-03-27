@@ -486,11 +486,15 @@ async function saveToHistory(
 
   const newItem: AnalysisHistoryItem = {
     location: {
-      lat: loc.lat,
-      lng: loc.lng,
-      address: loc.address || loc.placeName || "",
-      placeName: loc.placeName || "",
-    },
+  lat: loc.lat,
+  lng: loc.lng,
+  address: loc.address || loc.placeName || "",
+  placeName: loc.placeName || "",
+  sidoName: loc.sidoName,
+  sigunguName: loc.sigunguName,
+  dongName: loc.dongName,
+  admCd: loc.admCd,
+},
     industry,
     radius,
     analysis: leanAnalysis,
@@ -564,6 +568,9 @@ async function renderHistory() {
   source: "history",
   address: item.location.address,
   placeName: item.location.placeName,
+  sidoName: (item.location as any).sidoName,
+  sigunguName: (item.location as any).sigunguName,
+  dongName: (item.location as any).dongName,
 });
     });
   });
