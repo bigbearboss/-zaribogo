@@ -73,24 +73,27 @@ class HistoryService {
     }
 
     private saveToLocalStorage(item: AnalysisHistoryItem) {
-        try {
-            let history: AnalysisHistoryItem[] = JSON.parse(localStorage.getItem(LOCAL_HISTORY_KEY) || '[]');
+    try {
+        let history: AnalysisHistoryItem[] = JSON.parse(localStorage.getItem(LOCAL_HISTORY_KEY) || '[]');
 
-            // De-duplicate
-            history = history.filter(h =>
-                !(h.location.lat === item.location.lat &&
-                    h.location.lng === item.location.lng &&
-                    h.industry.code === item.industry.code &&
-                    h.radius === item.radius)
-            );
+        const getIndustryCode = (ind: string | { code: string; name: string }) =>
+            typeof ind === "string" ? ind : ind.code;
 
-            history.unshift(item);
-            if (history.length > 20) history.pop();
-            localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(history));
-        } catch (err) {
-            console.error('[HistoryService] LocalStorage save error:', err);
-        }
+        // De-duplicate
+        history = history.filter(h =>
+            !(h.location.lat === item.location.lat &&
+              h.location.lng === item.location.lng &&
+              getIndustryCode(h.industry) === getIndustryCode(item.industry) &&
+              h.radius === item.radius)
+        );
+
+        history.unshift(item);
+        if (history.length > 20) history.pop();
+        localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(history));
+    } catch (err) {
+        console.error('[HistoryService] LocalStorage save error:', err);
     }
+}
 
     private getFromLocalStorage(): AnalysisHistoryItem[] {
         try {
