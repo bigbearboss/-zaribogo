@@ -11,6 +11,7 @@ type DistrictMetadataResponse = {
 export class RealPublicDataProvider implements PublicDataProvider {
   private fallbackProvider = new MockPublicDataProvider();
   private cache: Map<string, Promise<PublicDataResult>> = new Map();
+  private sgisTokenCache: { token: string; expiresAt: number } | null = null;
 
   private getCacheKey(location: LocationPayload, radius: number, industryCode: string): string {
     const geohash = `${location.lat.toFixed(3)},${location.lng.toFixed(3)}`;
@@ -63,6 +64,80 @@ export class RealPublicDataProvider implements PublicDataProvider {
   ): Promise<PublicDataResult> {
     let fallbackData: PublicDataResult;
 
+private async getSgisAccessToken(): Promise<string> {
+  const now = Date.now();
+
+  // 1) 캐시된 토큰이 아직 유효하면 재사용
+  if (this.sgisTokenCache && this.sgisTokenCache.expiresAt > now) {
+    console.log("[SGIS] Using cached access token");
+    return this.sgisTokenCache.token;
+  }
+
+  // 2) 환경변수 읽기
+  const consumerKey = import.meta.env.VITE_SGIS_CONSUMER_KEY;
+  const consumerSecret = import.meta.env.VITE_SGIS_CONSUMER_SECRET;
+  const baseUrl =
+    import.meta.env.VITE_SGIS_API_BASE_URL || "https://sgisapi.mods.go.kr/OpenAPI3";
+
+  if (!consumerKey || !consumerKey.trim()) {
+    throw new Error("VITE_SGIS_CONSUMER_KEY is missing");
+  }
+
+  if (!consumerSecret || !consumerSecret.trim()) {
+    throw new Error("VITE_SGIS_CONSUMER_SECRET is missing");
+  }
+
+  // 3) 요청 파라미터 구성
+  const params = new URLSearchParams({
+    consumer_key: consumerKey,
+    consumer_secret: consumerSecret,
+  });
+
+  const url = `${baseUrl}/auth/authentication.json?${params.toString()}`;
+
+  console.log("[SGIS] Requesting new access token");
+
+  // 4) 인증 API 호출
+  const response = await fetch(url);
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`[SGIS] Auth request failed: ${response.status} ${text}`);
+  }
+
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(`[SGIS] Failed to parse auth response: ${text}`);
+  }
+
+  // 5) SGIS 응답 검증
+  if (
+    json.errCd !== 0 ||
+    !json.result ||
+    !json.result.accessToken
+  ) {
+    throw new Error(
+      `[SGIS] Auth failed: errCd=${json.errCd}, errMsg=${json.errMsg || "unknown"}`
+    );
+  }
+
+  const accessToken = json.result.accessToken;
+
+  // 6) 4시간보다 조금 짧게 캐시
+  const expiresAt = now + 1000 * 60 * 60 * 3.5;
+
+  this.sgisTokenCache = {
+    token: accessToken,
+    expiresAt,
+  };
+
+  console.log("[SGIS] New access token cached");
+
+  return accessToken;
+}
+    
     try {
       fallbackData = await this.fallbackProvider.fetchByRadius(location, radius, industryCode);
     } catch {
