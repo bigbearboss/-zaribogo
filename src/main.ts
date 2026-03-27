@@ -22,7 +22,6 @@ import {
 import { loadKakaoMap } from "./services/kakaoMapLoader";
 import { KakaoMapManager, KakaoPlaceResult } from "./map/KakaoMapManager";
 import { AIService } from "./engine/AIService";
-import type { AIInput } from "./engine/types";
 import { authService } from "./services/AuthService";
 import { historyService } from "./services/HistoryService";
 import { PublicDataFetcher } from "./engine/PublicDataFetcher";
