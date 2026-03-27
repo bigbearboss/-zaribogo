@@ -196,6 +196,39 @@ export class KakaoMapManager {
         });
     }
 
+async resolveAddressMeta(lat: number, lng: number): Promise<{
+    address?: string;
+    sidoName?: string;
+    sigunguName?: string;
+    dongName?: string;
+}> {
+    const kakao = window.kakao;
+
+    return new Promise((resolve) => {
+        if (!this.geocoder) {
+            resolve({});
+            return;
+        }
+
+        this.geocoder.coord2Address(lng, lat, (result: any[], status: any) => {
+            if (status !== kakao.maps.services.Status.OK || !result[0]) {
+                resolve({});
+                return;
+            }
+
+            const addr = result[0]?.address;
+            const roadAddr = result[0]?.road_address;
+
+            resolve({
+                address: roadAddr?.address_name || addr?.address_name || "",
+                sidoName: addr?.region_1depth_name,
+                sigunguName: addr?.region_2depth_name,
+                dongName: addr?.region_3depth_name,
+            });
+        });
+    });
+}
+    
     // ──────────────────────────────────────────────────────────
     // 5. Reverse Geocoding (map click → address)
     // ──────────────────────────────────────────────────────────
@@ -210,16 +243,11 @@ export class KakaoMapManager {
                 : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             const addr = result[0]?.address;
 
-this.onLocationSelect?.(
-    lat,
-    lng,
-    label,
-    {
-        sidoName: addr?.region_1depth_name,
-        sigunguName: addr?.region_2depth_name,
-        dongName: addr?.region_3depth_name,
-    }
-);
+this._emitSelect(lat, lng, label, {
+    sidoName: addr?.region_1depth_name,
+    sigunguName: addr?.region_2depth_name,
+    dongName: addr?.region_3depth_name,
+});
         });
     }
 
