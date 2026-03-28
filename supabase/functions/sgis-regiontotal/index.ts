@@ -62,10 +62,9 @@ serve(async (req) => {
       Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.mods.go.kr/OpenAPI3";
 
     const sgisUrl =
-      `${baseUrl}/stats/regiontotal.json?` +
-      `adm_cd=${encodeURIComponent(admCd)}` +
-      `&year=${encodeURIComponent(year)}` +
-      `&accessToken=${encodeURIComponent(token)}`;
+  `${baseUrl}/startupbiz/regiontotal.json?` +
+  `adm_cd=${encodeURIComponent(admCd)}` +
+  `&accessToken=${encodeURIComponent(token)}`;
 
     const sgisRes = await fetch(sgisUrl);
 
