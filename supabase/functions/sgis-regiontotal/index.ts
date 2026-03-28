@@ -49,11 +49,11 @@ async function transformTo5179(
   accessToken: string
 ): Promise<{ x: number; y: number }> {
   const params = new URLSearchParams({
+    accessToken,
     src: "4326",
     dst: "5179",
     posX: String(lng),
     posY: String(lat),
-    access_Token: accessToken,
   });
 
   const url = `${SGIS_BASE_URL}/transformation/transcoord.json?${params.toString()}`;
@@ -83,9 +83,9 @@ async function findSmallAreaCode(
   tot_reg_cd: string;
 }> {
   const params = new URLSearchParams({
+    accessToken,
     x_coor: String(x),
     y_coor: String(y),
-    access_Token: accessToken,
   });
 
   const url = `${SGIS_BASE_URL}/personal/findcodeinsmallarea.json?${params.toString()}`;
@@ -160,7 +160,6 @@ serve(async (req) => {
     const transformed = await transformTo5179(lng, lat, accessToken);
     const area = await findSmallAreaCode(transformed.x, transformed.y, accessToken);
 
-    // SGIS 문서 기준 regiontotal/population은 7자리 읍면동 코드 사용 가능
     const admCd7 = `${area.sido_cd}${area.sgg_cd}${area.emdong_cd}`;
 
     const [populationRaw, regionTotalRaw] = await Promise.all([
@@ -170,9 +169,9 @@ serve(async (req) => {
 
     const populationRow = populationRaw?.result?.[0] ?? null;
     const regionTotalRow =
-  regionTotalRaw?.result?.find((row: any) => row.adm_cd === admCd7) ??
-  regionTotalRaw?.result?.[0] ??
-  null;
+      regionTotalRaw?.result?.find((row: any) => row.adm_cd === admCd7) ??
+      regionTotalRaw?.result?.[0] ??
+      null;
 
     return new Response(
       JSON.stringify({
