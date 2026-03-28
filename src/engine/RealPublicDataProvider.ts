@@ -160,7 +160,7 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
   }
 }
 
-   private async fetchFloatingPopulation(admCd: string): Promise<number | null> {
+   private async fetchSgisRegionData(lat: number, lng: number): Promise<any | null> {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey =
@@ -177,7 +177,8 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
 
     const url =
       `${supabaseUrl}/functions/v1/sgis-regiontotal?` +
-      `admCd=${encodeURIComponent(admCd)}&year=2022`;
+      `lat=${encodeURIComponent(String(lat))}` +
+      `&lng=${encodeURIComponent(String(lng))}`;
 
     const res = await fetch(url, {
       headers: {
@@ -193,13 +194,12 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
     }
 
     const data = JSON.parse(text);
-    const population = data?.population ?? null;
 
-    console.log("[SGIS proxy] floating population:", population);
+    console.log("[SGIS proxy] region data =", data);
 
-    return population;
+    return data;
   } catch (err) {
-    console.error("[SGIS proxy] population fetch error:", err);
+    console.error("[SGIS proxy] region data fetch error:", err);
     return null;
   }
 }
@@ -218,37 +218,38 @@ private async resolveAdmCd(lat: number, lng: number): Promise<string | null> {
       throw new Error("Critical Failure: Mock provider failed.");
     }
 
-let admCd = (location as any).admCd ?? null;
-
-// A 방식: 앞단에서 확정된 admCd를 받아서 사용
 console.log("[SGIS] incoming location:", location);
-console.log("[SGIS] incoming admCd:", admCd);
 
-// 아직 앞단 작업이 안 끝났으면 경고만 띄우고 넘어감
-if (!admCd) {
-  console.warn("[SGIS] admCd is missing on location payload");
+const sgisData = await this.fetchSgisRegionData(location.lat, location.lng);
+
+if (sgisData?.population?.tot_ppltn) {
+  fallbackData.population = Number(sgisData.population.tot_ppltn);
 }
 
-   if (admCd) {
-  const population = await this.fetchFloatingPopulation(admCd);
-
-  if (population) {
-    console.log("[SGIS] applying real population:", population);
-
-    fallbackData.population = population;
-
-    fallbackData._sources = {
-      competitorsCount: fallbackData._sources?.competitorsCount ?? DataSource.INDUSTRY_DEFAULT,
-      poiTotalCount: fallbackData._sources?.poiTotalCount ?? DataSource.INDUSTRY_DEFAULT,
-      households: fallbackData._sources?.households ?? DataSource.INDUSTRY_DEFAULT,
-      population: DataSource.PUBLIC_DATA,
-      diversityIndex: fallbackData._sources?.diversityIndex ?? DataSource.INDUSTRY_DEFAULT,
-      ageShare20_39: fallbackData._sources?.ageShare20_39 ?? DataSource.INDUSTRY_DEFAULT,
-      volatilityProxy: fallbackData._sources?.volatilityProxy ?? DataSource.INDUSTRY_DEFAULT,
-      districtPoiCount: fallbackData._sources?.districtPoiCount ?? DataSource.INDUSTRY_DEFAULT,
-    };
-  }
+if (sgisData?.population?.tot_house) {
+  fallbackData.households = Number(sgisData.population.tot_house);
 }
+
+if (sgisData?.regiontotal?.twenty_ppltn_per) {
+  fallbackData.ageShare20_39 = Number(sgisData.regiontotal.twenty_ppltn_per) / 100;
+}
+
+fallbackData._sources = {
+  competitorsCount: fallbackData._sources?.competitorsCount ?? DataSource.INDUSTRY_DEFAULT,
+  poiTotalCount: fallbackData._sources?.poiTotalCount ?? DataSource.INDUSTRY_DEFAULT,
+  households: sgisData?.population?.tot_house
+    ? DataSource.PUBLIC_DATA
+    : fallbackData._sources?.households ?? DataSource.INDUSTRY_DEFAULT,
+  population: sgisData?.population?.tot_ppltn
+    ? DataSource.PUBLIC_DATA
+    : fallbackData._sources?.population ?? DataSource.INDUSTRY_DEFAULT,
+  diversityIndex: fallbackData._sources?.diversityIndex ?? DataSource.INDUSTRY_DEFAULT,
+  ageShare20_39: sgisData?.regiontotal?.twenty_ppltn_per
+    ? DataSource.PUBLIC_DATA
+    : fallbackData._sources?.ageShare20_39 ?? DataSource.INDUSTRY_DEFAULT,
+  volatilityProxy: fallbackData._sources?.volatilityProxy ?? DataSource.INDUSTRY_DEFAULT,
+  districtPoiCount: fallbackData._sources?.districtPoiCount ?? DataSource.INDUSTRY_DEFAULT,
+};
     
     const result: PublicDataResult = {
       ...fallbackData,
