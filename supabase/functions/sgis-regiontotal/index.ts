@@ -53,7 +53,7 @@ async function transformTo5179(
     dst: "5179",
     posX: String(lng),
     posY: String(lat),
-    accessToken,
+    access_Token: accessToken,
   });
 
   const url = `${SGIS_BASE_URL}/transformation/transcoord.json?${params.toString()}`;
@@ -85,7 +85,7 @@ async function findSmallAreaCode(
   const params = new URLSearchParams({
     x_coor: String(x),
     y_coor: String(y),
-    accessToken,
+    access_Token: accessToken,
   });
 
   const url = `${SGIS_BASE_URL}/personal/findcodeinsmallarea.json?${params.toString()}`;
@@ -173,7 +173,7 @@ serve(async (req) => {
   regionTotalRaw?.result?.find((row: any) => row.adm_cd === admCd7) ??
   regionTotalRaw?.result?.[0] ??
   null;
-  
+
     return new Response(
       JSON.stringify({
         input: { lat, lng },
