@@ -55,12 +55,7 @@ type SgisRegionProxyResponse = {
 export class RealPublicDataProvider implements PublicDataProvider {
   private fallbackProvider = new MockPublicDataProvider();
   private cache: Map<string, Promise<PublicDataResult>> = new Map();
-
-  /**
-   * SGIS는 반경과 무관하게 "위치 기준" 데이터이므로 위치 단위 캐시
-   * 같은 위치에서 300m / 500m / 1000m 분석 시 Edge Function 중복 호출 방지
-   */
-  private sgisRegionCache: Map<string, Promise<SgisRegionProxyResponse | null>> = new Map();
+  private sgisRegionCache: Map<string, Promise<SgisRegionProxyResponse>> = new Map();
 
   private getCacheKey(location: LocationPayload, radius: number, industryCode: string): string {
     const geohash = `${location.lat.toFixed(3)},${location.lng.toFixed(3)}`;
@@ -110,9 +105,26 @@ export class RealPublicDataProvider implements PublicDataProvider {
     return fetchPromise;
   }
 
-  /**
-   * SGIS는 프론트에서 직접 호출하지 않고, 무조건 Supabase Edge Function 경유
-   */
+  private resolveSupabaseKeys() {
+    const supabaseUrl =
+      import.meta.env.VITE_SUPABASE_URL ||
+      import.meta.env.SUPABASE_URL;
+
+    const publishableKey =
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      import.meta.env.VITE_SUPABASE_ANON_KEY ||
+      import.meta.env.SUPABASE_PUBLISHABLE_KEY ||
+      import.meta.env.SUPABASE_ANON_KEY;
+
+    const legacyAnonKey =
+      import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY ||
+      import.meta.env.VITE_SUPABASE_ANON_KEY ||
+      import.meta.env.SUPABASE_LEGACY_ANON_KEY ||
+      import.meta.env.SUPABASE_ANON_KEY;
+
+    return { supabaseUrl, publishableKey, legacyAnonKey };
+  }
+
   private async fetchSgisRegionData(lat: number, lng: number): Promise<SgisRegionProxyResponse | null> {
     const locationKey = this.getLocationCacheKey(lat, lng);
 
@@ -121,67 +133,67 @@ export class RealPublicDataProvider implements PublicDataProvider {
       return this.sgisRegionCache.get(locationKey)!;
     }
 
-    const promise = (async () => {
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const legacyAnonKey = import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY;
+    const requestPromise = (async () => {
+      const { supabaseUrl, publishableKey, legacyAnonKey } = this.resolveSupabaseKeys();
 
-        if (!supabaseUrl || !supabaseUrl.trim()) {
-          throw new Error("VITE_SUPABASE_URL is missing");
-        }
-        if (!publishableKey || !publishableKey.trim()) {
-          throw new Error("VITE_SUPABASE_PUBLISHABLE_KEY is missing");
-        }
-        if (!legacyAnonKey || !legacyAnonKey.trim()) {
-          throw new Error("VITE_SUPABASE_LEGACY_ANON_KEY is missing");
-        }
+      console.log("[SGIS proxy] key presence =", {
+        supabaseUrl: !!supabaseUrl,
+        publishableKey: !!publishableKey,
+        legacyAnonKey: !!legacyAnonKey,
+      });
 
-        const url =
-          `${supabaseUrl}/functions/v1/sgis-regiontotal?` +
-          `lat=${encodeURIComponent(String(lat))}` +
-          `&lng=${encodeURIComponent(String(lng))}`;
-
-        const res = await fetch(url, {
-          method: "GET",
-          headers: {
-            apikey: publishableKey,
-            Authorization: `Bearer ${legacyAnonKey}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        const text = await res.text();
-
-        if (!res.ok) {
-          throw new Error(`[SGIS proxy] ${res.status} ${text}`);
-        }
-
-        const data = JSON.parse(text) as SgisRegionProxyResponse;
-
-        console.log("[SGIS proxy] region data =", data);
-
-        if (data?.warnings?.population) {
-          console.warn("[SGIS proxy] population warning:", data.warnings.population);
-        }
-        if (data?.warnings?.regiontotal) {
-          console.warn("[SGIS proxy] regiontotal warning:", data.warnings.regiontotal);
-        }
-
-        return data;
-      } catch (err) {
-        console.error("[SGIS proxy] region data fetch error:", err);
-        return null;
+      if (!supabaseUrl || !supabaseUrl.trim()) {
+        throw new Error("Supabase URL is missing");
       }
+      if (!publishableKey || !publishableKey.trim()) {
+        throw new Error("Supabase publishable/anon key is missing");
+      }
+      if (!legacyAnonKey || !legacyAnonKey.trim()) {
+        throw new Error("Supabase legacy anon key is missing");
+      }
+
+      const url =
+        `${supabaseUrl}/functions/v1/sgis-regiontotal?` +
+        `lat=${encodeURIComponent(String(lat))}` +
+        `&lng=${encodeURIComponent(String(lng))}`;
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          apikey: publishableKey,
+          Authorization: `Bearer ${legacyAnonKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        throw new Error(`[SGIS proxy] ${res.status} ${text}`);
+      }
+
+      const data = JSON.parse(text) as SgisRegionProxyResponse;
+
+      console.log("[SGIS proxy] region data =", data);
+
+      if (data?.warnings?.population) {
+        console.warn("[SGIS proxy] population warning:", data.warnings.population);
+      }
+      if (data?.warnings?.regiontotal) {
+        console.warn("[SGIS proxy] regiontotal warning:", data.warnings.regiontotal);
+      }
+
+      return data;
     })();
 
-    this.sgisRegionCache.set(locationKey, promise);
+    this.sgisRegionCache.set(locationKey, requestPromise);
 
     try {
-      return await promise;
+      return await requestPromise;
     } catch (err) {
-      this.sgisRegionCache.delete(locationKey);
-      throw err;
+      console.error("[SGIS proxy] region data fetch error:", err);
+      this.sgisRegionCache.delete(locationKey); // 실패 결과는 캐시하지 않음
+      return null;
     }
   }
 
@@ -202,10 +214,6 @@ export class RealPublicDataProvider implements PublicDataProvider {
 
     const sgisData = await this.fetchSgisRegionData(location.lat, location.lng);
 
-    /**
-     * SGIS 성공 시 fallbackData 일부 필드 덮어쓰기
-     * 실패하면 fallback 유지
-     */
     if (sgisData?.population?.tot_ppltn !== undefined && sgisData.population.tot_ppltn !== null) {
       const population = Number(sgisData.population.tot_ppltn);
       if (Number.isFinite(population) && population > 0) {
@@ -289,10 +297,6 @@ export class RealPublicDataProvider implements PublicDataProvider {
     return result;
   }
 
-  /**
-   * 현재는 위치 기반 필터 없이 dataset 첫 row를 사용하는 임시 보조 메타데이터 endpoint.
-   * 추후 실제 좌표/행정동 매핑 로직으로 교체 필요.
-   */
   private async fetchDistrictMetadataEndpoint(
     location: LocationPayload,
     timeoutMs: number
