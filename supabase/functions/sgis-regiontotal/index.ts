@@ -169,8 +169,11 @@ serve(async (req) => {
     ]);
 
     const populationRow = populationRaw?.result?.[0] ?? null;
-    const regionTotalRow = regionTotalRaw?.result?.[0] ?? null;
-
+    const regionTotalRow =
+  regionTotalRaw?.result?.find((row: any) => row.adm_cd === admCd7) ??
+  regionTotalRaw?.result?.[0] ??
+  null;
+  
     return new Response(
       JSON.stringify({
         input: { lat, lng },
