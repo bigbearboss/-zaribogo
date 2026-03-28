@@ -23,16 +23,23 @@ async function getSgisAccessToken(): Promise<string> {
   const url = `${baseUrl}/auth/authentication.json?${params.toString()}`;
   const res = await fetch(url);
 
+  const text = await res.text();
+  console.log("[SGIS AUTH] raw response =", text);
+
   if (!res.ok) {
-    const text = await res.text();
     throw new Error(`SGIS auth failed: ${res.status} ${text}`);
   }
 
-  const json = await res.json();
+  const json = JSON.parse(text);
 
   if (json.errCd !== 0 || !json.result?.accessToken) {
     throw new Error(`SGIS auth error: ${JSON.stringify(json)}`);
   }
+
+  console.log(
+    "[SGIS AUTH] token prefix =",
+    String(json.result.accessToken).slice(0, 12)
+  );
 
   return json.result.accessToken;
 }
@@ -45,7 +52,6 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const admCd = url.searchParams.get("admCd");
-    const year = url.searchParams.get("year") || "2022";
 
     if (!admCd) {
       return new Response(
@@ -58,23 +64,29 @@ serve(async (req) => {
     }
 
     const token = await getSgisAccessToken();
+
     const baseUrl =
       Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.mods.go.kr/OpenAPI3";
 
     const sgisUrl =
-  `${baseUrl}/startupbiz/regiontotal.json?` +
-  `adm_cd=${encodeURIComponent(admCd)}` +
-  `&accessToken=${encodeURIComponent(token)}`;
+      `${baseUrl}/startupbiz/regiontotal.json?` +
+      `adm_cd=${encodeURIComponent(admCd)}` +
+      `&accessToken=${encodeURIComponent(token)}`;
+
+    console.log("[SGIS REGIONTOTAL] request url =", sgisUrl);
 
     const sgisRes = await fetch(sgisUrl);
+    const sgisText = await sgisRes.text();
+
+    console.log("[SGIS REGIONTOTAL] status =", sgisRes.status);
+    console.log("[SGIS REGIONTOTAL] raw text =", sgisText);
 
     if (!sgisRes.ok) {
-      const text = await sgisRes.text();
       return new Response(
         JSON.stringify({
           error: "SGIS regiontotal request failed",
           status: sgisRes.status,
-          detail: text,
+          detail: sgisText,
         }),
         {
           status: 502,
@@ -83,13 +95,13 @@ serve(async (req) => {
       );
     }
 
-    const data = await sgisRes.json();
+    const data = JSON.parse(sgisText);
+
     const population = data?.result?.[0]?.tot_ppltn ?? null;
 
     return new Response(
       JSON.stringify({
         admCd,
-        year,
         population,
         raw: data,
       }),
@@ -99,6 +111,8 @@ serve(async (req) => {
       }
     );
   } catch (err) {
+    console.error("[ERROR]", err);
+
     return new Response(
       JSON.stringify({
         error: err instanceof Error ? err.message : "Unknown error",
@@ -109,4 +123,4 @@ serve(async (req) => {
       }
     );
   }
-});   
+});
