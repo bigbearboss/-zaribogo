@@ -10,7 +10,7 @@ async function getSgisAccessToken(): Promise<string> {
   const consumerKey = Deno.env.get("VITE_SGIS_CONSUMER_KEY");
   const consumerSecret = Deno.env.get("VITE_SGIS_CONSUMER_SECRET");
   const baseUrl =
-    Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.mods.go.kr/OpenAPI3";
+    Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.kostat.go.kr/OpenAPI3";
 
   if (!consumerKey) throw new Error("Missing VITE_SGIS_CONSUMER_KEY");
   if (!consumerSecret) throw new Error("Missing VITE_SGIS_CONSUMER_SECRET");
@@ -22,9 +22,7 @@ async function getSgisAccessToken(): Promise<string> {
 
   const url = `${baseUrl}/auth/authentication.json?${params.toString()}`;
   const res = await fetch(url);
-
   const text = await res.text();
-  console.log("[SGIS AUTH] raw response =", text);
 
   if (!res.ok) {
     throw new Error(`SGIS auth failed: ${res.status} ${text}`);
@@ -35,11 +33,6 @@ async function getSgisAccessToken(): Promise<string> {
   if (json.errCd !== 0 || !json.result?.accessToken) {
     throw new Error(`SGIS auth error: ${JSON.stringify(json)}`);
   }
-
-  console.log(
-    "[SGIS AUTH] token prefix =",
-    String(json.result.accessToken).slice(0, 12)
-  );
 
   return json.result.accessToken;
 }
@@ -64,22 +57,16 @@ serve(async (req) => {
     }
 
     const token = await getSgisAccessToken();
-
     const baseUrl =
-      Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.mods.go.kr/OpenAPI3";
+      Deno.env.get("VITE_SGIS_API_BASE_URL") || "https://sgisapi.kostat.go.kr/OpenAPI3";
 
     const sgisUrl =
       `${baseUrl}/startupbiz/regiontotal.json?` +
       `adm_cd=${encodeURIComponent(admCd)}` +
       `&accessToken=${encodeURIComponent(token)}`;
 
-    console.log("[SGIS REGIONTOTAL] request url =", sgisUrl);
-
     const sgisRes = await fetch(sgisUrl);
     const sgisText = await sgisRes.text();
-
-    console.log("[SGIS REGIONTOTAL] status =", sgisRes.status);
-    console.log("[SGIS REGIONTOTAL] raw text =", sgisText);
 
     if (!sgisRes.ok) {
       return new Response(
@@ -97,12 +84,9 @@ serve(async (req) => {
 
     const data = JSON.parse(sgisText);
 
-    const population = data?.result?.[0]?.tot_ppltn ?? null;
-
     return new Response(
       JSON.stringify({
         admCd,
-        population,
         raw: data,
       }),
       {
@@ -111,8 +95,6 @@ serve(async (req) => {
       }
     );
   } catch (err) {
-    console.error("[ERROR]", err);
-
     return new Response(
       JSON.stringify({
         error: err instanceof Error ? err.message : "Unknown error",
