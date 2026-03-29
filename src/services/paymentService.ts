@@ -46,13 +46,23 @@ export async function initiatePaymentFlow(productId: string): Promise<PaymentIni
     },
   });
 
-  if (error) {
-    throw new Error(`결제 준비 요청 실패: ${error.message}`);
+    if (error) {
+    console.error("[paymentService] invoke error =", error);
+    console.error("[paymentService] invoke data =", data);
+    throw new Error(
+      `결제 준비 요청 실패: ${error.message}${
+        data?.error ? ` / ${data.error}` : ""
+      }${data?.detail ? ` / ${data.detail}` : ""}`
+    );
   }
 
   if (!data?.success) {
-    throw new Error(data?.error || "결제 준비 중 오류가 발생했습니다.");
+    throw new Error(
+      `${data?.error || "결제 준비 중 오류가 발생했습니다."}${
+        data?.detail ? ` / ${data.detail}` : ""
+      }`
+    );
   }
-
+  
   return data.data as PaymentInitResult;
 }
