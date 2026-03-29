@@ -1070,7 +1070,7 @@ function showUpgradeModal() {
   }
 }
 
-async function saveAnalysisResultToSupabase(params: {
+async function saveAnalysisAndConsumeCredit(params: {
   userId: string;
   location: LocationState;
   businessTypeCode: string;
@@ -1105,30 +1105,19 @@ async function saveAnalysisResultToSupabase(params: {
 
   const reportTitle = `[${businessTypeLabel}] ${location.placeName || location.address} 분석 리포트`;
 
-  const { error } = await supabase.from("analysis_results").insert([
-    {
-      user_id: userId,
-      title: reportTitle,
-      location: location.placeName || location.address,
-      business_type: businessTypeCode,
-      result_data: normalizedResult,
-      is_favorite: false,
-    },
-  ]);
-
-  if (error) {
-    throw new Error(`분석 결과 저장 실패: ${error.message}`);
-  }
-}
-
-async function consumeCredit(userId: string) {
-  const { error } = await supabase.rpc("increment_used_credit", {
+  const { data, error } = await supabase.rpc("save_analysis_and_consume_credit", {
     user_id_input: userId,
+    title_input: reportTitle,
+    location_input: location.placeName || location.address,
+    business_type_input: businessTypeCode,
+    result_data_input: normalizedResult,
   });
 
   if (error) {
-    throw new Error(`크레딧 차감 실패: ${error.message}`);
+    throw new Error(`분석 저장/차감 처리 실패: ${error.message}`);
   }
+
+  return data;
 }
 
 async function handleStartAnalysisClick() {
@@ -1557,43 +1546,41 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
     }
   }
 
-  if (persist) {
-    if (elements.llmCard) {
-      elements.llmCard.style.display = "block";
-    }
-
-    const aiResult = await renderAIInsights(analysis, pData);
-
-    if (!aiResult) {
-      throw new Error("AI 요약 생성에 실패했습니다.");
-    }
-
-    const industry = {
-      code: industryCode,
-      name: elements.selectedSectorLabel?.textContent || "선택 업종",
-    };
-
-    await saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
-
-    if (!userId) {
-      throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
-    }
-
-    await saveAnalysisResultToSupabase({
-      userId,
-      location: currentLocation,
-      businessTypeCode: industryCode,
-      businessTypeLabel: industry.name,
-      analysis,
-      aiResult,
-    });
-
-    await consumeCredit(userId);
-  } else {
-    if (elements.llmCard) {
-      elements.llmCard.style.display = "none";
-    }
+if (persist) {
+  if (elements.llmCard) {
+    elements.llmCard.style.display = "block";
   }
+
+  const aiResult = await renderAIInsights(analysis, pData);
+
+  if (!aiResult) {
+    throw new Error("AI 요약 생성에 실패했습니다.");
+  }
+
+  const industry = {
+    code: industryCode,
+    name: elements.selectedSectorLabel?.textContent || "선택 업종",
+  };
+
+  if (!userId) {
+    throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
+  }
+
+  await saveAnalysisAndConsumeCredit({
+    userId,
+    location: currentLocation,
+    businessTypeCode: industryCode,
+    businessTypeLabel: industry.name,
+    analysis,
+    aiResult,
+  });
+
+  await saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
+} else {
+  if (elements.llmCard) {
+    elements.llmCard.style.display = "none";
+  }
+}
 
   lastAnalysisResult = analysis;
 }
