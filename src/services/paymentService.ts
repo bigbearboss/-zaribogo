@@ -40,15 +40,35 @@ export async function fetchActiveCreditProducts(): Promise<CreditProduct[]> {
 }
 
 export async function initiatePaymentFlow(productId: string): Promise<PaymentInitResult> {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  console.log("[paymentService] session exists =", !!session);
+  console.log("[paymentService] access token exists =", !!session?.access_token);
+
+  if (sessionError) {
+    throw new Error(`세션 확인 실패: ${sessionError.message}`);
+  }
+
+  if (!session?.access_token) {
+    throw new Error("로그인 세션이 없어 결제를 시작할 수 없습니다. 다시 로그인해주세요.");
+  }
+
   const { data, error } = await supabase.functions.invoke("create-payment", {
     body: {
       product_id: productId,
     },
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
   });
 
-    if (error) {
-    console.error("[paymentService] invoke error =", error);
-    console.error("[paymentService] invoke data =", data);
+  console.log("[paymentService] invoke response data =", data);
+  console.log("[paymentService] invoke response error =", error);
+
+  if (error) {
     throw new Error(
       `결제 준비 요청 실패: ${error.message}${
         data?.error ? ` / ${data.error}` : ""
@@ -63,6 +83,6 @@ export async function initiatePaymentFlow(productId: string): Promise<PaymentIni
       }`
     );
   }
-  
+
   return data.data as PaymentInitResult;
 }
