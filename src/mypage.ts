@@ -13,6 +13,7 @@ interface AppState {
     currentView: 'dashboard' | 'reports' | 'profile' | 'report-detail';
 }
 
+
 const state: AppState = {
     user: null,
     profile: null,
