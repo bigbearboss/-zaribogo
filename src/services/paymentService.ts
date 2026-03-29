@@ -56,12 +56,12 @@ export async function initiatePaymentFlow(productId: string): Promise<PaymentIni
     throw new Error("로그인 세션이 없어 결제를 시작할 수 없습니다. 다시 로그인해주세요.");
   }
 
+  // 핵심: 헤더를 직접 넣지 말고, Functions 클라이언트에 auth 토큰을 세팅
+  supabase.functions.setAuth(session.access_token);
+
   const { data, error } = await supabase.functions.invoke("create-payment", {
     body: {
       product_id: productId,
-    },
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
     },
   });
 
