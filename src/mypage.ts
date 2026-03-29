@@ -47,9 +47,10 @@ const DOM = {
     
     // Dashboard widgets
     greetingMsg: document.getElementById('greetingMsg') as HTMLElement,
-    creditUsed: document.getElementById('creditUsed') as HTMLElement,
-    creditTotal: document.getElementById('creditTotal') as HTMLElement,
-    creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
+creditUsed: document.getElementById('creditUsed') as HTMLElement,
+creditTotal: document.getElementById('creditTotal') as HTMLElement,
+creditUsageMeta: document.getElementById('creditUsageMeta') as HTMLElement,
+creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
     recentReportsList: document.getElementById('recentReportsList') as HTMLElement,
     emptyRecentState: document.getElementById('emptyRecentState') as HTMLElement,
     
@@ -204,13 +205,24 @@ function updateDashboardUI() {
     DOM.greetingMsg.textContent = `안녕하세요, ${name}님! 👋`;
     
     if (state.credits) {
-        DOM.creditUsed.textContent = state.credits.used_credits.toString();
-        DOM.creditTotal.textContent = state.credits.total_credits.toString();
-        if (state.credits.reset_date) {
-            const resetDate = new Date(state.credits.reset_date).toLocaleDateString();
-            DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
-        }
+    const totalCredits = Number(state.credits.total_credits ?? 0);
+    const usedCredits = Number(state.credits.used_credits ?? 0);
+    const remainingCredits = Math.max(totalCredits - usedCredits, 0);
+
+    DOM.creditUsed.textContent = remainingCredits.toString();
+    DOM.creditTotal.textContent = totalCredits.toString();
+
+    if (DOM.creditUsageMeta) {
+        DOM.creditUsageMeta.textContent = `현재 사용: ${usedCredits}회`;
     }
+
+    if (state.credits.reset_date) {
+        const resetDate = new Date(state.credits.reset_date).toLocaleDateString('ko-KR');
+        DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
+    } else {
+        DOM.creditResetDate.textContent = '충전일 정보 없음';
+    }
+}
     
     // Render Recent Reports
     DOM.recentReportsList.innerHTML = '';
