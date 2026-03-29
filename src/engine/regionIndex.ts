@@ -144,8 +144,14 @@ export async function getManifest(): Promise<RegionEntry[]> {
   if (manifestPromise) return manifestPromise;
 
   const baseUrl = import.meta.env.VITE_CSV_BASE_URL || "";
+  const manifestUrl = joinBaseUrl(
+    baseUrl,
+    "/processed/regionManifest.json?v=20260329-1"
+  );
 
-  manifestPromise = fetch(joinBaseUrl(baseUrl, "/processed/regionManifest.json"))
+  console.log("[regionIndex] Loading manifest from", manifestUrl);
+
+  manifestPromise = fetch(manifestUrl, { cache: "no-store" })
     .then((res) => {
       if (!res.ok) throw new Error(`Failed to load region manifest: ${res.status}`);
       return res.json();
@@ -160,13 +166,9 @@ export async function getManifest(): Promise<RegionEntry[]> {
 
       console.log("[regionIndex] Manifest loaded", {
         count: regionManifest.length,
-        sample: regionManifest.slice(0, 3).map((r) => ({
+        sample: regionManifest.slice(0, 5).map((r) => ({
           name: r.name,
-          csvUrl: r.csvUrl,
-          latMin: r.latMin,
-          latMax: r.latMax,
-          lngMin: r.lngMin,
-          lngMax: r.lngMax,
+          csvUrl: r.csvUrl
         })),
       });
 
