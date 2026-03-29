@@ -1,6 +1,6 @@
 import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
-
+import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 // ==========================================
 // 1. State Management
 // ==========================================
@@ -36,14 +36,16 @@ const DOM = {
     errorMessage: document.getElementById('errorMessage') as HTMLElement,
     
     // Actions
-    btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
-    btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
-    btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
-    logoToMain: document.getElementById('logoToMain') as HTMLElement,
-    btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
-    btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
-    btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
-    btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
+   // Actions
+btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
+btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
+btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
+logoToMain: document.getElementById('logoToMain') as HTMLElement,
+btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
+btnTestPaymentInit: document.getElementById('btnTestPaymentInit') as HTMLButtonElement,
+btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
+btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
+btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
     
     // Dashboard widgets
     greetingMsg: document.getElementById('greetingMsg') as HTMLElement,
@@ -350,6 +352,42 @@ function setupEventListeners() {
 
     DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
+
+    DOM.btnTestPaymentInit?.addEventListener('click', async () => {
+    try {
+        DOM.btnTestPaymentInit.disabled = true;
+        DOM.btnTestPaymentInit.textContent = '결제 준비 중...';
+
+        const products = await fetchActiveCreditProducts();
+        console.log('[PAYMENT PRODUCTS]', products);
+
+        // 일반 결제 가능한 상품 중 Starter Pack 우선 선택
+        const targetProduct =
+            products.find((p) => p.name === 'Starter Pack') ||
+            products.find((p) => p.is_active && !p.is_b2b_only);
+
+        if (!targetProduct) {
+            alert('온라인 구매 가능한 상품이 없습니다.');
+            return;
+        }
+
+        const result = await initiatePaymentFlow(targetProduct.id);
+        console.log('[PAYMENT INIT SUCCESS]', result);
+
+        alert(
+            `결제 대기 생성 완료\n` +
+            `주문번호: ${result.order_id}\n` +
+            `상품명: ${result.product_name}\n` +
+            `금액: ${result.amount}원`
+        );
+    } catch (err) {
+        console.error('[PAYMENT INIT ERROR]', err);
+        alert(err instanceof Error ? err.message : '결제 준비 중 오류가 발생했습니다.');
+    } finally {
+        DOM.btnTestPaymentInit.disabled = false;
+        DOM.btnTestPaymentInit.textContent = '결제 대기 생성 테스트';
+    }
+});
     
     DOM.btnRetry.addEventListener('click', () => {
         initMypage();
