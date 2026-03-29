@@ -1,6 +1,6 @@
 import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
-
+import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 // ==========================================
 // 1. State Management
 // ==========================================
@@ -36,14 +36,16 @@ const DOM = {
     errorMessage: document.getElementById('errorMessage') as HTMLElement,
     
     // Actions
-    btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
-    btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
-    btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
-    logoToMain: document.getElementById('logoToMain') as HTMLElement,
-    btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
-    btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
-    btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
-    btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
+   // Actions
+btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
+btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
+btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
+logoToMain: document.getElementById('logoToMain') as HTMLElement,
+btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
+btnTestPaymentInit: document.getElementById('btnTestPaymentInit') as HTMLButtonElement,
+btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
+btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
+btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
     
     // Dashboard widgets
     greetingMsg: document.getElementById('greetingMsg') as HTMLElement,
