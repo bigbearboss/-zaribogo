@@ -23,6 +23,7 @@ const state: AppState = {
     currentView: 'dashboard'
 };
 
+
 // ==========================================
 // 2. DOM Elements
 // ==========================================
@@ -402,6 +403,8 @@ function setupEventListeners() {
             const paymentInit = await initiatePaymentFlow(targetProduct.id);
             console.log('[PAYMENT INIT SUCCESS]', paymentInit);
 
+            localStorage.setItem("pending_order_id", paymentInit.order_id);
+            
             const tossPayments = getTossPaymentsInstance();
 
             await tossPayments.requestPayment('카드', {
