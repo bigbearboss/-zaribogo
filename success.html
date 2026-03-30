@@ -119,9 +119,7 @@
     </div>
   </div>
 
-  <script type="module">
-    import { supabase } from "./src/services/supabase";
-
+  <script>
     const titleEl = document.getElementById("statusTitle");
     const descEl = document.getElementById("statusDesc");
     const boxEl = document.getElementById("statusBox");
@@ -161,44 +159,31 @@
 
         setProcessing(`orderId=${orderId} 승인 요청을 보내는 중입니다...`);
 
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+        const res = await fetch(
+          "https://cbfhjycvvlfdqvnzbxfr.supabase.co/functions/v1/confirm-toss-payment",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": "sb_publishable_ttZslHz5mE4MHGPtq0FMbg_9u5YXQUD"
+            },
+            body: JSON.stringify({
+              paymentKey,
+              orderId,
+              amount: Number(amount)
+            }),
+          }
+        );
 
-        if (sessionError) {
-          setError(`세션 확인 실패: ${sessionError.message}`);
-          return;
-        }
+        const data = await res.json();
 
-        if (!session?.access_token) {
-          setError("로그인 세션이 없어 결제 승인 요청을 보낼 수 없습니다. 다시 로그인 후 시도해주세요.");
-          return;
-        }
-
-        supabase.functions.setAuth(session.access_token);
-
-        const { data, error } = await supabase.functions.invoke("confirm-toss-payment", {
-          body: {
-            paymentKey,
-            orderId,
-            amount: Number(amount),
-          },
-        });
-
-        if (error) {
-          setError(`승인 요청 실패: ${error.message}`);
-          console.error("[success.html] function invoke error", error);
-          return;
-        }
-
-        if (!data?.success) {
+        if (!res.ok || !data?.success) {
           setError(
             `${data?.error || "결제 승인 중 알 수 없는 오류가 발생했습니다."}${
               data?.detail ? `\n\n${JSON.stringify(data.detail, null, 2)}` : ""
             }`
           );
-          console.error("[success.html] function returned failure", data);
+          console.error("[success.html] confirm failed", data);
           return;
         }
 
