@@ -43,7 +43,6 @@ const DOM = {
     btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
     logoToMain: document.getElementById('logoToMain') as HTMLElement,
     btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
-    btnTestPaymentInit: document.getElementById('btnTestPaymentInit') as HTMLButtonElement,
     btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
     btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
     btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
@@ -54,8 +53,15 @@ const DOM = {
     creditTotal: document.getElementById('creditTotal') as HTMLElement,
     creditUsageMeta: document.getElementById('creditUsageMeta') as HTMLElement,
     creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
+    creditPreviewBox: document.getElementById('creditPreviewBox') as HTMLElement,
+    creditPreviewAmount: document.getElementById('creditPreviewAmount') as HTMLElement,
     recentReportsList: document.getElementById('recentReportsList') as HTMLElement,
     emptyRecentState: document.getElementById('emptyRecentState') as HTMLElement,
+
+    // Payment
+    productCards: document.getElementById('productCards') as HTMLElement,
+    creditSuccessBanner: document.getElementById('creditSuccessBanner') as HTMLElement,
+    btnCloseBanner: document.getElementById('btnCloseBanner') as HTMLButtonElement,
 
     // All Reports list
     allReportsList: document.getElementById('allReportsList') as HTMLElement,
@@ -134,6 +140,12 @@ async function initMypage() {
         updateProfileUI();
         hideLoading();
         switchView('dashboard');
+
+        // 결제 성공 배너 감지
+        checkCreditedParam();
+
+        // 상품 카드 렌더링 (비동기로 진행해 우선 콘텐츠 표시후 충전)
+        loadProductCards();
 
         authService.onAuthStateChange(async (nextUser) => {
             if (!nextUser) {
@@ -237,7 +249,7 @@ async function fetchAllReports() {
 // 6. UI Updates
 // ==========================================
 function updateDashboardUI() {
-    const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '고객';
+    const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '소개인';
     DOM.greetingMsg.textContent = `안녕하세요, ${name}님! 👋`;
 
     if (state.credits) {
@@ -256,7 +268,7 @@ function updateDashboardUI() {
             const resetDate = new Date(state.credits.reset_date).toLocaleDateString('ko-KR');
             DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
         } else {
-            DOM.creditResetDate.textContent = '충전일 정보 없음';
+            DOM.creditResetDate.textContent = '유효기간 없음 (포인트 실주날 때까지 사용 가능)';
         }
     }
 
@@ -335,8 +347,178 @@ function openReportDetail(report: any) {
 }
 
 // ==========================================
-// 7. Navigation & Setup
+// 7. Payment — 상품 카드 렌더링
 // ==========================================
+
+async function loadProductCards() {
+    try {
+        const products = await fetchActiveCreditProducts();
+        renderProductCards(products);
+    } catch (err) {
+        console.error('[loadProductCards]', err);
+        if (DOM.productCards) {
+            DOM.productCards.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem">상품 정보를 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>`;
+        }
+    }
+}
+
+function renderProductCards(products: import('./services/paymentService').CreditProduct[]) {
+    if (!DOM.productCards) return;
+
+    // B2B 전용 상품 제외하고 일반 상품만 렌더링 (B2B는 별도 카드로)
+    const regularProducts = products.filter(p => !p.is_b2b_only);
+    const b2bProducts    = products.filter(p => p.is_b2b_only);
+
+    const remainingCredits = state.credits
+        ? Math.max(Number(state.credits.total_credits ?? 0) - Number(state.credits.used_credits ?? 0), 0)
+        : 0;
+
+    // 카드 콘텐츠 메타데이터 (상품명 기반으로 정의)
+    const cardMeta: Record<string, { features: string[]; recommended?: boolean; btnLabel: string; tagline: string }> = {
+        'Starter Pack': {
+            features: ['10회 분석 크레딧 즉시 지급', '후보지 3~5곳 비교 분석 가능', '입지 선택 전 빠른 검증에 최적', '크레딧 만료 없음'],
+            btnLabel: '스타터로 시작하기',
+            tagline: '처음 충전에 딱 맞는 선택',
+        },
+        'Growth Pack': {
+            features: ['20회 분석 크레딧 즉시 지급', '여러 업종·지역 연속 비교 가능', '회당 최저 단가 (≈8,500원/회)', '크레딧 만료 없음'],
+            recommended: true,
+            btnLabel: '그로스로 충전하기',
+            tagline: '자주 분석하는 분께 추천',
+        },
+    };
+
+    DOM.productCards.innerHTML = '';
+
+    // 일반 상품 카드
+    regularProducts.forEach((product) => {
+        const meta = cardMeta[product.name] ?? {
+            features: [`${product.total_credits}회 분석 크레딧`],
+            btnLabel: '지금 충전하기',
+            tagline: '',
+        };
+        const unitPrice = product.total_credits > 0
+            ? Math.round(product.price / product.total_credits).toLocaleString('ko-KR')
+            : '-';
+        const bonusText = product.bonus_credits > 0
+            ? `기본 ${product.base_credits}회 + 보너스 <span class="credits-bold">+${product.bonus_credits}회</span>`
+            : `<span class="credits-bold">${product.base_credits}회</span> 분석 크레딧`;
+
+        const card = document.createElement('div');
+        card.className = `product-card${meta.recommended ? ' recommended' : ''}`;
+        card.innerHTML = `
+            ${meta.recommended ? '<span class="badge-recommended">⭐ 가장 인기</span>' : ''}
+            <span class="card-badge-text">${meta.tagline}</span>
+            <p class="card-name">${product.name}</p>
+            <div class="card-price">
+                ${product.price.toLocaleString('ko-KR')}<span class="price-unit">원</span>
+            </div>
+            <p class="card-credits">${bonusText} = <span class="credits-bold">총 ${product.total_credits}회</span></p>
+            <p class="card-unit-price">약 ${unitPrice}원 / 회</p>
+            <hr class="card-divider">
+            <ul class="card-features">
+                ${meta.features.map(f => `<li>${f}</li>`).join('')}
+            </ul>
+            <button class="product-btn btn-primary-card" data-product-id="${product.id}">${meta.btnLabel}</button>
+        `;
+
+        // hover → 크레딧 프리뷰 업데이트
+        const btn = card.querySelector('button') as HTMLButtonElement;
+        card.addEventListener('mouseenter', () => {
+            if (!DOM.creditPreviewBox || !DOM.creditPreviewAmount) return;
+            const afterCredits = remainingCredits + product.total_credits;
+            DOM.creditPreviewAmount.textContent = `${afterCredits}회`;
+            DOM.creditPreviewBox.style.display = 'flex';
+        });
+        card.addEventListener('mouseleave', () => {
+            if (DOM.creditPreviewBox) DOM.creditPreviewBox.style.display = 'none';
+        });
+
+        // 결제 버튼 클릭
+        btn.addEventListener('click', () => handleProductPurchase(product, btn));
+
+        DOM.productCards.appendChild(card);
+    });
+
+    // B2B/Pro 카드
+    b2bProducts.forEach((product) => {
+        const card = document.createElement('div');
+        card.className = 'product-card b2b';
+        card.innerHTML = `
+            <span class="card-badge-text">팀·프랜차이즈·법인</span>
+            <p class="card-name">${product.name.replace(' / B2B', '')}</p>
+            <div class="card-price">
+                별도 문의<span class="price-unit"></span>
+            </div>
+            <p class="card-credits">맞춤 크레딧·기간·권한 협의</p>
+            <p class="card-unit-price">팀 단위 대량 분석에 최적화</p>
+            <hr class="card-divider">
+            <ul class="card-features">
+                <li>무제한 팀원 공유</li>
+                <li>전담 CS 지원</li>
+                <li>대시보드·리포트 커스터마이징</li>
+                <li>세금계산서 발행 가능</li>
+            </ul>
+            <a href="mailto:contact@zaribogo.com?subject=Pro%20%2F%20B2B%20%EB%AC%B8%EC%9D%98" class="product-btn btn-outline-card" style="text-align:center;display:block;text-decoration:none;line-height:2.2">문의하기</a>
+        `;
+        DOM.productCards.appendChild(card);
+    });
+}
+
+async function handleProductPurchase(
+    product: import('./services/paymentService').CreditProduct,
+    btn: HTMLButtonElement
+) {
+    try {
+        btn.disabled = true;
+        btn.textContent = '결제창 준비 중...';
+
+        const paymentInit = await initiatePaymentFlow(product.id);
+        localStorage.setItem('pending_order_id', paymentInit.order_id);
+
+        const tossPayments = getTossPaymentsInstance();
+        await tossPayments.requestPayment('카드', {
+            amount: paymentInit.amount,
+            orderId: paymentInit.order_id,
+            orderName: paymentInit.product_name,
+            customerEmail: paymentInit.user_email || undefined,
+            successUrl: `${window.location.origin}/success.html`,
+            failUrl: `${window.location.origin}/fail.html`,
+        });
+    } catch (err) {
+        console.error('[handleProductPurchase]', err);
+        alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
+    } finally {
+        btn.disabled = false;
+        // 카드 메타 데이터에서 원래 라벨 복원
+        const originalLabel = btn.closest('.product-card')?.querySelector('.card-name')?.textContent;
+        if (originalLabel?.includes('Starter')) btn.textContent = '스타터로 시작하기';
+        else if (originalLabel?.includes('Growth')) btn.textContent = '그로스로 충전하기';
+        else btn.textContent = '지금 충전하기';
+    }
+}
+
+// ==========================================
+// 8. 결제 성공 배너
+// ==========================================
+function checkCreditedParam() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('credited') === '1') {
+        if (DOM.creditSuccessBanner) {
+            DOM.creditSuccessBanner.classList.remove('hidden');
+
+            // 6초 후 자동 소멸
+            setTimeout(() => {
+                DOM.creditSuccessBanner?.classList.add('hidden');
+            }, 6000);
+        }
+
+        // URL에서 파라미터 제거
+        const cleanUrl = window.location.pathname + (window.location.hash || '');
+        history.replaceState(null, '', cleanUrl);
+    }
+}
+
 function switchView(viewId: string) {
     state.currentView = viewId as any;
 
@@ -383,45 +565,9 @@ function setupEventListeners() {
     DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
 
-    DOM.btnTestPaymentInit?.addEventListener('click', async () => {
-        try {
-            DOM.btnTestPaymentInit.disabled = true;
-            DOM.btnTestPaymentInit.textContent = '결제창 준비 중...';
-
-            const products = await fetchActiveCreditProducts();
-            console.log('[PAYMENT PRODUCTS]', products);
-
-            const targetProduct =
-                products.find((p) => p.name === 'Starter Pack') ||
-                products.find((p) => p.is_active && !p.is_b2b_only);
-
-            if (!targetProduct) {
-                alert('온라인 구매 가능한 상품이 없습니다.');
-                return;
-            }
-
-            const paymentInit = await initiatePaymentFlow(targetProduct.id);
-            console.log('[PAYMENT INIT SUCCESS]', paymentInit);
-
-            localStorage.setItem("pending_order_id", paymentInit.order_id);
-            
-            const tossPayments = getTossPaymentsInstance();
-
-            await tossPayments.requestPayment('카드', {
-                amount: paymentInit.amount,
-                orderId: paymentInit.order_id,
-                orderName: paymentInit.product_name,
-                customerEmail: paymentInit.user_email || undefined,
-                successUrl: `${window.location.origin}/success.html`,
-                failUrl: `${window.location.origin}/fail.html`,
-            });
-        } catch (err) {
-            console.error('[PAYMENT START ERROR]', err);
-            alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
-        } finally {
-            DOM.btnTestPaymentInit.disabled = false;
-            DOM.btnTestPaymentInit.textContent = '테스트 결제 진행';
-        }
+    // 배너 닫기
+    DOM.btnCloseBanner?.addEventListener('click', () => {
+        DOM.creditSuccessBanner?.classList.add('hidden');
     });
 
     DOM.btnRetry.addEventListener('click', () => {
@@ -447,6 +593,7 @@ function setupEventListeners() {
         DOM.themeKnob.textContent = newTheme === 'dark' ? '🌙' : '☀️';
     });
 }
+
 
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';

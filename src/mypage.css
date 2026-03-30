@@ -256,3 +256,359 @@
     font-size: 0.9rem;
     line-height: 1.5;
 }
+
+/* ==========================================
+   결제 성공 배너
+   ========================================== */
+.credit-success-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    animation: slideInBanner 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.credit-success-banner.hidden {
+    display: none;
+}
+
+@keyframes slideInBanner {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.banner-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.banner-text strong {
+    color: rgb(52, 211, 153);
+    font-size: 0.95rem;
+}
+
+.banner-text span {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.banner-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.banner-close:hover {
+    background: var(--bg-hover);
+}
+
+/* ==========================================
+   크레딧 위젯 개선
+   ========================================== */
+.credit-slash {
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin: 0 2px;
+}
+
+.credit-unit {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 2px;
+}
+
+.credit-preview-box {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.25s ease;
+}
+
+.credit-preview-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.credit-preview-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+/* ==========================================
+   결제 상품 섹션
+   ========================================== */
+.payment-section {
+    margin-bottom: 40px;
+}
+
+.payment-section-header {
+    margin-bottom: 20px;
+}
+
+.payment-section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.payment-sub {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.payment-note {
+    margin-top: 14px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* 상품 카드 그리드 */
+.product-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .product-cards {
+        grid-template-columns: 1fr;
+        max-width: 420px;
+    }
+}
+
+/* 개별 상품 카드 */
+.product-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    cursor: default;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    border-color: var(--accent-primary);
+}
+
+/* 추천 카드 (Growth Pack) */
+.product-card.recommended {
+    border-color: rgba(99, 102, 241, 0.5);
+    background: linear-gradient(160deg, var(--bg-card) 60%, rgba(99, 102, 241, 0.06));
+}
+
+.product-card.recommended:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.25);
+}
+
+/* B2B 카드 */
+.product-card.b2b {
+    border-style: dashed;
+    opacity: 0.8;
+}
+
+.product-card.b2b:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border-color);
+    opacity: 1;
+}
+
+/* 추천 뱃지 */
+.badge-recommended {
+    position: absolute;
+    top: -1px;
+    right: 18px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 0 0 8px 8px;
+    letter-spacing: 0.02em;
+}
+
+/* 카드 내부 요소 */
+.card-badge-text {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.12);
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    width: fit-content;
+}
+
+.product-card.b2b .card-badge-text {
+    color: var(--text-muted);
+    background: var(--bg-hover);
+}
+
+.card-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.card-price {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 8px 0 4px;
+    line-height: 1.1;
+}
+
+.card-price .price-unit {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.card-credits {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.card-credits .credits-bold {
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.card-unit-price {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+
+.card-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 14px 0;
+}
+
+.card-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1;
+}
+
+.card-features li {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.card-features li::before {
+    content: '✓';
+    color: rgb(52, 211, 153);
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.product-card.b2b .card-features li::before {
+    content: '◆';
+    color: var(--text-muted);
+    font-size: 0.6rem;
+}
+
+/* 상품 CTA 버튼 */
+.product-btn {
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    margin-top: auto;
+}
+
+.product-btn.btn-primary-card {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.product-btn.btn-primary-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+.product-btn.btn-primary-card:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.product-btn.btn-outline-card {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.product-btn.btn-outline-card:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* 스켈레톤 로딩 */
+.product-card-skeleton {
+    height: 320px;
+    background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-hover) 50%, var(--bg-card) 75%);
+    background-size: 200% 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

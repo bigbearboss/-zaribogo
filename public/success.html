@@ -114,7 +114,7 @@
     </div>
 
     <div class="payment-result-actions">
-      <a href="/mypage.html" class="payment-result-btn primary">마이페이지로 이동</a>
+      <a href="/mypage.html?credited=1" class="payment-result-btn primary">마이페이지에서 확인하기 →</a>
       <a href="/index.html" class="payment-result-btn secondary">메인으로 이동</a>
     </div>
   </div>
@@ -193,6 +193,11 @@
           `주문번호 ${orderId} 승인이 완료되었습니다.\n결제 금액 ${Number(amount).toLocaleString()}원이 반영되었고, 크레딧 지급 로직이 실행되었습니다.`
         );
         console.log("[success.html] confirm success", data);
+
+        // 3초 후 마이페이지로 자동 이동 (credited 배너 표시)
+        setTimeout(() => {
+          window.location.href = "/mypage.html?credited=1";
+        }, 3000);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         setError(message);
