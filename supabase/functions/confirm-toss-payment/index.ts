@@ -15,6 +15,42 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+type PaymentRow = {
+  id: string;
+  user_id: string | null;
+  product_id: string | null;
+  order_id: string;
+  amount: number;
+  status: string;
+  pg_tid: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+async function logPaymentEvent(params: {
+  supabaseAdmin: ReturnType<typeof createClient>;
+  paymentId?: string | null;
+  orderId: string;
+  eventType: string;
+  source: string;
+  payload?: unknown;
+}) {
+  const { supabaseAdmin, paymentId, orderId, eventType, source, payload } = params;
+
+  const { error } = await supabaseAdmin.from("payment_events").insert({
+    payment_id: paymentId ?? null,
+    order_id: orderId,
+    event_type: eventType,
+    source,
+    payload_json: payload ?? null,
+  });
+
+  if (error) {
+    console.error("[payment_events insert error]", error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -30,27 +66,56 @@ serve(async (req) => {
     );
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const tossSecretKey = Deno.env.get("TOSS_SECRET_KEY");
+
+  if (!supabaseUrl || !supabaseServiceRoleKey || !tossSecretKey) {
+    return jsonResponse(
+      {
+        success: false,
+        error: "Missing required environment variables",
+      },
+      500
+    );
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+  let paymentIdForLogging: string | null = null;
+  let orderIdForLogging = "unknown";
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const tossSecretKey = Deno.env.get("TOSS_SECRET_KEY");
-
-    if (!supabaseUrl || !supabaseServiceRoleKey || !tossSecretKey) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "Missing required environment variables",
-        },
-        500
-      );
-    }
-
     const requestBody = await req.json().catch(() => null);
     const paymentKey = requestBody?.paymentKey;
     const orderId = requestBody?.orderId;
     const amount = requestBody?.amount;
 
+    if (typeof orderId === "string") {
+      orderIdForLogging = orderId;
+    }
+
+    await logPaymentEvent({
+      supabaseAdmin,
+      orderId: orderIdForLogging,
+      eventType: "payment_confirm_requested",
+      source: "confirm_toss_payment",
+      payload: {
+        requestBody,
+      },
+    });
+
     if (!paymentKey || typeof paymentKey !== "string") {
+      await logPaymentEvent({
+        supabaseAdmin,
+        orderId: orderIdForLogging,
+        eventType: "payment_confirm_validation_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          reason: "paymentKey is required",
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -61,6 +126,16 @@ serve(async (req) => {
     }
 
     if (!orderId || typeof orderId !== "string") {
+      await logPaymentEvent({
+        supabaseAdmin,
+        orderId: orderIdForLogging,
+        eventType: "payment_confirm_validation_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          reason: "orderId is required",
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -71,6 +146,17 @@ serve(async (req) => {
     }
 
     if (typeof amount !== "number" || Number.isNaN(amount)) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        orderId,
+        eventType: "payment_confirm_validation_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          reason: "amount must be a valid number",
+          amount,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -80,16 +166,24 @@ serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
-
     // 1) DB payment 조회
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
       .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
       .eq("order_id", orderId)
-      .maybeSingle();
+      .maybeSingle<PaymentRow>();
 
     if (paymentError) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        orderId,
+        eventType: "payment_lookup_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          error: paymentError.message,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -101,6 +195,17 @@ serve(async (req) => {
     }
 
     if (!payment) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        orderId,
+        eventType: "payment_not_found",
+        source: "confirm_toss_payment",
+        payload: {
+          paymentKey,
+          amount,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -110,7 +215,21 @@ serve(async (req) => {
       );
     }
 
+    paymentIdForLogging = payment.id;
+
     if (payment.amount !== amount) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "payment_amount_mismatch",
+        source: "confirm_toss_payment",
+        payload: {
+          dbAmount: payment.amount,
+          requestAmount: amount,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -126,6 +245,19 @@ serve(async (req) => {
 
     // 2) 이미 paid면 그대로 성공 반환
     if (payment.status === "paid") {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "payment_already_processed",
+        source: "confirm_toss_payment",
+        payload: {
+          status: payment.status,
+          pg_tid: payment.pg_tid,
+          paid_at: payment.paid_at,
+        },
+      });
+
       return jsonResponse({
         success: true,
         message: "Payment already processed",
@@ -137,6 +269,18 @@ serve(async (req) => {
     }
 
     // 3) Toss 승인 API 호출
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: payment.id,
+      orderId,
+      eventType: "toss_confirm_requested",
+      source: "confirm_toss_payment",
+      payload: {
+        paymentKey,
+        amount,
+      },
+    });
+
     const encodedSecretKey = btoa(`${tossSecretKey}:`);
 
     const tossResponse = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
@@ -155,6 +299,15 @@ serve(async (req) => {
     const tossResult = await tossResponse.json();
 
     if (!tossResponse.ok) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "toss_confirm_failed",
+        source: "confirm_toss_payment",
+        payload: tossResult,
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -165,8 +318,29 @@ serve(async (req) => {
       );
     }
 
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: payment.id,
+      orderId,
+      eventType: "toss_confirm_succeeded",
+      source: "confirm_toss_payment",
+      payload: tossResult,
+    });
+
     // 4) Toss 응답 재검증
     if (tossResult.orderId !== orderId) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "toss_order_id_mismatch",
+        source: "confirm_toss_payment",
+        payload: {
+          expected: orderId,
+          actual: tossResult.orderId,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -181,6 +355,18 @@ serve(async (req) => {
     }
 
     if (Number(tossResult.totalAmount) !== amount) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "toss_total_amount_mismatch",
+        source: "confirm_toss_payment",
+        payload: {
+          expected: amount,
+          actual: tossResult.totalAmount,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -195,6 +381,17 @@ serve(async (req) => {
     }
 
     if (tossResult.status !== "DONE") {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "toss_status_not_done",
+        source: "confirm_toss_payment",
+        payload: {
+          status: tossResult.status,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -218,6 +415,17 @@ serve(async (req) => {
     );
 
     if (rpcError) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "payment_rpc_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          error: rpcError.message,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -228,14 +436,38 @@ serve(async (req) => {
       );
     }
 
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: payment.id,
+      orderId,
+      eventType: "payment_rpc_succeeded",
+      source: "confirm_toss_payment",
+      payload: {
+        rpcResult,
+        paymentKey,
+        paidAt,
+      },
+    });
+
     // 6) 처리 후 payment 재확인
     const { data: paymentAfter, error: paymentAfterError } = await supabaseAdmin
       .from("payments")
       .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
       .eq("order_id", orderId)
-      .maybeSingle();
+      .maybeSingle<PaymentRow>();
 
     if (paymentAfterError) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "payment_after_lookup_failed",
+        source: "confirm_toss_payment",
+        payload: {
+          error: paymentAfterError.message,
+        },
+      });
+
       return jsonResponse(
         {
           success: false,
@@ -245,6 +477,19 @@ serve(async (req) => {
         500
       );
     }
+
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: payment.id,
+      orderId,
+      eventType: "payment_confirm_completed",
+      source: "confirm_toss_payment",
+      payload: {
+        finalStatus: paymentAfter?.status ?? null,
+        pg_tid: paymentAfter?.pg_tid ?? null,
+        paid_at: paymentAfter?.paid_at ?? null,
+      },
+    });
 
     return jsonResponse({
       success: true,
@@ -258,6 +503,17 @@ serve(async (req) => {
       },
     });
   } catch (error) {
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: paymentIdForLogging,
+      orderId: orderIdForLogging,
+      eventType: "payment_confirm_unexpected_error",
+      source: "confirm_toss_payment",
+      payload: {
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+
     return jsonResponse(
       {
         success: false,
