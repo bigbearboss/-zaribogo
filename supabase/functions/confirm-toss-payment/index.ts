@@ -32,28 +32,16 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const tossSecretKey = Deno.env.get("TOSS_SECRET_KEY");
 
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey || !tossSecretKey) {
+    if (!supabaseUrl || !supabaseServiceRoleKey || !tossSecretKey) {
       return jsonResponse(
         {
           success: false,
           error: "Missing required environment variables",
         },
         500
-      );
-    }
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "Missing Authorization header",
-        },
-        401
       );
     }
 
@@ -92,38 +80,12 @@ serve(async (req) => {
       );
     }
 
-    // 현재 로그인 사용자 확인
-    const supabaseUserClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    });
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseUserClient.auth.getUser();
-
-    if (userError || !user) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "Unauthorized",
-          detail: userError?.message ?? null,
-        },
-        401
-      );
-    }
-
-    // 관리자 권한 클라이언트
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // DB에서 payment 확인
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
-      .select("id, user_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
+      .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
       .eq("order_id", orderId)
       .maybeSingle();
 
@@ -145,16 +107,6 @@ serve(async (req) => {
           error: "Payment not found",
         },
         404
-      );
-    }
-
-    if (payment.user_id !== user.id) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "This payment does not belong to the current user",
-        },
-        403
       );
     }
 
@@ -184,7 +136,6 @@ serve(async (req) => {
       });
     }
 
-    // Toss 승인 API 호출
     const encodedSecretKey = btoa(`${tossSecretKey}:`);
 
     const tossResponse = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
@@ -213,7 +164,6 @@ serve(async (req) => {
       );
     }
 
-    // Toss 응답 재검증
     if (tossResult.orderId !== orderId) {
       return jsonResponse(
         {
@@ -255,7 +205,6 @@ serve(async (req) => {
 
     const paidAt = tossResult.approvedAt || new Date().toISOString();
 
-    // 기존 성공 처리 RPC 실행
     const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
       "process_successful_payment",
       {
@@ -276,10 +225,9 @@ serve(async (req) => {
       );
     }
 
-    // 처리 후 payment 재확인
     const { data: paymentAfter, error: paymentAfterError } = await supabaseAdmin
       .from("payments")
-      .select("id, user_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
+      .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
       .eq("order_id", orderId)
       .maybeSingle();
 
