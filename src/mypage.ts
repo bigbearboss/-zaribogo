@@ -149,11 +149,6 @@ function consumePaymentResultFlags() {
 async function initMypage() {
     setupEventListeners();
     initTheme();
-
-    if (DOM.btnTestPaymentInit) {
-        DOM.btnTestPaymentInit.textContent = 'Starter Pack 구매하기';
-    }
-
     showLoading();
 
     try {
@@ -185,11 +180,7 @@ async function initMypage() {
         hideLoading();
         switchView('dashboard');
         consumePaymentResultFlags();
-
-        // 결제 성공 배너 감지
         checkCreditedParam();
-
-        // 상품 카드 렌더링 (비동기로 진행해 우선 콘텐츠 표시후 충전)
         loadProductCards();
 
         authService.onAuthStateChange(async (nextUser) => {
@@ -294,7 +285,7 @@ async function fetchAllReports() {
 // 7. UI Updates
 // ==========================================
 function updateDashboardUI() {
-    const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '소개인';
+    const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '고객';
     DOM.greetingMsg.textContent = `안녕하세요, ${name}님! 👋`;
 
     if (state.credits) {
@@ -313,7 +304,7 @@ function updateDashboardUI() {
             const resetDate = new Date(state.credits.reset_date).toLocaleDateString('ko-KR');
             DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
         } else {
-            DOM.creditResetDate.textContent = '유효기간 없음 (포인트 실주날 때까지 사용 가능)';
+            DOM.creditResetDate.textContent = '유효기간 없음 (보유 크레딧 소진 시까지 사용 가능)';
         }
     }
 
@@ -392,13 +383,8 @@ function openReportDetail(report: any) {
 }
 
 // ==========================================
-<<<<<<< HEAD
-// 7. Payment — 상품 카드 렌더링
-=======
-// 8. Navigation & Setup
->>>>>>> 08e537d224965a9511e2496088c20bef62e4fc41
+// 8. Payment — 상품 카드 렌더링
 // ==========================================
-
 async function loadProductCards() {
     try {
         const products = await fetchActiveCreditProducts();
@@ -414,15 +400,13 @@ async function loadProductCards() {
 function renderProductCards(products: import('./services/paymentService').CreditProduct[]) {
     if (!DOM.productCards) return;
 
-    // B2B 전용 상품 제외하고 일반 상품만 렌더링 (B2B는 별도 카드로)
     const regularProducts = products.filter(p => !p.is_b2b_only);
-    const b2bProducts    = products.filter(p => p.is_b2b_only);
+    const b2bProducts = products.filter(p => p.is_b2b_only);
 
     const remainingCredits = state.credits
         ? Math.max(Number(state.credits.total_credits ?? 0) - Number(state.credits.used_credits ?? 0), 0)
         : 0;
 
-    // 카드 콘텐츠 메타데이터 (상품명 기반으로 정의)
     const cardMeta: Record<string, { features: string[]; recommended?: boolean; btnLabel: string; tagline: string }> = {
         'Starter Pack': {
             features: ['10회 분석 크레딧 즉시 지급', '후보지 3~5곳 비교 분석 가능', '입지 선택 전 빠른 검증에 최적', '크레딧 만료 없음'],
@@ -439,16 +423,17 @@ function renderProductCards(products: import('./services/paymentService').Credit
 
     DOM.productCards.innerHTML = '';
 
-    // 일반 상품 카드
     regularProducts.forEach((product) => {
         const meta = cardMeta[product.name] ?? {
             features: [`${product.total_credits}회 분석 크레딧`],
             btnLabel: '지금 충전하기',
             tagline: '',
         };
+
         const unitPrice = product.total_credits > 0
             ? Math.round(product.price / product.total_credits).toLocaleString('ko-KR')
             : '-';
+
         const bonusText = product.bonus_credits > 0
             ? `기본 ${product.base_credits}회 + 보너스 <span class="credits-bold">+${product.bonus_credits}회</span>`
             : `<span class="credits-bold">${product.base_credits}회</span> 분석 크레딧`;
@@ -471,25 +456,23 @@ function renderProductCards(products: import('./services/paymentService').Credit
             <button class="product-btn btn-primary-card" data-product-id="${product.id}">${meta.btnLabel}</button>
         `;
 
-        // hover → 크레딧 프리뷰 업데이트
         const btn = card.querySelector('button') as HTMLButtonElement;
+
         card.addEventListener('mouseenter', () => {
             if (!DOM.creditPreviewBox || !DOM.creditPreviewAmount) return;
             const afterCredits = remainingCredits + product.total_credits;
             DOM.creditPreviewAmount.textContent = `${afterCredits}회`;
             DOM.creditPreviewBox.style.display = 'flex';
         });
+
         card.addEventListener('mouseleave', () => {
             if (DOM.creditPreviewBox) DOM.creditPreviewBox.style.display = 'none';
         });
 
-        // 결제 버튼 클릭
         btn.addEventListener('click', () => handleProductPurchase(product, btn));
-
         DOM.productCards.appendChild(card);
     });
 
-    // B2B/Pro 카드
     b2bProducts.forEach((product) => {
         const card = document.createElement('div');
         card.className = 'product-card b2b';
@@ -497,7 +480,7 @@ function renderProductCards(products: import('./services/paymentService').Credit
             <span class="card-badge-text">팀·프랜차이즈·법인</span>
             <p class="card-name">${product.name.replace(' / B2B', '')}</p>
             <div class="card-price">
-                별도 문의<span class="price-unit"></span>
+                별도 문의
             </div>
             <p class="card-credits">맞춤 크레딧·기간·권한 협의</p>
             <p class="card-unit-price">팀 단위 대량 분석에 최적화</p>
@@ -508,7 +491,7 @@ function renderProductCards(products: import('./services/paymentService').Credit
                 <li>대시보드·리포트 커스터마이징</li>
                 <li>세금계산서 발행 가능</li>
             </ul>
-            <a href="mailto:contact@zaribogo.com?subject=Pro%20%2F%20B2B%20%EB%AC%B8%EC%9D%98" class="product-btn btn-outline-card" style="text-align:center;display:block;text-decoration:none;line-height:2.2">문의하기</a>
+            <a href="mailto:contact@zaribogo.com?subject=Pro%20%2F%20B2B%20문의" class="product-btn btn-outline-card" style="text-align:center;display:block;text-decoration:none;line-height:2.2">문의하기</a>
         `;
         DOM.productCards.appendChild(card);
     });
@@ -523,23 +506,27 @@ async function handleProductPurchase(
         btn.textContent = '결제창 준비 중...';
 
         const paymentInit = await initiatePaymentFlow(product.id);
+
         localStorage.setItem('pending_order_id', paymentInit.order_id);
+        localStorage.setItem('pending_product_name', paymentInit.product_name);
+        localStorage.setItem('pending_amount', String(paymentInit.amount));
 
         const tossPayments = getTossPaymentsInstance();
         await tossPayments.requestPayment('카드', {
             amount: paymentInit.amount,
             orderId: paymentInit.order_id,
-            orderName: paymentInit.product_name,
+            orderName: `${paymentInit.product_name} · ${paymentInit.total_credits}회 분석 크레딧`,
             customerEmail: paymentInit.user_email || undefined,
             successUrl: `${window.location.origin}/success.html`,
             failUrl: `${window.location.origin}/fail.html`,
         });
     } catch (err) {
+        clearPendingPaymentState();
         console.error('[handleProductPurchase]', err);
         alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
     } finally {
         btn.disabled = false;
-        // 카드 메타 데이터에서 원래 라벨 복원
+
         const originalLabel = btn.closest('.product-card')?.querySelector('.card-name')?.textContent;
         if (originalLabel?.includes('Starter')) btn.textContent = '스타터로 시작하기';
         else if (originalLabel?.includes('Growth')) btn.textContent = '그로스로 충전하기';
@@ -548,26 +535,26 @@ async function handleProductPurchase(
 }
 
 // ==========================================
-// 8. 결제 성공 배너
+// 9. 결제 성공 배너
 // ==========================================
 function checkCreditedParam() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('credited') === '1') {
         if (DOM.creditSuccessBanner) {
             DOM.creditSuccessBanner.classList.remove('hidden');
-
-            // 6초 후 자동 소멸
             setTimeout(() => {
                 DOM.creditSuccessBanner?.classList.add('hidden');
             }, 6000);
         }
 
-        // URL에서 파라미터 제거
         const cleanUrl = window.location.pathname + (window.location.hash || '');
         history.replaceState(null, '', cleanUrl);
     }
 }
 
+// ==========================================
+// 10. Navigation & Setup
+// ==========================================
 function switchView(viewId: string) {
     state.currentView = viewId as any;
 
@@ -614,54 +601,8 @@ function setupEventListeners() {
     DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
 
-<<<<<<< HEAD
-    // 배너 닫기
     DOM.btnCloseBanner?.addEventListener('click', () => {
         DOM.creditSuccessBanner?.classList.add('hidden');
-=======
-    DOM.btnTestPaymentInit?.addEventListener('click', async () => {
-        try {
-            DOM.btnTestPaymentInit.disabled = true;
-            DOM.btnTestPaymentInit.textContent = '결제창 여는 중...';
-
-            const products = await fetchActiveCreditProducts();
-            console.log('[PAYMENT PRODUCTS]', products);
-
-            const targetProduct =
-                products.find((p) => p.name === 'Starter Pack') ||
-                products.find((p) => p.is_active && !p.is_b2b_only);
-
-            if (!targetProduct) {
-                alert('현재 구매 가능한 상품이 없습니다.');
-                return;
-            }
-
-            const paymentInit = await initiatePaymentFlow(targetProduct.id);
-            console.log('[PAYMENT INIT SUCCESS]', paymentInit);
-
-            localStorage.setItem('pending_order_id', paymentInit.order_id);
-            localStorage.setItem('pending_product_name', paymentInit.product_name);
-            localStorage.setItem('pending_amount', String(paymentInit.amount));
-
-            const tossPayments = getTossPaymentsInstance();
-
-            await tossPayments.requestPayment('카드', {
-                amount: paymentInit.amount,
-                orderId: paymentInit.order_id,
-                orderName: `${paymentInit.product_name} · ${paymentInit.total_credits}회 분석 크레딧`,
-                customerEmail: paymentInit.user_email || undefined,
-                successUrl: `${window.location.origin}/success.html`,
-                failUrl: `${window.location.origin}/fail.html`,
-            });
-        } catch (err) {
-            clearPendingPaymentState();
-            console.error('[PAYMENT START ERROR]', err);
-            alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
-        } finally {
-            DOM.btnTestPaymentInit.disabled = false;
-            DOM.btnTestPaymentInit.textContent = 'Starter Pack 구매하기';
-        }
->>>>>>> 08e537d224965a9511e2496088c20bef62e4fc41
     });
 
     DOM.btnRetry.addEventListener('click', () => {
@@ -687,7 +628,6 @@ function setupEventListeners() {
         DOM.themeKnob.textContent = newTheme === 'dark' ? '🌙' : '☀️';
     });
 }
-
 
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
