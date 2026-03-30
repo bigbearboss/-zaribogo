@@ -1,6 +1,7 @@
 import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
+
 // ==========================================
 // 1. State Management
 // ==========================================
@@ -12,7 +13,6 @@ interface AppState {
     allReports: any[];
     currentView: 'dashboard' | 'reports' | 'profile' | 'report-detail';
 }
-
 
 const state: AppState = {
     user: null,
@@ -30,38 +30,37 @@ const DOM = {
     // Views
     views: document.querySelectorAll('.mypage-view'),
     navLinks: document.querySelectorAll('.nav-link'),
-    
+
     // States
     loadingState: document.getElementById('loadingState') as HTMLElement,
     errorState: document.getElementById('errorState') as HTMLElement,
     errorMessage: document.getElementById('errorMessage') as HTMLElement,
-    
+
     // Actions
-   // Actions
-btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
-btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
-btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
-logoToMain: document.getElementById('logoToMain') as HTMLElement,
-btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
-btnTestPaymentInit: document.getElementById('btnTestPaymentInit') as HTMLButtonElement,
-btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
-btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
-btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
-    
+    btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
+    btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
+    btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
+    logoToMain: document.getElementById('logoToMain') as HTMLElement,
+    btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
+    btnTestPaymentInit: document.getElementById('btnTestPaymentInit') as HTMLButtonElement,
+    btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
+    btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
+    btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
+
     // Dashboard widgets
     greetingMsg: document.getElementById('greetingMsg') as HTMLElement,
-creditUsed: document.getElementById('creditUsed') as HTMLElement,
-creditTotal: document.getElementById('creditTotal') as HTMLElement,
-creditUsageMeta: document.getElementById('creditUsageMeta') as HTMLElement,
-creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
+    creditUsed: document.getElementById('creditUsed') as HTMLElement,
+    creditTotal: document.getElementById('creditTotal') as HTMLElement,
+    creditUsageMeta: document.getElementById('creditUsageMeta') as HTMLElement,
+    creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
     recentReportsList: document.getElementById('recentReportsList') as HTMLElement,
     emptyRecentState: document.getElementById('emptyRecentState') as HTMLElement,
-    
+
     // All Reports list
     allReportsList: document.getElementById('allReportsList') as HTMLElement,
     emptyAllState: document.getElementById('emptyAllState') as HTMLElement,
     searchInput: document.getElementById('searchInput') as HTMLInputElement,
-    
+
     // Profile
     profileEmail: document.getElementById('profileEmail') as HTMLElement,
     profileName: document.getElementById('profileName') as HTMLElement,
@@ -71,14 +70,35 @@ creditResetDate: document.getElementById('creditResetDate') as HTMLElement,
     detailTitle: document.getElementById('detailTitle') as HTMLElement,
     detailDate: document.getElementById('detailDate') as HTMLElement,
     rawJsonContainer: document.getElementById('rawJsonContainer') as HTMLElement,
-    
+
     // Theme
     themeToggle: document.getElementById('themeToggle') as HTMLElement,
     themeKnob: document.getElementById('themeKnob') as HTMLElement,
 };
 
 // ==========================================
-// 3. Initialization
+// 3. Toss Helpers
+// ==========================================
+function getTossClientKey(): string {
+    const key = import.meta.env.VITE_TOSS_CLIENT_KEY;
+    if (!key) {
+        throw new Error('VITE_TOSS_CLIENT_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+    }
+    return key;
+}
+
+function getTossPaymentsInstance() {
+    const TossPaymentsFactory = (window as any).TossPayments;
+
+    if (!TossPaymentsFactory) {
+        throw new Error('토스페이먼츠 스크립트가 로드되지 않았습니다. mypage.html의 script 태그를 확인해주세요.');
+    }
+
+    return TossPaymentsFactory(getTossClientKey());
+}
+
+// ==========================================
+// 4. Initialization
 // ==========================================
 async function initMypage() {
     setupEventListeners();
@@ -148,94 +168,106 @@ async function initMypage() {
 }
 
 // ==========================================
-// 4. Data Fetching
+// 5. Data Fetching
 // ==========================================
 async function fetchProfile() {
     if (!state.user) return;
+
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', state.user.id)
         .single();
-        
+
     if (error && error.code !== 'PGRST116') throw error;
-    state.profile = data || { email: state.user.email, full_name: state.user.user_metadata?.full_name, plan_type: 'free' };
+
+    state.profile = data || {
+        email: state.user.email,
+        full_name: state.user.user_metadata?.full_name,
+        plan_type: 'free'
+    };
 }
 
 async function fetchCredits() {
     if (!state.user) return;
+
     const { data, error } = await supabase
         .from('usage_credits')
         .select('*')
         .eq('user_id', state.user.id)
         .single();
-        
+
     if (error && error.code !== 'PGRST116') throw error;
+
     state.credits = data || { total_credits: 2, used_credits: 0 };
 }
 
 async function fetchRecentReports() {
     if (!state.user) return;
+
     const { data, error } = await supabase
         .from('analysis_results')
         .select('*')
         .eq('user_id', state.user.id)
         .order('created_at', { ascending: false })
         .limit(3);
-        
+
     if (error) throw error;
+
     state.recentReports = data || [];
 }
 
 async function fetchAllReports() {
     if (!state.user) return;
+
     const { data, error } = await supabase
         .from('analysis_results')
         .select('*')
         .eq('user_id', state.user.id)
         .order('created_at', { ascending: false });
-        
+
     if (error) throw error;
+
     state.allReports = data || [];
     renderAllReports(state.allReports);
 }
 
 // ==========================================
-// 5. UI Updates
+// 6. UI Updates
 // ==========================================
 function updateDashboardUI() {
     const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '고객';
     DOM.greetingMsg.textContent = `안녕하세요, ${name}님! 👋`;
-    
+
     if (state.credits) {
-    const totalCredits = Number(state.credits.total_credits ?? 0);
-    const usedCredits = Number(state.credits.used_credits ?? 0);
-    const remainingCredits = Math.max(totalCredits - usedCredits, 0);
+        const totalCredits = Number(state.credits.total_credits ?? 0);
+        const usedCredits = Number(state.credits.used_credits ?? 0);
+        const remainingCredits = Math.max(totalCredits - usedCredits, 0);
 
-    DOM.creditUsed.textContent = remainingCredits.toString();
-    DOM.creditTotal.textContent = totalCredits.toString();
+        DOM.creditUsed.textContent = remainingCredits.toString();
+        DOM.creditTotal.textContent = totalCredits.toString();
 
-    if (DOM.creditUsageMeta) {
-        DOM.creditUsageMeta.textContent = `현재 사용: ${usedCredits}회`;
+        if (DOM.creditUsageMeta) {
+            DOM.creditUsageMeta.textContent = `현재 사용: ${usedCredits}회`;
+        }
+
+        if (state.credits.reset_date) {
+            const resetDate = new Date(state.credits.reset_date).toLocaleDateString('ko-KR');
+            DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
+        } else {
+            DOM.creditResetDate.textContent = '충전일 정보 없음';
+        }
     }
 
-    if (state.credits.reset_date) {
-        const resetDate = new Date(state.credits.reset_date).toLocaleDateString('ko-KR');
-        DOM.creditResetDate.textContent = `다음 충전일: ${resetDate}`;
-    } else {
-        DOM.creditResetDate.textContent = '충전일 정보 없음';
-    }
-}
-    
-    // Render Recent Reports
     DOM.recentReportsList.innerHTML = '';
+
     if (state.recentReports.length === 0) {
         DOM.recentReportsList.classList.add('hidden');
         DOM.emptyRecentState.classList.remove('hidden');
     } else {
         DOM.emptyRecentState.classList.add('hidden');
         DOM.recentReportsList.classList.remove('hidden');
-        
+
         state.recentReports.forEach(report => {
             const card = document.createElement('div');
             card.className = 'report-card';
@@ -257,9 +289,10 @@ function updateDashboardUI() {
 function updateProfileUI() {
     DOM.profileEmail.textContent = state.profile?.email || state.user?.email || '-';
     DOM.profileName.textContent = state.profile?.full_name || '-';
-    
+
     const plan = state.profile?.plan_type || 'free';
     DOM.profilePlan.textContent = plan.toUpperCase();
+
     if (plan === 'premium') {
         DOM.profilePlan.style.backgroundColor = 'var(--accent-primary)';
     }
@@ -267,13 +300,14 @@ function updateProfileUI() {
 
 function renderAllReports(reports: any[]) {
     DOM.allReportsList.innerHTML = '';
+
     if (reports.length === 0) {
         DOM.allReportsList.classList.add('hidden');
         DOM.emptyAllState.classList.remove('hidden');
     } else {
         DOM.emptyAllState.classList.add('hidden');
         DOM.allReportsList.classList.remove('hidden');
-        
+
         reports.forEach(report => {
             const card = document.createElement('div');
             card.className = 'report-card';
@@ -295,27 +329,21 @@ function renderAllReports(reports: any[]) {
 function openReportDetail(report: any) {
     DOM.detailTitle.textContent = report.title;
     DOM.detailDate.textContent = new Date(report.created_at).toLocaleDateString();
-    
-    // Display raw JSON for now, can be enhanced to render actual UI elements later
     DOM.rawJsonContainer.textContent = JSON.stringify(report.result_data, null, 2);
-    
     switchView('report-detail');
 }
 
 // ==========================================
-// 6. Navigation & Setup
+// 7. Navigation & Setup
 // ==========================================
 function switchView(viewId: string) {
     state.currentView = viewId as any;
-    
-    // Hide all views
+
     DOM.views.forEach(view => view.classList.remove('active'));
-    
-    // Show target view
+
     const target = document.getElementById(`view-${viewId}`);
     if (target) target.classList.add('active');
-    
-    // Update Nav
+
     DOM.navLinks.forEach(link => {
         if (link.getAttribute('data-target') === viewId) {
             link.classList.add('active');
@@ -324,7 +352,6 @@ function switchView(viewId: string) {
         }
     });
 
-    // Special logic per view
     if (viewId === 'reports' && state.allReports.length === 0) {
         showLoading();
         fetchAllReports().finally(() => hideLoading());
@@ -341,11 +368,12 @@ function setupEventListeners() {
     });
 
     const goMain = () => window.location.href = '/index.html';
+
     DOM.logoToMain.addEventListener('click', goMain);
     DOM.btnBackToMain.addEventListener('click', goMain);
     DOM.btnAnalyzeNow.addEventListener('click', goMain);
     DOM.btnStartFirst.addEventListener('click', goMain);
-    
+
     DOM.btnLogout.addEventListener('click', async () => {
         await authService.logout();
         goMain();
@@ -355,56 +383,58 @@ function setupEventListeners() {
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
 
     DOM.btnTestPaymentInit?.addEventListener('click', async () => {
-    try {
-        DOM.btnTestPaymentInit.disabled = true;
-        DOM.btnTestPaymentInit.textContent = '결제 준비 중...';
+        try {
+            DOM.btnTestPaymentInit.disabled = true;
+            DOM.btnTestPaymentInit.textContent = '결제창 준비 중...';
 
-        const products = await fetchActiveCreditProducts();
-        console.log('[PAYMENT PRODUCTS]', products);
+            const products = await fetchActiveCreditProducts();
+            console.log('[PAYMENT PRODUCTS]', products);
 
-        // 일반 결제 가능한 상품 중 Starter Pack 우선 선택
-        const targetProduct =
-            products.find((p) => p.name === 'Starter Pack') ||
-            products.find((p) => p.is_active && !p.is_b2b_only);
+            const targetProduct =
+                products.find((p) => p.name === 'Starter Pack') ||
+                products.find((p) => p.is_active && !p.is_b2b_only);
 
-        if (!targetProduct) {
-            alert('온라인 구매 가능한 상품이 없습니다.');
-            return;
+            if (!targetProduct) {
+                alert('온라인 구매 가능한 상품이 없습니다.');
+                return;
+            }
+
+            const paymentInit = await initiatePaymentFlow(targetProduct.id);
+            console.log('[PAYMENT INIT SUCCESS]', paymentInit);
+
+            const tossPayments = getTossPaymentsInstance();
+
+            await tossPayments.requestPayment('카드', {
+                amount: paymentInit.amount,
+                orderId: paymentInit.order_id,
+                orderName: paymentInit.product_name,
+                customerEmail: paymentInit.user_email || undefined,
+                successUrl: `${window.location.origin}/success.html`,
+                failUrl: `${window.location.origin}/fail.html`,
+            });
+        } catch (err) {
+            console.error('[PAYMENT START ERROR]', err);
+            alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
+        } finally {
+            DOM.btnTestPaymentInit.disabled = false;
+            DOM.btnTestPaymentInit.textContent = '테스트 결제 진행';
         }
+    });
 
-        const result = await initiatePaymentFlow(targetProduct.id);
-        console.log('[PAYMENT INIT SUCCESS]', result);
-
-        alert(
-            `결제 대기 생성 완료\n` +
-            `주문번호: ${result.order_id}\n` +
-            `상품명: ${result.product_name}\n` +
-            `금액: ${result.amount}원`
-        );
-    } catch (err) {
-        console.error('[PAYMENT INIT ERROR]', err);
-        alert(err instanceof Error ? err.message : '결제 준비 중 오류가 발생했습니다.');
-    } finally {
-        DOM.btnTestPaymentInit.disabled = false;
-        DOM.btnTestPaymentInit.textContent = '결제 대기 생성 테스트';
-    }
-});
-    
     DOM.btnRetry.addEventListener('click', () => {
         initMypage();
     });
 
     DOM.searchInput.addEventListener('input', (e) => {
         const term = (e.target as HTMLInputElement).value.toLowerCase();
-        const filtered = state.allReports.filter(r => 
-            r.title.toLowerCase().includes(term) || 
-            r.location.toLowerCase().includes(term) || 
+        const filtered = state.allReports.filter(r =>
+            r.title.toLowerCase().includes(term) ||
+            r.location.toLowerCase().includes(term) ||
             r.business_type.toLowerCase().includes(term)
         );
         renderAllReports(filtered);
     });
 
-    // Theme logic
     DOM.themeToggle.addEventListener('click', () => {
         const body = document.body;
         const currentTheme = body.getAttribute('data-theme');
