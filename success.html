@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+
+const paymentKey = urlParams.get("paymentKey");
+const orderId = urlParams.get("orderId");
+const amount = urlParams.get("amount");
+
+async function confirmPayment() {
+  const res = await fetch(
+    "https://cbfhjycvvlfdqvnzbxfr.supabase.co/functions/v1/confirm-toss-payment",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": "여기에 sb_publishable 붙여",
+        "Authorization": "Bearer 여기에 anon key 붙여"
+      },
+      body: JSON.stringify({
+        paymentKey,
+        orderId,
+        amount
+      }),
+    }
+  );
+
+  const data = await res.json();
+  console.log(data);
+
+  document.body.innerHTML = "<h1>결제 완료</h1>";
+}
+
+confirmPayment();
+</script>
+</body>
+</html>
