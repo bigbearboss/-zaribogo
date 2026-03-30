@@ -664,5 +664,38 @@
     </div>
 
     <script type="module" src="./src/main.ts"></script>
+
+    <script>
+  // 결제 진행 중 상태 확인
+  const pendingOrderId = localStorage.getItem("pending_order_id");
+
+  if (pendingOrderId) {
+    console.log("[payment] pending order detected:", pendingOrderId);
+
+    // Supabase 함수 호출해서 상태 확인
+    fetch("https://cbfhjycvvlfdqvnzbxfr.supabase.co/functions/v1/check-payment-status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": "sb_publishable_ttZslHz5mE4MHGPtq0FMbg_9u5YXQUD"
+      },
+      body: JSON.stringify({
+        orderId: pendingOrderId
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("[payment] status check:", data);
+
+      if (data?.status === "DONE") {
+        // 결제 성공 → success.html로 이동
+        window.location.href = `/success.html?orderId=${pendingOrderId}&amount=${data.amount}&paymentKey=${data.paymentKey}`;
+      }
+    })
+    .catch(err => {
+      console.error("[payment] status check error:", err);
+    });
+  }
+</script>
 </body>
 </html>
