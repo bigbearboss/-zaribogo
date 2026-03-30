@@ -82,7 +82,7 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // DB에서 payment 확인
+    // 1) DB payment 조회
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
       .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
@@ -124,7 +124,7 @@ serve(async (req) => {
       );
     }
 
-    // 이미 paid면 재승인 없이 그대로 성공 처리
+    // 2) 이미 paid면 그대로 성공 반환
     if (payment.status === "paid") {
       return jsonResponse({
         success: true,
@@ -136,6 +136,7 @@ serve(async (req) => {
       });
     }
 
+    // 3) Toss 승인 API 호출
     const encodedSecretKey = btoa(`${tossSecretKey}:`);
 
     const tossResponse = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
@@ -164,6 +165,7 @@ serve(async (req) => {
       );
     }
 
+    // 4) Toss 응답 재검증
     if (tossResult.orderId !== orderId) {
       return jsonResponse(
         {
@@ -203,6 +205,7 @@ serve(async (req) => {
       );
     }
 
+    // 5) 기존 RPC 호출
     const paidAt = tossResult.approvedAt || new Date().toISOString();
 
     const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
@@ -225,6 +228,7 @@ serve(async (req) => {
       );
     }
 
+    // 6) 처리 후 payment 재확인
     const { data: paymentAfter, error: paymentAfterError } = await supabaseAdmin
       .from("payments")
       .select("id, user_id, product_id, order_id, amount, status, pg_tid, paid_at, created_at, updated_at")
