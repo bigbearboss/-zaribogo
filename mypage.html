@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css">
     <link rel="stylesheet" href="./src/mypage.css">
+    <script src="https://js.tosspayments.com/v1/payment"></script>
 </head>
 <body data-theme="dark">
     <div id="app">
@@ -67,10 +68,10 @@
                         <p class="credit-meta" id="creditUsageMeta">현재 사용: 0회</p>
                         <p class="credit-hint" id="creditResetDate">충전일 정보 없음</p>
                     </div>
-                   <div class="credit-action">
-    <button id="btnAnalyzeNow" class="btn-primary-glam">지금 분석하러 가기</button>
-    <button id="btnTestPaymentInit" class="btn-action btn-outline mt-3">결제 대기 생성 테스트</button>
-</div>
+                    <div class="credit-action">
+                        <button id="btnAnalyzeNow" class="btn-primary-glam">지금 분석하러 가기</button>
+                        <button id="btnTestPaymentInit" class="btn-action btn-outline mt-3">테스트 결제 진행</button>
+                    </div>
                 </div>
 
                 <div class="recent-reports-section">
@@ -78,8 +79,7 @@
                         <h3>최근 분석 내역</h3>
                         <button class="btn-text" id="btnViewAllReports">전체보기 ➔</button>
                     </div>
-                    <div id="recentReportsList" class="reports-grid">
-                    </div>
+                    <div id="recentReportsList" class="reports-grid"></div>
 
                     <div id="emptyRecentState" class="empty-state hidden">
                         <div class="empty-icon">🗺️</div>
@@ -99,8 +99,7 @@
                     <input type="text" id="searchInput" placeholder="상권명 또는 업종으로 검색..." class="input-text">
                 </div>
 
-                <div id="allReportsList" class="reports-list-container">
-                </div>
+                <div id="allReportsList" class="reports-list-container"></div>
 
                 <div id="emptyAllState" class="empty-state hidden">
                     <div class="empty-icon">📉</div>
