@@ -23,7 +23,6 @@ const state: AppState = {
     currentView: 'dashboard'
 };
 
-
 // ==========================================
 // 2. DOM Elements
 // ==========================================
@@ -89,7 +88,7 @@ const DOM = {
 function getTossClientKey(): string {
     const key = import.meta.env.VITE_TOSS_CLIENT_KEY;
     if (!key) {
-        throw new Error('VITE_TOSS_CLIENT_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+        throw new Error('VITE_TOSS_CLIENT_KEY가 설정되지 않았습니다. 배포 환경 변수를 확인해주세요.');
     }
     return key;
 }
@@ -105,11 +104,56 @@ function getTossPaymentsInstance() {
 }
 
 // ==========================================
-// 4. Initialization
+// 4. Payment State Helpers
+// ==========================================
+function clearPendingPaymentState() {
+    localStorage.removeItem('pending_order_id');
+    localStorage.removeItem('pending_product_name');
+    localStorage.removeItem('pending_amount');
+}
+
+function consumePaymentResultFlags() {
+    const paymentCompleted = localStorage.getItem('payment_completed');
+    const paymentCompletedOrderId = localStorage.getItem('payment_completed_order_id');
+    const paymentCompletedAmount = localStorage.getItem('payment_completed_amount');
+    const paymentFailed = localStorage.getItem('payment_failed');
+    const paymentFailedMessage = localStorage.getItem('payment_failed_message');
+
+    if (paymentCompleted === '1') {
+        localStorage.removeItem('payment_completed');
+        localStorage.removeItem('payment_completed_order_id');
+        localStorage.removeItem('payment_completed_amount');
+
+        alert(
+            `결제가 완료되었어요.\n` +
+            `${paymentCompletedOrderId ? `주문번호: ${paymentCompletedOrderId}\n` : ''}` +
+            `${paymentCompletedAmount ? `결제금액: ${Number(paymentCompletedAmount).toLocaleString()}원\n` : ''}` +
+            `마이페이지의 보유 크레딧이 최신 상태로 반영되었습니다.`
+        );
+    }
+
+    if (paymentFailed === '1') {
+        localStorage.removeItem('payment_failed');
+        localStorage.removeItem('payment_failed_message');
+
+        alert(
+            `결제가 완료되지 않았어요.\n` +
+            `${paymentFailedMessage || '결제 과정에서 오류가 발생했거나 사용자가 취소했습니다.'}`
+        );
+    }
+}
+
+// ==========================================
+// 5. Initialization
 // ==========================================
 async function initMypage() {
     setupEventListeners();
     initTheme();
+
+    if (DOM.btnTestPaymentInit) {
+        DOM.btnTestPaymentInit.textContent = 'Starter Pack 구매하기';
+    }
+
     showLoading();
 
     try {
@@ -140,6 +184,7 @@ async function initMypage() {
         updateProfileUI();
         hideLoading();
         switchView('dashboard');
+        consumePaymentResultFlags();
 
         // 결제 성공 배너 감지
         checkCreditedParam();
@@ -181,7 +226,7 @@ async function initMypage() {
 }
 
 // ==========================================
-// 5. Data Fetching
+// 6. Data Fetching
 // ==========================================
 async function fetchProfile() {
     if (!state.user) return;
@@ -246,7 +291,7 @@ async function fetchAllReports() {
 }
 
 // ==========================================
-// 6. UI Updates
+// 7. UI Updates
 // ==========================================
 function updateDashboardUI() {
     const name = state.profile?.full_name || state.user?.email?.split('@')[0] || '소개인';
@@ -347,7 +392,11 @@ function openReportDetail(report: any) {
 }
 
 // ==========================================
+<<<<<<< HEAD
 // 7. Payment — 상품 카드 렌더링
+=======
+// 8. Navigation & Setup
+>>>>>>> 08e537d224965a9511e2496088c20bef62e4fc41
 // ==========================================
 
 async function loadProductCards() {
@@ -565,9 +614,54 @@ function setupEventListeners() {
     DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
 
+<<<<<<< HEAD
     // 배너 닫기
     DOM.btnCloseBanner?.addEventListener('click', () => {
         DOM.creditSuccessBanner?.classList.add('hidden');
+=======
+    DOM.btnTestPaymentInit?.addEventListener('click', async () => {
+        try {
+            DOM.btnTestPaymentInit.disabled = true;
+            DOM.btnTestPaymentInit.textContent = '결제창 여는 중...';
+
+            const products = await fetchActiveCreditProducts();
+            console.log('[PAYMENT PRODUCTS]', products);
+
+            const targetProduct =
+                products.find((p) => p.name === 'Starter Pack') ||
+                products.find((p) => p.is_active && !p.is_b2b_only);
+
+            if (!targetProduct) {
+                alert('현재 구매 가능한 상품이 없습니다.');
+                return;
+            }
+
+            const paymentInit = await initiatePaymentFlow(targetProduct.id);
+            console.log('[PAYMENT INIT SUCCESS]', paymentInit);
+
+            localStorage.setItem('pending_order_id', paymentInit.order_id);
+            localStorage.setItem('pending_product_name', paymentInit.product_name);
+            localStorage.setItem('pending_amount', String(paymentInit.amount));
+
+            const tossPayments = getTossPaymentsInstance();
+
+            await tossPayments.requestPayment('카드', {
+                amount: paymentInit.amount,
+                orderId: paymentInit.order_id,
+                orderName: `${paymentInit.product_name} · ${paymentInit.total_credits}회 분석 크레딧`,
+                customerEmail: paymentInit.user_email || undefined,
+                successUrl: `${window.location.origin}/success.html`,
+                failUrl: `${window.location.origin}/fail.html`,
+            });
+        } catch (err) {
+            clearPendingPaymentState();
+            console.error('[PAYMENT START ERROR]', err);
+            alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
+        } finally {
+            DOM.btnTestPaymentInit.disabled = false;
+            DOM.btnTestPaymentInit.textContent = 'Starter Pack 구매하기';
+        }
+>>>>>>> 08e537d224965a9511e2496088c20bef62e4fc41
     });
 
     DOM.btnRetry.addEventListener('click', () => {

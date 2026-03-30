@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>자리보고 | 결제 실패</title>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./src/style.css" />
+  <link rel="stylesheet" href="/src/style.css" />
   <style>
     body {
       display: flex;
@@ -64,6 +64,7 @@
       font-size: 14px;
       line-height: 1.6;
       word-break: break-word;
+      white-space: pre-wrap;
     }
 
     .payment-result-actions {
@@ -102,13 +103,13 @@
     <div class="payment-result-badge">Toss Payments</div>
     <h1 class="payment-result-title">결제가 완료되지 않았어요</h1>
     <p class="payment-result-desc">
-      결제 과정에서 사용자가 취소했거나 오류가 발생했습니다.
+      결제 과정에서 취소되었거나 오류가 발생했습니다. 다시 시도하실 수 있어요.
     </p>
 
     <div class="payment-result-box" id="failBox">실패 정보를 확인 중입니다.</div>
 
     <div class="payment-result-actions">
-      <a href="/mypage.html" class="payment-result-btn primary">마이페이지로 이동</a>
+      <a href="/mypage.html#dashboard" class="payment-result-btn primary">마이페이지로 돌아가기</a>
       <a href="/index.html" class="payment-result-btn secondary">메인으로 이동</a>
     </div>
   </div>
@@ -118,8 +119,17 @@
     const code = params.get("code");
     const message = params.get("message");
 
+    localStorage.removeItem("pending_order_id");
+    localStorage.removeItem("pending_product_name");
+    localStorage.removeItem("pending_amount");
+    localStorage.setItem("payment_failed", "1");
+    localStorage.setItem(
+      "payment_failed_message",
+      `code=${code || "-"}, message=${message || "알 수 없는 오류"}`
+    );
+
     const failBox = document.getElementById("failBox");
-    failBox.textContent = `code=${code || "-"}, message=${message || "알 수 없는 오류"}`;
+    failBox.textContent = `code=${code || "-"}\nmessage=${message || "알 수 없는 오류"}`;
   </script>
 </body>
 </html>

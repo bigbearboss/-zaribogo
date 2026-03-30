@@ -87,17 +87,4 @@ export async function initiatePaymentFlow(productId: string): Promise<PaymentIni
   return data.data as PaymentInitResult;
 }
 
-export async function requestTossPayment(productId: string) {
-  const data = await initiatePaymentFlow(productId);
 
-  const clientKey = "여기에 test_ck 붙여";
-  const tossPayments = (window as any).TossPayments(clientKey);
-
-  await tossPayments.requestPayment("카드", {
-    amount: data.amount,
-    orderId: data.order_id,
-    orderName: data.product_name,
-    successUrl: window.location.origin + "/success.html",
-    failUrl: window.location.origin + "/fail.html",
-  });
-}
