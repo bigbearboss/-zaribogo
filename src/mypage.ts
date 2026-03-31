@@ -11,7 +11,7 @@ interface AppState {
     credits: any;
     recentReports: any[];
     allReports: any[];
-    currentView: 'dashboard' | 'reports' | 'profile' | 'report-detail';
+    currentView: 'dashboard' | 'reports' | 'billing' | 'profile' | 'report-detail';
 }
 
 const state: AppState = {
@@ -688,55 +688,31 @@ document.addEventListener('DOMContentLoaded', initMypage);
 interface PaymentRecord {
     id: string;
     order_id: string;
+    product_id: string | null;
     amount: number;
     status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refund_requested' | 'refunded';
     paid_at: string | null;
     created_at: string;
-    credit_products?: { name: string; total_credits: number };
+    credit_products?: {
+        name: string;
+        total_credits: number;
+    };
 }
 
 let activeRefundPayment: PaymentRecord | null = null;
 
-async function loadPaymentHistory() {
-    if (!state.user || !DOM.paymentHistoryList) return;
-
-    DOM.billingLoading.classList.remove('hidden');
-    DOM.paymentHistoryList.innerHTML = '';
-    DOM.billingEmptyState.classList.add('hidden');
-
-    try {
-        const { data, error } = await supabase
-            .from('payments')
-            .select('*, credit_products(name, total_credits)')
-            .eq('user_id', state.user.id)
-            .in('status', ['paid', 'cancelled', 'refund_requested', 'refunded'])
-            .order('created_at', { ascending: false })
-            .limit(20);
-
-        DOM.billingLoading.classList.add('hidden');
-
-        if (error) {
-            console.error('[loadPaymentHistory]', error);
-            DOM.paymentHistoryList.innerHTML =
-                '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>';
-            return;
-        }
-
-        const payments = (data ?? []) as PaymentRecord[];
-
-        if (payments.length === 0) {
-            DOM.billingEmptyState.classList.remove('hidden');
-            return;
-        }
-
-        renderPaymentHistory(payments);
-        setupRefundModalListeners();
-    } catch (err) {
-        console.error('[loadPaymentHistory]', err);
-        DOM.billingLoading.classList.add('hidden');
-        DOM.paymentHistoryList.innerHTML =
-            '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다.</p>';
-    }
+interface PaymentRecord {
+    id: string;
+    order_id: string;
+    product_id: string | null;
+    amount: number;
+    status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refund_requested' | 'refunded';
+    paid_at: string | null;
+    created_at: string;
+    credit_products?: {
+        name: string;
+        total_credits: number;
+    };
 }
 
 function getStatusBadge(status: PaymentRecord['status']): string {
