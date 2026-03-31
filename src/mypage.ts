@@ -701,18 +701,80 @@ interface PaymentRecord {
 
 let activeRefundPayment: PaymentRecord | null = null;
 
-interface PaymentRecord {
-    id: string;
-    order_id: string;
-    product_id: string | null;
-    amount: number;
-    status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refund_requested' | 'refunded';
-    paid_at: string | null;
-    created_at: string;
-    credit_products?: {
-        name: string;
-        total_credits: number;
-    };
+async function loadPaymentHistory() {
+    if (!state.user || !DOM.paymentHistoryList) return;
+
+    DOM.billingLoading.classList.remove('hidden');
+    DOM.paymentHistoryList.innerHTML = '';
+    DOM.billingEmptyState.classList.add('hidden');
+
+    try {
+        const { data, error } = await supabase
+            .from('payments')
+            .select('id, order_id, product_id, amount, status, paid_at, created_at')
+            .eq('user_id', state.user.id)
+            .in('status', ['paid', 'cancelled', 'refund_requested', 'refunded'])
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('[loadPaymentHistory] payments error', error);
+            DOM.billingLoading.classList.add('hidden');
+            DOM.paymentHistoryList.innerHTML =
+                `<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. (${error.message})</p>`;
+            return;
+        }
+
+        const payments = (data ?? []) as PaymentRecord[];
+
+        if (payments.length === 0) {
+            DOM.billingLoading.classList.add('hidden');
+            DOM.billingEmptyState.classList.remove('hidden');
+            return;
+        }
+
+        const productIds = Array.from(
+            new Set(
+                payments
+                    .map(payment => payment.product_id)
+                    .filter((id): id is string => Boolean(id))
+            )
+        );
+
+        let productMap = new Map<string, { name: string; total_credits: number }>();
+
+        if (productIds.length > 0) {
+            const { data: productRows, error: productError } = await supabase
+                .from('credit_products')
+                .select('id, name, total_credits')
+                .in('id', productIds);
+
+            if (productError) {
+                console.error('[loadPaymentHistory] credit_products error', productError);
+            } else {
+                productMap = new Map(
+                    (productRows ?? []).map((row: any) => [
+                        row.id,
+                        { name: row.name, total_credits: row.total_credits }
+                    ])
+                );
+            }
+        }
+
+        const enrichedPayments: PaymentRecord[] = payments.map(payment => ({
+            ...payment,
+            credit_products: payment.product_id ? productMap.get(payment.product_id) : undefined,
+        }));
+
+        DOM.billingLoading.classList.add('hidden');
+        renderPaymentHistory(enrichedPayments);
+        setupRefundModalListeners();
+    } catch (err) {
+        console.error('[loadPaymentHistory] unexpected error', err);
+        DOM.billingLoading.classList.add('hidden');
+        DOM.paymentHistoryList.innerHTML =
+            '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. 콘솔 로그를 확인해주세요.</p>';
+    }
 }
 
 function getStatusBadge(status: PaymentRecord['status']): string {
