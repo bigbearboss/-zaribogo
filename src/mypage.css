@@ -612,3 +612,468 @@
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+/* ==========================================
+   결제 내역 뷰 (view-billing)
+   ========================================== */
+
+.billing-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 0;
+    color: var(--text-muted);
+}
+
+.billing-loading.hidden { display: none; }
+
+.billing-notice {
+    margin-top: 24px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.billing-notice a {
+    color: var(--accent-primary);
+    text-decoration: none;
+}
+
+.billing-notice a:hover {
+    text-decoration: underline;
+}
+
+/* 결제 내역 목록 */
+.payment-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* 개별 결제 카드 */
+.payment-history-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    transition: border-color 0.2s;
+}
+
+.payment-history-card:hover {
+    border-color: var(--accent-primary);
+}
+
+.payment-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.payment-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.payment-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* 상태 배지 */
+.payment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.badge-paid {
+    background: rgba(16, 185, 129, 0.15);
+    color: rgb(52, 211, 153);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.badge-refund-requested {
+    background: rgba(245, 158, 11, 0.12);
+    color: rgb(251, 191, 36);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.badge-refunded {
+    background: rgba(99, 102, 241, 0.12);
+    color: rgb(129, 140, 248);
+    border: 1px solid rgba(129, 140, 248, 0.3);
+}
+
+.badge-review {
+    background: rgba(239, 68, 68, 0.12);
+    color: rgb(252, 165, 165);
+    border: 1px solid rgba(252, 165, 165, 0.3);
+}
+
+.badge-cancelled {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.payment-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.payment-card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.payment-card-order-id {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    word-break: break-all;
+}
+
+.payment-card-amount {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.payment-card-amount .amount-credits {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent-primary);
+    margin-top: 2px;
+}
+
+/* 환불 요청 버튼 */
+.btn-request-refund {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-request-refund:hover {
+    border-color: rgb(251, 191, 36);
+    color: rgb(251, 191, 36);
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.btn-request-refund:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ==========================================
+   환불 요청 모달
+   ========================================== */
+.refund-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    animation: fadeIn 0.2s ease;
+}
+
+.refund-modal-overlay.hidden {
+    display: none;
+}
+
+.refund-modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.refund-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.refund-modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.refund-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.refund-modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* 결제 정보 요약 */
+.refund-payment-summary {
+    margin: 18px 24px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.refund-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+.refund-summary-label {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.refund-summary-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.refund-order-id {
+    font-family: monospace;
+    font-size: 0.78rem;
+    word-break: break-all;
+    text-align: right;
+}
+
+/* 안내 문구 */
+.refund-notice {
+    margin: 16px 24px 0;
+    padding: 14px 16px;
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.refund-notice p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.refund-notice strong {
+    color: rgb(251, 191, 36);
+}
+
+/* 환불 사유 폼 */
+.refund-form {
+    margin: 16px 24px 0;
+}
+
+.refund-label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.refund-required {
+    color: rgb(248, 113, 113);
+    margin-left: 2px;
+}
+
+.refund-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-input, rgba(255,255,255,0.05));
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    line-height: 1.55;
+    resize: vertical;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.refund-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.refund-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.refund-char-count {
+    margin: 6px 0 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* 결과 메시지 박스 */
+.refund-result-box {
+    margin: 16px 24px 0;
+    padding: 14px 18px;
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.refund-result-box.hidden { display: none; }
+
+.refund-result-box.result-success {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(52, 211, 153, 0.3);
+}
+
+.refund-result-box.result-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.refund-result-box.result-info {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(129, 140, 248, 0.3);
+}
+
+.refund-result-box.result-error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(252, 165, 165, 0.3);
+}
+
+.refund-result-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+.refund-result-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.refund-result-text strong {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.refund-result-text p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* 모달 액션 버튼 */
+.refund-modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 20px 24px 24px;
+    justify-content: flex-end;
+}
+
+.refund-btn-cancel {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refund-btn-cancel:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.refund-btn-submit {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, rgb(245, 158, 11), rgb(234, 88, 12));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.refund-btn-submit:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.refund-btn-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+

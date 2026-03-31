@@ -62,6 +62,27 @@ const DOM = {
     creditSuccessBanner: document.getElementById('creditSuccessBanner') as HTMLElement,
     btnCloseBanner: document.getElementById('btnCloseBanner') as HTMLButtonElement,
 
+    // Billing & Refund
+    paymentHistoryList: document.getElementById('paymentHistoryList') as HTMLElement,
+    billingLoading: document.getElementById('billingLoading') as HTMLElement,
+    billingEmptyState: document.getElementById('billingEmptyState') as HTMLElement,
+    refundModal: document.getElementById('refundModal') as HTMLElement,
+    btnRefundModalClose: document.getElementById('btnRefundModalClose') as HTMLButtonElement,
+    btnRefundCancel: document.getElementById('btnRefundCancel') as HTMLButtonElement,
+    btnRefundSubmit: document.getElementById('btnRefundSubmit') as HTMLButtonElement,
+    refundProductName: document.getElementById('refundProductName') as HTMLElement,
+    refundAmount: document.getElementById('refundAmount') as HTMLElement,
+    refundOrderId: document.getElementById('refundOrderId') as HTMLElement,
+    refundPaidAt: document.getElementById('refundPaidAt') as HTMLElement,
+    refundReason: document.getElementById('refundReason') as HTMLTextAreaElement,
+    refundReasonLength: document.getElementById('refundReasonLength') as HTMLElement,
+    refundResultBox: document.getElementById('refundResultBox') as HTMLElement,
+    refundResultIcon: document.getElementById('refundResultIcon') as HTMLElement,
+    refundResultTitle: document.getElementById('refundResultTitle') as HTMLElement,
+    refundResultDesc: document.getElementById('refundResultDesc') as HTMLElement,
+    refundForm: document.getElementById('refundForm') as HTMLElement,
+    refundModalActions: document.getElementById('refundModalActions') as HTMLElement,
+
     // All Reports list
     allReportsList: document.getElementById('allReportsList') as HTMLElement,
     emptyAllState: document.getElementById('emptyAllState') as HTMLElement,
@@ -575,6 +596,11 @@ function switchView(viewId: string) {
         showLoading();
         fetchAllReports().finally(() => hideLoading());
     }
+
+    // 결제 내역 탭 진입 시 데이터 로드
+    if (viewId === 'billing') {
+        loadPaymentHistory();
+    }
 }
 
 function setupEventListeners() {
@@ -654,3 +680,318 @@ function showError(msg: string) {
 
 // Start
 document.addEventListener('DOMContentLoaded', initMypage);
+
+// ==========================================
+// 11. 결제 내역 및 환불 요청
+// ==========================================
+
+interface PaymentRecord {
+    id: string;
+    order_id: string;
+    amount: number;
+    status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refund_requested' | 'refunded';
+    paid_at: string | null;
+    created_at: string;
+    credit_products?: { name: string; total_credits: number };
+}
+
+let activeRefundPayment: PaymentRecord | null = null;
+
+async function loadPaymentHistory() {
+    if (!state.user || !DOM.paymentHistoryList) return;
+
+    DOM.billingLoading.classList.remove('hidden');
+    DOM.paymentHistoryList.innerHTML = '';
+    DOM.billingEmptyState.classList.add('hidden');
+
+    try {
+        const { data, error } = await supabase
+            .from('payments')
+            .select('*, credit_products(name, total_credits)')
+            .eq('user_id', state.user.id)
+            .in('status', ['paid', 'cancelled', 'refund_requested', 'refunded'])
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        DOM.billingLoading.classList.add('hidden');
+
+        if (error) {
+            console.error('[loadPaymentHistory]', error);
+            DOM.paymentHistoryList.innerHTML =
+                '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>';
+            return;
+        }
+
+        const payments = (data ?? []) as PaymentRecord[];
+
+        if (payments.length === 0) {
+            DOM.billingEmptyState.classList.remove('hidden');
+            return;
+        }
+
+        renderPaymentHistory(payments);
+        setupRefundModalListeners();
+    } catch (err) {
+        console.error('[loadPaymentHistory]', err);
+        DOM.billingLoading.classList.add('hidden');
+        DOM.paymentHistoryList.innerHTML =
+            '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다.</p>';
+    }
+}
+
+function getStatusBadge(status: PaymentRecord['status']): string {
+    const map: Record<string, [string, string]> = {
+        paid:             ['badge-paid',             '\u25cf 결제 완료'],
+        cancelled:        ['badge-cancelled',         '\u25cf 취소됨'],
+        refund_requested: ['badge-refund-requested',  '\u25b2 환불 요청됨'],
+        refunded:         ['badge-refunded',          '\u25c6 환불 완료'],
+        failed:           ['badge-cancelled',         '\u25cf 결제 실패'],
+        pending:          ['badge-cancelled',         '\u2219 처리 중'],
+    };
+    const [cls, label] = map[status] ?? ['badge-cancelled', status];
+    return `<span class="payment-status-badge ${cls}">${label}</span>`;
+}
+
+function renderPaymentHistory(payments: PaymentRecord[]) {
+    if (!DOM.paymentHistoryList) return;
+    DOM.paymentHistoryList.innerHTML = '';
+
+    payments.forEach(payment => {
+        const productName = payment.credit_products?.name ?? '상품';
+        const totalCredits = payment.credit_products?.total_credits;
+        const paidDate = payment.paid_at
+            ? new Date(payment.paid_at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
+            : new Date(payment.created_at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
+
+        const refundBtnHtml = payment.status === 'paid'
+            ? `<button class="btn-request-refund" data-payment-id="${payment.id}">\u21a9 환불 요청</button>`
+            : payment.status === 'refund_requested'
+            ? `<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">\u23f3 운영팀 검토 중</span>`
+            : payment.status === 'refunded'
+            ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">\u2714 환불 완료</span>`
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'payment-history-card';
+        card.dataset.paymentId = payment.id;
+        card.innerHTML = `
+            <div class="payment-card-body">
+                <div class="payment-card-top">
+                    <span class="payment-card-name">${productName}</span>
+                    ${getStatusBadge(payment.status)}
+                </div>
+                <div class="payment-card-meta">
+                    <span>\ud83d\udcc5 ${paidDate}</span>
+                    ${totalCredits ? `<span>\ud83d\udcca ${totalCredits}회 크레딧</span>` : ''}
+                </div>
+                <p class="payment-card-order-id">주문번호: ${payment.order_id}</p>
+                ${refundBtnHtml}
+            </div>
+            <div class="payment-card-amount">
+                ${payment.amount.toLocaleString('ko-KR')}원
+                ${totalCredits ? `<span class="amount-credits">${totalCredits}회 충전</span>` : ''}
+            </div>
+        `;
+
+        const refundBtn = card.querySelector('.btn-request-refund') as HTMLButtonElement | null;
+        if (refundBtn) {
+            refundBtn.addEventListener('click', () => openRefundModal(payment));
+        }
+
+        DOM.paymentHistoryList.appendChild(card);
+    });
+}
+
+// ==========================================
+// 12. 환불 모달
+// ==========================================
+
+function openRefundModal(payment: PaymentRecord) {
+    activeRefundPayment = payment;
+
+    const productName = payment.credit_products?.name ?? '상품';
+    const paidDate = payment.paid_at
+        ? new Date(payment.paid_at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
+        : '\u2014';
+
+    DOM.refundProductName.textContent = productName;
+    DOM.refundAmount.textContent = `${payment.amount.toLocaleString('ko-KR')}원`;
+    DOM.refundOrderId.textContent = payment.order_id;
+    DOM.refundPaidAt.textContent = paidDate;
+
+    DOM.refundReason.value = '';
+    DOM.refundReasonLength.textContent = '0';
+    DOM.refundResultBox.className = 'refund-result-box hidden';
+    DOM.refundForm.style.display = 'block';
+    DOM.refundModalActions.style.display = 'flex';
+    DOM.btnRefundSubmit.disabled = false;
+    DOM.btnRefundSubmit.textContent = '환불 요청 제출';
+    DOM.btnRefundCancel.textContent = '취소';
+
+    DOM.refundModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => DOM.refundReason.focus(), 100);
+}
+
+function closeRefundModal() {
+    DOM.refundModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    activeRefundPayment = null;
+}
+
+async function submitRefundRequest() {
+    if (!activeRefundPayment) return;
+
+    const reason = DOM.refundReason.value.trim();
+    if (!reason) {
+        DOM.refundReason.focus();
+        DOM.refundReason.style.borderColor = 'rgb(248, 113, 113)';
+        setTimeout(() => { DOM.refundReason.style.borderColor = ''; }, 2000);
+        return;
+    }
+
+    DOM.btnRefundSubmit.disabled = true;
+    DOM.btnRefundSubmit.textContent = '요청 제출 중...';
+
+    try {
+        const {
+            data: { session },
+            error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+            throw new Error(`세션 확인 실패: ${sessionError.message}`);
+        }
+
+        if (!session?.access_token) {
+            throw new Error('로그인 세션이 없어 환불 요청을 보낼 수 없습니다. 다시 로그인해주세요.');
+        }
+
+        supabase.functions.setAuth(session.access_token);
+
+        const { data, error } = await supabase.functions.invoke('request-refund-review', {
+            body: {
+                orderId: activeRefundPayment.order_id,
+                cancelReason: reason,
+            },
+        });
+
+        const responseData = data as any;
+        const responseError = error as any;
+
+        const derivedErrorMessage =
+            responseData?.error ||
+            responseError?.message ||
+            '환불 요청 처리 중 오류가 발생했습니다.';
+
+        // 중복 환불 요청 처리
+        if (derivedErrorMessage.includes('refund request already exists')) {
+            showRefundResult('duplicate');
+            updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+            return;
+        }
+
+        if (error || !responseData?.success) {
+            throw new Error(derivedErrorMessage);
+        }
+
+        const autoRefundEligible = Boolean(responseData?.data?.autoRefundEligible);
+
+        if (autoRefundEligible) {
+            showRefundResult('auto_refund');
+        } else {
+            showRefundResult('review_needed');
+        }
+
+        // 현재 단계에서는 refund_requests 테이블만 생성되고
+        // payments.status 자체는 아직 바뀌지 않으므로,
+        // 프론트에서 일단 낙관적으로 상태 배지만 변경해둔다.
+        updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+
+    } catch (err) {
+        console.error('[submitRefundRequest]', err);
+        showRefundResult(
+            'error',
+            err instanceof Error ? err.message : '오류가 발생했습니다.'
+        );
+    } finally {
+        DOM.btnRefundSubmit.disabled = false;
+        DOM.btnRefundSubmit.textContent = '환불 요청 제출';
+    }
+}
+
+type RefundResultType = 'auto_refund' | 'review_needed' | 'duplicate' | 'error';
+
+function showRefundResult(type: RefundResultType, errMsg?: string) {
+    const configs: Record<RefundResultType, { icon: string; title: string; desc: string; cls: string }> = {
+        auto_refund: {
+            icon: '\u2705',
+            title: '환불 요청이 접수되었습니다',
+            desc: '분석을 사용하지 않은 결제 건으로 확인되었습니다. 원래 결제 수단으로 영업일 1~5일 내 환불 처리됩니다.',
+            cls: 'result-success',
+        },
+        review_needed: {
+            icon: '\ud83d\udccb',
+            title: '환불 요청이 접수되었습니다',
+            desc: '이미 사용한 크레딧이 있어 운영팀 검토 후 처리됩니다. 영업일 기준 1~3일 내 이메일로 안내드립니다.',
+            cls: 'result-warning',
+        },
+        duplicate: {
+            icon: '\u26a0\ufe0f',
+            title: '이미 요청된 환불 건입니다',
+            desc: '해당 결제 건에 이미 환불 요청이 접수되어 있습니다. 문의: contact@zaribogo.com',
+            cls: 'result-info',
+        },
+        error: {
+            icon: '\u274c',
+            title: '요청에 실패했습니다',
+            desc: errMsg ?? '잠시 후 다시 시도하거나 contact@zaribogo.com으로 문의해주세요.',
+            cls: 'result-error',
+        },
+    };
+
+    const cfg = configs[type];
+    DOM.refundResultIcon.textContent = cfg.icon;
+    DOM.refundResultTitle.textContent = cfg.title;
+    DOM.refundResultDesc.textContent = cfg.desc;
+    DOM.refundResultBox.className = `refund-result-box ${cfg.cls}`;
+
+    DOM.refundForm.style.display = 'none';
+    DOM.btnRefundSubmit.style.display = 'none';
+    DOM.btnRefundCancel.textContent = '닫기';
+}
+
+function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['status']) {
+    const card = DOM.paymentHistoryList?.querySelector(`[data-payment-id="${paymentId}"]`);
+    if (!card) return;
+    const badgeEl = card.querySelector('.payment-status-badge');
+    if (badgeEl) badgeEl.outerHTML = getStatusBadge(newStatus);
+    const refundBtn = card.querySelector('.btn-request-refund');
+    if (refundBtn) {
+        refundBtn.outerHTML = '<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">\u23f3 운영팀 검토 중</span>';
+    }
+}
+
+let refundListenersAttached = false;
+function setupRefundModalListeners() {
+    if (refundListenersAttached) return;
+    refundListenersAttached = true;
+
+    DOM.btnRefundModalClose?.addEventListener('click', closeRefundModal);
+    DOM.btnRefundCancel?.addEventListener('click', closeRefundModal);
+    DOM.btnRefundSubmit?.addEventListener('click', submitRefundRequest);
+
+    DOM.refundReason?.addEventListener('input', () => {
+        DOM.refundReasonLength.textContent = String(DOM.refundReason.value.length);
+    });
+
+    DOM.refundModal?.addEventListener('click', (e) => {
+        if (e.target === DOM.refundModal) closeRefundModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !DOM.refundModal?.classList.contains('hidden')) {
+            closeRefundModal();
+        }
+    });
+}

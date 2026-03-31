@@ -27,6 +27,9 @@
                 <a href="#reports" class="nav-link" data-target="reports">
                     <span class="nav-icon">📁</span> 내 분석 리스트
                 </a>
+                <a href="#billing" class="nav-link" data-target="billing">
+                    <span class="nav-icon">💳</span> 결제 내역
+                </a>
                 <a href="#profile" class="nav-link" data-target="profile">
                     <span class="nav-icon">👤</span> 프로필 설정
                 </a>
@@ -140,6 +143,39 @@
                 </div>
             </section>
 
+            <!-- ================================================
+                 결제 내역 뷰
+                 ================================================ -->
+            <section id="view-billing" class="mypage-view hidden">
+                <div class="mypage-header">
+                    <h2>결제 내역</h2>
+                    <p class="text-muted">결제 건을 확인하고 환불을 요청할 수 있습니다.</p>
+                </div>
+
+                <!-- 결제 내역 로딩 상태 -->
+                <div id="billingLoading" class="billing-loading hidden">
+                    <div class="spinner"></div>
+                    <p>결제 내역을 불러오는 중입니다...</p>
+                </div>
+
+                <!-- 결제 내역 목록 -->
+                <div id="paymentHistoryList" class="payment-history-list">
+                    <!-- JS로 동적 렌더링 -->
+                </div>
+
+                <!-- 결제 내역 없음 -->
+                <div id="billingEmptyState" class="empty-state hidden">
+                    <div class="empty-icon">🧾</div>
+                    <p>아직 결제 내역이 없습니다.</p>
+                    <p class="text-muted" style="font-size:0.85rem;margin-top:4px">크레딧을 충전하면 여기서 결제 내역을 확인할 수 있어요.</p>
+                </div>
+
+                <p class="billing-notice">💡 환불 관련 문의는 <a href="mailto:contact@zaribogo.com">contact@zaribogo.com</a>으로 연락해주세요.</p>
+            </section>
+
+            <!-- ================================================
+                 프로필 설정 뷰
+                 ================================================ -->
             <section id="view-profile" class="mypage-view hidden">
                 <div class="mypage-header">
                     <h2>프로필 설정</h2>
@@ -177,6 +213,73 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- ================================================
+         환불 요청 모달
+         ================================================ -->
+    <div id="refundModal" class="refund-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="refundModalTitle">
+        <div class="refund-modal">
+            <!-- 헤더 -->
+            <div class="refund-modal-header">
+                <h3 id="refundModalTitle">환불 요청</h3>
+                <button class="refund-modal-close" id="btnRefundModalClose" aria-label="닫기">✕</button>
+            </div>
+
+            <!-- 결제 정보 요약 -->
+            <div class="refund-payment-summary" id="refundPaymentSummary">
+                <div class="refund-summary-row">
+                    <span class="refund-summary-label">상품명</span>
+                    <span class="refund-summary-value" id="refundProductName">—</span>
+                </div>
+                <div class="refund-summary-row">
+                    <span class="refund-summary-label">결제금액</span>
+                    <span class="refund-summary-value" id="refundAmount">—</span>
+                </div>
+                <div class="refund-summary-row">
+                    <span class="refund-summary-label">주문번호</span>
+                    <span class="refund-summary-value refund-order-id" id="refundOrderId">—</span>
+                </div>
+                <div class="refund-summary-row">
+                    <span class="refund-summary-label">결제일시</span>
+                    <span class="refund-summary-value" id="refundPaidAt">—</span>
+                </div>
+            </div>
+
+            <!-- 안내 문구 -->
+            <div class="refund-notice">
+                <p>📌 분석을 아직 사용하지 않은 결제 건은 <strong>자동 환불 검토 대상</strong>이 될 수 있습니다.</p>
+                <p>📋 이미 사용한 결제 건은 <strong>운영팀 검토 후</strong> 처리됩니다. (영업일 기준 1~3일)</p>
+            </div>
+
+            <!-- 환불 사유 입력 -->
+            <div class="refund-form" id="refundForm">
+                <label for="refundReason" class="refund-label">환불 사유 <span class="refund-required">*</span></label>
+                <textarea
+                    id="refundReason"
+                    class="refund-textarea"
+                    placeholder="환불을 요청하시는 이유를 간단히 입력해주세요. (예: 서비스 미사용, 중복 결제 등)"
+                    rows="4"
+                    maxlength="500"
+                ></textarea>
+                <p class="refund-char-count"><span id="refundReasonLength">0</span> / 500</p>
+            </div>
+
+            <!-- 결과 메시지 (제출 후 표시) -->
+            <div id="refundResultBox" class="refund-result-box hidden">
+                <span class="refund-result-icon" id="refundResultIcon"></span>
+                <div class="refund-result-text">
+                    <strong id="refundResultTitle"></strong>
+                    <p id="refundResultDesc"></p>
+                </div>
+            </div>
+
+            <!-- 액션 버튼 -->
+            <div class="refund-modal-actions" id="refundModalActions">
+                <button class="refund-btn-cancel" id="btnRefundCancel">취소</button>
+                <button class="refund-btn-submit" id="btnRefundSubmit">환불 요청 제출</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="./src/mypage.ts"></script>
