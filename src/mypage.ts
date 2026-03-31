@@ -811,7 +811,8 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
             : payment.status === 'refund_requested'
                 ? `<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>`
                 : payment.status === 'refunded'
-    ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료 (카드사 반영 대기 가능)</span>`
+                    ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료 (카드사 반영 대기 가능)</span>`
+                    : '';
 
         const card = document.createElement('div');
         card.className = 'payment-history-card';
@@ -949,6 +950,7 @@ async function submitRefundRequest() {
         ) {
             showRefundResult('duplicate');
             updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+            await loadPaymentHistory();
             return;
         }
 
@@ -962,17 +964,20 @@ async function submitRefundRequest() {
         if (autoRefundCompleted) {
             showRefundResult('auto_refund_completed');
             updatePaymentCardStatus(activeRefundPayment.id, 'refunded');
+            await loadPaymentHistory();
             return;
         }
 
         if (autoRefundEligible) {
             showRefundResult('auto_refund_pending');
             updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+            await loadPaymentHistory();
             return;
         }
 
         showRefundResult('review_needed');
         updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+        await loadPaymentHistory();
 
     } catch (err) {
         console.error('[submitRefundRequest]', err);
@@ -1052,7 +1057,7 @@ function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['st
 
     if (newStatus === 'refunded') {
         refundBtn.outerHTML =
-            '<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료</span>';
+            '<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료 (카드사 반영 대기 가능)</span>';
         return;
     }
 
