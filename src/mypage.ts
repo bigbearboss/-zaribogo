@@ -579,10 +579,16 @@ function checkCreditedParam() {
 function switchView(viewId: string) {
     state.currentView = viewId as any;
 
-    DOM.views.forEach(view => view.classList.remove('active'));
+    DOM.views.forEach(view => {
+    view.classList.remove('active');
+    view.classList.add('hidden');
+});
 
-    const target = document.getElementById(`view-${viewId}`);
-    if (target) target.classList.add('active');
+const target = document.getElementById(`view-${viewId}`);
+if (target) {
+    target.classList.remove('hidden');
+    target.classList.add('active');
+}
 
     DOM.navLinks.forEach(link => {
         if (link.getAttribute('data-target') === viewId) {
