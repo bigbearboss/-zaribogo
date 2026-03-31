@@ -7,6 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('[Supabase] Missing environment variables. Auth and Cloud History will be disabled.');
 }
 
+
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
     supabaseAnonKey || 'placeholder'
