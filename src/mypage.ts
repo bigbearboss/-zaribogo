@@ -1,4 +1,4 @@
-import { supabase } from './services/supabase';
+import { supabase, supabaseFunctions } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 
