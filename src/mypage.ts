@@ -911,15 +911,14 @@ async function submitRefundRequest() {
             throw new Error('로그인 세션이 없어 환불 요청을 보낼 수 없습니다. 다시 로그인해주세요.');
         }
 
-        supabase.functions.setAuth(session.access_token);
+       supabaseFunctions.functions.setAuth(session.access_token);
 
-        const { data, error } = await supabase.functions.invoke('request-refund-review', {
-            body: {
-                orderId: activeRefundPayment.order_id,
-                cancelReason: reason,
-            },
-        });
-
+const { data, error } = await supabaseFunctions.functions.invoke('request-refund-review', {
+    body: {
+        orderId: activeRefundPayment.order_id,
+        cancelReason: reason,
+    },
+});
         const responseData = data as any;
         const responseError = error as any;
 
