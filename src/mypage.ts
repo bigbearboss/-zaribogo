@@ -1,4 +1,4 @@
-import { supabase, supabaseFunctions } from './services/supabase';
+import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 
@@ -580,15 +580,15 @@ function switchView(viewId: string) {
     state.currentView = viewId as any;
 
     DOM.views.forEach(view => {
-    view.classList.remove('active');
-    view.classList.add('hidden');
-});
+        view.classList.remove('active');
+        view.classList.add('hidden');
+    });
 
-const target = document.getElementById(`view-${viewId}`);
-if (target) {
-    target.classList.remove('hidden');
-    target.classList.add('active');
-}
+    const target = document.getElementById(`view-${viewId}`);
+    if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
+    }
 
     DOM.navLinks.forEach(link => {
         if (link.getAttribute('data-target') === viewId) {
@@ -603,7 +603,6 @@ if (target) {
         fetchAllReports().finally(() => hideLoading());
     }
 
-    // 결제 내역 탭 진입 시 데이터 로드
     if (viewId === 'billing') {
         loadPaymentHistory();
     }
@@ -785,12 +784,12 @@ async function loadPaymentHistory() {
 
 function getStatusBadge(status: PaymentRecord['status']): string {
     const map: Record<string, [string, string]> = {
-        paid:             ['badge-paid',             '\u25cf 결제 완료'],
-        cancelled:        ['badge-cancelled',         '\u25cf 취소됨'],
-        refund_requested: ['badge-refund-requested',  '\u25b2 환불 요청됨'],
-        refunded:         ['badge-refunded',          '\u25c6 환불 완료'],
-        failed:           ['badge-cancelled',         '\u25cf 결제 실패'],
-        pending:          ['badge-cancelled',         '\u2219 처리 중'],
+        paid: ['badge-paid', '● 결제 완료'],
+        cancelled: ['badge-cancelled', '● 취소됨'],
+        refund_requested: ['badge-refund-requested', '▲ 환불 요청됨'],
+        refunded: ['badge-refunded', '◆ 환불 완료'],
+        failed: ['badge-cancelled', '● 결제 실패'],
+        pending: ['badge-cancelled', '∙ 처리 중'],
     };
     const [cls, label] = map[status] ?? ['badge-cancelled', status];
     return `<span class="payment-status-badge ${cls}">${label}</span>`;
@@ -808,12 +807,12 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
             : new Date(payment.created_at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
 
         const refundBtnHtml = payment.status === 'paid'
-            ? `<button class="btn-request-refund" data-payment-id="${payment.id}">\u21a9 환불 요청</button>`
+            ? `<button class="btn-request-refund" data-payment-id="${payment.id}">↩ 환불 요청</button>`
             : payment.status === 'refund_requested'
-            ? `<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">\u23f3 운영팀 검토 중</span>`
-            : payment.status === 'refunded'
-            ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">\u2714 환불 완료</span>`
-            : '';
+                ? `<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>`
+                : payment.status === 'refunded'
+                    ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료</span>`
+                    : '';
 
         const card = document.createElement('div');
         card.className = 'payment-history-card';
@@ -825,8 +824,8 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
                     ${getStatusBadge(payment.status)}
                 </div>
                 <div class="payment-card-meta">
-                    <span>\ud83d\udcc5 ${paidDate}</span>
-                    ${totalCredits ? `<span>\ud83d\udcca ${totalCredits}회 크레딧</span>` : ''}
+                    <span>📅 ${paidDate}</span>
+                    ${totalCredits ? `<span>📊 ${totalCredits}회 크레딧</span>` : ''}
                 </div>
                 <p class="payment-card-order-id">주문번호: ${payment.order_id}</p>
                 ${refundBtnHtml}
@@ -856,7 +855,7 @@ function openRefundModal(payment: PaymentRecord) {
     const productName = payment.credit_products?.name ?? '상품';
     const paidDate = payment.paid_at
         ? new Date(payment.paid_at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' })
-        : '\u2014';
+        : '—';
 
     DOM.refundProductName.textContent = productName;
     DOM.refundAmount.textContent = `${payment.amount.toLocaleString('ko-KR')}원`;
@@ -869,6 +868,7 @@ function openRefundModal(payment: PaymentRecord) {
     DOM.refundForm.style.display = 'block';
     DOM.refundModalActions.style.display = 'flex';
     DOM.btnRefundSubmit.disabled = false;
+    DOM.btnRefundSubmit.style.display = '';
     DOM.btnRefundSubmit.textContent = '환불 요청 제출';
     DOM.btnRefundCancel.textContent = '취소';
 
@@ -911,30 +911,56 @@ async function submitRefundRequest() {
             throw new Error('로그인 세션이 없어 환불 요청을 보낼 수 없습니다. 다시 로그인해주세요.');
         }
 
-       supabaseFunctions.functions.setAuth(session.access_token);
+        const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/request-refund-review`;
+        const functionApiKey =
+            import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY;
 
-const { data, error } = await supabaseFunctions.functions.invoke('request-refund-review', {
-    body: {
-        orderId: activeRefundPayment.order_id,
-        cancelReason: reason,
-    },
-});
-        const responseData = data as any;
-        const responseError = error as any;
+        if (!functionApiKey) {
+            throw new Error('Supabase Function 호출용 API 키가 없습니다. 환경변수를 확인해주세요.');
+        }
+
+        console.log('[refund] functionUrl:', functionUrl);
+        console.log('[refund] has access token:', Boolean(session.access_token));
+        console.log('[refund] orderId:', activeRefundPayment.order_id);
+
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': functionApiKey,
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+                orderId: activeRefundPayment.order_id,
+                cancelReason: reason,
+            }),
+        });
+
+        let responseData: any = null;
+        try {
+            responseData = await response.json();
+        } catch {
+            responseData = null;
+        }
+
+        console.log('[refund] response status:', response.status);
+        console.log('[refund] response body:', responseData);
 
         const derivedErrorMessage =
             responseData?.error ||
-            responseError?.message ||
-            '환불 요청 처리 중 오류가 발생했습니다.';
+            responseData?.detail ||
+            `환불 요청 처리 중 오류가 발생했습니다. (HTTP ${response.status})`;
 
-        // 중복 환불 요청 처리
-        if (derivedErrorMessage.includes('refund request already exists')) {
+        if (
+            typeof responseData?.error === 'string' &&
+            responseData.error.toLowerCase().includes('already exists')
+        ) {
             showRefundResult('duplicate');
             updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
             return;
         }
 
-        if (error || !responseData?.success) {
+        if (!response.ok || !responseData?.success) {
             throw new Error(derivedErrorMessage);
         }
 
@@ -946,9 +972,6 @@ const { data, error } = await supabaseFunctions.functions.invoke('request-refund
             showRefundResult('review_needed');
         }
 
-        // 현재 단계에서는 refund_requests 테이블만 생성되고
-        // payments.status 자체는 아직 바뀌지 않으므로,
-        // 프론트에서 일단 낙관적으로 상태 배지만 변경해둔다.
         updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
 
     } catch (err) {
@@ -968,25 +991,25 @@ type RefundResultType = 'auto_refund' | 'review_needed' | 'duplicate' | 'error';
 function showRefundResult(type: RefundResultType, errMsg?: string) {
     const configs: Record<RefundResultType, { icon: string; title: string; desc: string; cls: string }> = {
         auto_refund: {
-            icon: '\u2705',
+            icon: '✅',
             title: '환불 요청이 접수되었습니다',
             desc: '분석을 사용하지 않은 결제 건으로 확인되었습니다. 원래 결제 수단으로 영업일 1~5일 내 환불 처리됩니다.',
             cls: 'result-success',
         },
         review_needed: {
-            icon: '\ud83d\udccb',
+            icon: '📋',
             title: '환불 요청이 접수되었습니다',
             desc: '이미 사용한 크레딧이 있어 운영팀 검토 후 처리됩니다. 영업일 기준 1~3일 내 이메일로 안내드립니다.',
             cls: 'result-warning',
         },
         duplicate: {
-            icon: '\u26a0\ufe0f',
+            icon: '⚠️',
             title: '이미 요청된 환불 건입니다',
             desc: '해당 결제 건에 이미 환불 요청이 접수되어 있습니다. 문의: contact@zaribogo.com',
             cls: 'result-info',
         },
         error: {
-            icon: '\u274c',
+            icon: '❌',
             title: '요청에 실패했습니다',
             desc: errMsg ?? '잠시 후 다시 시도하거나 contact@zaribogo.com으로 문의해주세요.',
             cls: 'result-error',
@@ -1011,7 +1034,7 @@ function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['st
     if (badgeEl) badgeEl.outerHTML = getStatusBadge(newStatus);
     const refundBtn = card.querySelector('.btn-request-refund');
     if (refundBtn) {
-        refundBtn.outerHTML = '<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">\u23f3 운영팀 검토 중</span>';
+        refundBtn.outerHTML = '<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>';
     }
 }
 
