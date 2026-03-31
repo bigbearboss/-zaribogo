@@ -51,6 +51,42 @@ async function logPaymentEvent(params: {
   }
 }
 
+function buildTossBasicAuth(secretKey: string) {
+  return `Basic ${btoa(`${secretKey}:`)}`;
+}
+
+async function cancelTossPayment(params: {
+  secretKey: string;
+  paymentKey: string;
+  cancelReason: string;
+  idempotencyKey: string;
+}) {
+  const { secretKey, paymentKey, cancelReason, idempotencyKey } = params;
+
+  const response = await fetch(
+    `https://api.tosspayments.com/v1/payments/${paymentKey}/cancel`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: buildTossBasicAuth(secretKey),
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify({
+        cancelReason,
+      }),
+    }
+  );
+
+  const data = await response.json().catch(() => null);
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -69,12 +105,23 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const tossSecretKey = Deno.env.get("TOSS_SECRET_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return jsonResponse(
       {
         success: false,
-        error: "Missing required environment variables",
+        error: "Missing required Supabase environment variables",
+      },
+      500
+    );
+  }
+
+  if (!tossSecretKey) {
+    return jsonResponse(
+      {
+        success: false,
+        error: "Missing TOSS_SECRET_KEY",
       },
       500
     );
@@ -159,6 +206,8 @@ serve(async (req) => {
         400
       );
     }
+
+    const normalizedCancelReason = cancelReason.trim();
 
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
@@ -342,7 +391,7 @@ serve(async (req) => {
         request_status: requestStatus,
         refund_type: "full",
         refund_amount: payment.amount,
-        cancel_reason: cancelReason.trim(),
+        cancel_reason: normalizedCancelReason,
         admin_note: adminNote,
       })
       .select("*")
@@ -368,30 +417,179 @@ serve(async (req) => {
       );
     }
 
+    if (!autoRefundEligible) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "refund_review_manual_review_required",
+        source: "request_refund_review",
+        payload: {
+          refundRequestId: refundRequest.id,
+          analysisCountAfterPayment,
+          requestStatus,
+        },
+      });
+
+      return jsonResponse({
+        success: true,
+        message: "Refund request created and marked for manual review",
+        data: {
+          refundRequest,
+          autoRefundEligible,
+          autoRefundCompleted: false,
+          analysisCountAfterPayment,
+        },
+      });
+    }
+
+    if (!payment.pg_tid) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "refund_auto_cancel_missing_pg_tid",
+        source: "request_refund_review",
+        payload: {
+          refundRequestId: refundRequest.id,
+        },
+      });
+
+      return jsonResponse(
+        {
+          success: false,
+          error: "pg_tid(paymentKey) is missing",
+        },
+        500
+      );
+    }
+
     await logPaymentEvent({
       supabaseAdmin,
       paymentId: payment.id,
       orderId,
-      eventType: autoRefundEligible
-        ? "refund_review_auto_approved"
-        : "refund_review_manual_review_required",
+      eventType: "refund_auto_cancel_started",
       source: "request_refund_review",
       payload: {
         refundRequestId: refundRequest.id,
-        analysisCountAfterPayment,
-        requestStatus,
+        paymentKey: payment.pg_tid,
+      },
+    });
+
+    const cancelResult = await cancelTossPayment({
+      secretKey: tossSecretKey,
+      paymentKey: payment.pg_tid,
+      cancelReason: normalizedCancelReason,
+      idempotencyKey: `refund-${payment.id}-${refundRequest.id}`,
+    });
+
+    if (!cancelResult.ok) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "refund_auto_cancel_failed",
+        source: "request_refund_review",
+        payload: {
+          refundRequestId: refundRequest.id,
+          status: cancelResult.status,
+          response: cancelResult.data,
+        },
+      });
+
+      return jsonResponse(
+        {
+          success: false,
+          error: "Toss refund failed",
+          detail: cancelResult.data,
+        },
+        502
+      );
+    }
+
+    const { error: paymentUpdateError } = await supabaseAdmin
+      .from("payments")
+      .update({
+        status: "refunded",
+      })
+      .eq("id", payment.id);
+
+    if (paymentUpdateError) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "refund_auto_cancel_payment_update_failed",
+        source: "request_refund_review",
+        payload: {
+          refundRequestId: refundRequest.id,
+          error: paymentUpdateError.message,
+        },
+      });
+
+      return jsonResponse(
+        {
+          success: false,
+          error: "Toss refund succeeded but payment update failed",
+          detail: paymentUpdateError.message,
+        },
+        500
+      );
+    }
+
+    const { error: refundRequestUpdateError } = await supabaseAdmin
+      .from("refund_requests")
+      .update({
+        request_status: "completed",
+        admin_note: `${adminNote} / AUTO_REFUND_COMPLETED`,
+      })
+      .eq("id", refundRequest.id);
+
+    if (refundRequestUpdateError) {
+      await logPaymentEvent({
+        supabaseAdmin,
+        paymentId: payment.id,
+        orderId,
+        eventType: "refund_auto_cancel_refund_request_update_failed",
+        source: "request_refund_review",
+        payload: {
+          refundRequestId: refundRequest.id,
+          error: refundRequestUpdateError.message,
+        },
+      });
+
+      return jsonResponse(
+        {
+          success: false,
+          error: "Toss refund succeeded but refund request update failed",
+          detail: refundRequestUpdateError.message,
+        },
+        500
+      );
+    }
+
+    await logPaymentEvent({
+      supabaseAdmin,
+      paymentId: payment.id,
+      orderId,
+      eventType: "refund_auto_cancel_success",
+      source: "request_refund_review",
+      payload: {
+        refundRequestId: refundRequest.id,
+        status: cancelResult.status,
+        response: cancelResult.data,
       },
     });
 
     return jsonResponse({
       success: true,
-      message: autoRefundEligible
-        ? "Refund request created and marked as auto-eligible"
-        : "Refund request created and marked for manual review",
+      message: "자동 환불 완료",
       data: {
         refundRequest,
-        autoRefundEligible,
+        autoRefundEligible: true,
+        autoRefundCompleted: true,
         analysisCountAfterPayment,
+        tossCancel: cancelResult.data,
       },
     });
   } catch (error) {
