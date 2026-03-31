@@ -811,8 +811,7 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
             : payment.status === 'refund_requested'
                 ? `<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>`
                 : payment.status === 'refunded'
-                    ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료</span>`
-                    : '';
+    ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료 (카드사 반영 대기 가능)</span>`
 
         const card = document.createElement('div');
         card.className = 'payment-history-card';
@@ -919,10 +918,6 @@ async function submitRefundRequest() {
             throw new Error('Supabase Function 호출용 API 키가 없습니다. 환경변수를 확인해주세요.');
         }
 
-        console.log('[refund] functionUrl:', functionUrl);
-        console.log('[refund] has access token:', Boolean(session.access_token));
-        console.log('[refund] orderId:', activeRefundPayment.order_id);
-
         const response = await fetch(functionUrl, {
             method: 'POST',
             headers: {
@@ -943,9 +938,6 @@ async function submitRefundRequest() {
             responseData = null;
         }
 
-        console.log('[refund] response status:', response.status);
-        console.log('[refund] response body:', responseData);
-
         const derivedErrorMessage =
             responseData?.error ||
             responseData?.detail ||
@@ -965,13 +957,21 @@ async function submitRefundRequest() {
         }
 
         const autoRefundEligible = Boolean(responseData?.data?.autoRefundEligible);
+        const autoRefundCompleted = Boolean(responseData?.data?.autoRefundCompleted);
 
-        if (autoRefundEligible) {
-            showRefundResult('auto_refund');
-        } else {
-            showRefundResult('review_needed');
+        if (autoRefundCompleted) {
+            showRefundResult('auto_refund_completed');
+            updatePaymentCardStatus(activeRefundPayment.id, 'refunded');
+            return;
         }
 
+        if (autoRefundEligible) {
+            showRefundResult('auto_refund_pending');
+            updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
+            return;
+        }
+
+        showRefundResult('review_needed');
         updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
 
     } catch (err) {
@@ -986,26 +986,37 @@ async function submitRefundRequest() {
     }
 }
 
-type RefundResultType = 'auto_refund' | 'review_needed' | 'duplicate' | 'error';
+type RefundResultType =
+    | 'auto_refund_completed'
+    | 'auto_refund_pending'
+    | 'review_needed'
+    | 'duplicate'
+    | 'error';
 
 function showRefundResult(type: RefundResultType, errMsg?: string) {
     const configs: Record<RefundResultType, { icon: string; title: string; desc: string; cls: string }> = {
-        auto_refund: {
+        auto_refund_completed: {
             icon: '✅',
-            title: '환불 요청이 접수되었습니다',
-            desc: '분석을 사용하지 않은 결제 건으로 확인되었습니다. 원래 결제 수단으로 영업일 1~5일 내 환불 처리됩니다.',
+            title: '자동 환불이 완료되었습니다',
+            desc: '분석 이력이 없는 결제 건으로 확인되어 자동 승인 및 환불 완료 처리되었습니다. 카드사 반영 시점에 따라 실제 입금 반영까지 영업일 1~5일 정도 소요될 수 있습니다.',
+            cls: 'result-success',
+        },
+        auto_refund_pending: {
+            icon: '🟢',
+            title: '자동 환불이 승인되었습니다',
+            desc: '분석 이력이 없는 결제 건으로 확인되었습니다. 환불이 정상 접수되었으며 카드사 반영까지는 영업일 기준 1~5일 정도 소요될 수 있습니다.',
             cls: 'result-success',
         },
         review_needed: {
             icon: '📋',
             title: '환불 요청이 접수되었습니다',
-            desc: '이미 사용한 크레딧이 있어 운영팀 검토 후 처리됩니다. 영업일 기준 1~3일 내 이메일로 안내드립니다.',
+            desc: '이미 사용한 크레딧 또는 검토가 필요한 결제 건으로 확인되어 운영팀 검토 후 처리됩니다. 영업일 기준 1~3일 내 이메일로 안내드립니다.',
             cls: 'result-warning',
         },
         duplicate: {
             icon: '⚠️',
             title: '이미 요청된 환불 건입니다',
-            desc: '해당 결제 건에 이미 환불 요청이 접수되어 있습니다. 문의: contact@zaribogo.com',
+            desc: '해당 결제 건에는 이미 환불 요청이 접수되어 있습니다. 추가 문의는 contact@zaribogo.com으로 부탁드립니다.',
             cls: 'result-info',
         },
         error: {
@@ -1030,12 +1041,28 @@ function showRefundResult(type: RefundResultType, errMsg?: string) {
 function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['status']) {
     const card = DOM.paymentHistoryList?.querySelector(`[data-payment-id="${paymentId}"]`);
     if (!card) return;
+
     const badgeEl = card.querySelector('.payment-status-badge');
-    if (badgeEl) badgeEl.outerHTML = getStatusBadge(newStatus);
-    const refundBtn = card.querySelector('.btn-request-refund');
-    if (refundBtn) {
-        refundBtn.outerHTML = '<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>';
+    if (badgeEl) {
+        badgeEl.outerHTML = getStatusBadge(newStatus);
     }
+
+    const refundBtn = card.querySelector('.btn-request-refund');
+    if (!refundBtn) return;
+
+    if (newStatus === 'refunded') {
+        refundBtn.outerHTML =
+            '<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">✔ 환불 완료</span>';
+        return;
+    }
+
+    if (newStatus === 'refund_requested') {
+        refundBtn.outerHTML =
+            '<span style="font-size:0.8rem;color:rgb(251,191,36);margin-top:10px;display:inline-block">⏳ 운영팀 검토 중</span>';
+        return;
+    }
+
+    refundBtn.outerHTML = '';
 }
 
 let refundListenersAttached = false;
