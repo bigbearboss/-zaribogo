@@ -83,7 +83,7 @@
                 <div class="summary-card summary-card-success">
                     <span class="summary-icon">✅</span>
                     <div class="summary-body">
-                        <span class="summary-label">자동 환불 완료</span>
+                        <span class="summary-label">환불 완료</span>
                         <span class="summary-value" id="summaryAutoRefunded">—</span>
                     </div>
                 </div>
@@ -145,6 +145,10 @@
                     ↻ 새로고침
                 </button>
             </div>
+            
+            <p class="admin-tab-desc">
+                💡 검토 승인 후 실제 환불 완료 처리는 별도 프로세스로 진행됩니다.
+            </p>
 
             <!-- 필터 바 -->
             <div class="admin-filter-bar">
@@ -156,9 +160,9 @@
                 />
                 <div class="admin-status-filters" id="refundStatusFilters">
                     <button class="status-filter-btn active" data-status="">전체</button>
-                    <button class="status-filter-btn" data-status="pending">검토 대기</button>
-                    <button class="status-filter-btn" data-status="auto_approved">자동 승인</button>
-                    <button class="status-filter-btn" data-status="approved">승인됨</button>
+                    <button class="status-filter-btn" data-status="requested">검토 대기</button>
+                    <button class="status-filter-btn" data-status="approved">승인 대기</button>
+                    <button class="status-filter-btn" data-status="completed">환불 완료</button>
                     <button class="status-filter-btn" data-status="rejected">거절됨</button>
                 </div>
             </div>
@@ -173,7 +177,8 @@
                             <th>환불 사유</th>
                             <th>자동 환불</th>
                             <th>요청일시</th>
-                            <th>처리일시</th>
+                            <th>관리 메모</th>
+                            <th>처리</th>
                         </tr>
                     </thead>
                     <tbody id="refundsTableBody">

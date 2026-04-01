@@ -255,6 +255,14 @@
     color: var(--text-primary);
 }
 
+.admin-tab-desc {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: -8px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
 /* ── 버튼 ── */
 .admin-btn {
     display: inline-flex;
@@ -275,6 +283,24 @@
 .admin-btn-primary {
     background: rgb(99,102,241);
     color: #fff;
+}
+
+.admin-btn-error {
+    background: rgba(239, 68, 68, 0.9);
+    color: #fff;
+}
+.admin-btn-error:hover {
+    background: rgba(220, 38, 38, 1);
+}
+.admin-btn-error:disabled {
+    background: rgba(239, 68, 68, 0.5);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .admin-btn-ghost {
