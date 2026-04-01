@@ -696,12 +696,25 @@ interface PaymentRecord {
 }
 
 let activeRefundPayment: PaymentRecord | null = null;
+let isLoadingPaymentHistory = false;
+/** 환불 요청 성공 후 모달 닫힐 때 갱신 필요 여부 */
+let needsPaymentHistoryRefresh = false;
+
+/** skeleton 카드 3개를 DOM에 삽입해 로딩 중 체감을 개선 */
+function showBillingSkeletons() {
+    if (!DOM.paymentHistoryList) return;
+    DOM.paymentHistoryList.innerHTML = Array.from({ length: 3 })
+        .map(() => '<div class="payment-card-skeleton"></div>')
+        .join('');
+}
 
 async function loadPaymentHistory() {
-    if (!state.user || !DOM.paymentHistoryList) return;
+    // 중복 호출 방어
+    if (!state.user || !DOM.paymentHistoryList || isLoadingPaymentHistory) return;
+    isLoadingPaymentHistory = true;
 
     DOM.billingLoading.classList.remove('hidden');
-    DOM.paymentHistoryList.innerHTML = '';
+    showBillingSkeletons();
     DOM.billingEmptyState.classList.add('hidden');
 
     try {
@@ -714,11 +727,12 @@ async function loadPaymentHistory() {
             .limit(20);
 
         DOM.billingLoading.classList.add('hidden');
+        DOM.paymentHistoryList.innerHTML = '';
 
         if (error) {
             console.error('[loadPaymentHistory]', error);
             DOM.paymentHistoryList.innerHTML =
-                '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>';
+                '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
             return;
         }
 
@@ -736,6 +750,8 @@ async function loadPaymentHistory() {
         DOM.billingLoading.classList.add('hidden');
         DOM.paymentHistoryList.innerHTML =
             '<p style="color:var(--text-muted);font-size:0.85rem">결제 내역을 불러오지 못했습니다.</p>';
+    } finally {
+        isLoadingPaymentHistory = false;
     }
 }
 
@@ -771,6 +787,15 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
             ? `<span style="font-size:0.8rem;color:rgb(129,140,248);margin-top:10px;display:inline-block">\u2714 환불 완료</span>`
             : '';
 
+        const statusHintMap: Partial<Record<PaymentRecord['status'], string>> = {
+            paid:             '미사용 결제 건은 자동 환불 대상이 될 수 있습니다.',
+            refund_requested: '운영팀 검토 후 이메일로 안내드립니다.',
+            refunded:         '카드사 반영까지 영업일 1~5일 소요될 수 있습니다.',
+        };
+        const statusHint = statusHintMap[payment.status]
+            ? `<p class="payment-card-status-hint">${statusHintMap[payment.status]}</p>`
+            : '';
+
         const card = document.createElement('div');
         card.className = 'payment-history-card';
         card.dataset.paymentId = payment.id;
@@ -786,6 +811,7 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
                 </div>
                 <p class="payment-card-order-id">주문번호: ${payment.order_id}</p>
                 ${refundBtnHtml}
+                ${statusHint}
             </div>
             <div class="payment-card-amount">
                 ${payment.amount.toLocaleString('ko-KR')}원
@@ -837,6 +863,23 @@ function closeRefundModal() {
     DOM.refundModal.classList.add('hidden');
     document.body.style.overflow = '';
     activeRefundPayment = null;
+
+    // 환불 요청이 성공했으면 목록을 최신 상태로 다시 조회
+    if (needsPaymentHistoryRefresh) {
+        needsPaymentHistoryRefresh = false;
+        loadPaymentHistory();
+    }
+}
+
+/** 제출 중 UI 전체를 잠금/해제 */
+function setRefundSubmitLocked(locked: boolean) {
+    DOM.btnRefundSubmit.disabled = locked;
+    DOM.btnRefundModalClose.disabled = locked;
+    DOM.btnRefundCancel.disabled = locked;
+    DOM.refundReason.readOnly = locked;
+    // 오버레이 클릭으로 닫히지 않도록 pointer-events 제어
+    const inner = DOM.refundModal?.querySelector('.refund-modal') as HTMLElement | null;
+    if (inner) inner.style.pointerEvents = locked ? 'none' : '';
 }
 
 async function submitRefundRequest() {
@@ -850,7 +893,7 @@ async function submitRefundRequest() {
         return;
     }
 
-    DOM.btnRefundSubmit.disabled = true;
+    setRefundSubmitLocked(true);
     DOM.btnRefundSubmit.textContent = '요청 제출 중...';
 
     try {
@@ -903,11 +946,10 @@ async function submitRefundRequest() {
             showRefundResult('review_needed');
         }
 
-        // 현재 단계에서는 refund_requests 테이블만 생성되고
-        // payments.status 자체는 아직 바뀌지 않으므로,
-        // 프론트에서 일단 낙관적으로 상태 배지만 변경해둔다.
+        // refund_requests 테이블 생성 후 낙관적으로 배지 업데이트
+        // 모달이 닫히 때 목록을 재조회하도록 플래그 세팅
         updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
-
+        needsPaymentHistoryRefresh = true;
     } catch (err) {
         console.error('[submitRefundRequest]', err);
         showRefundResult(
@@ -915,7 +957,9 @@ async function submitRefundRequest() {
             err instanceof Error ? err.message : '오류가 발생했습니다.'
         );
     } finally {
-        DOM.btnRefundSubmit.disabled = false;
+        // 성공/실패 관계없이 UI 잠금 해제
+        // (showRefundResult가 팅 토글 순서를 담당하며, textContent만 복원)
+        setRefundSubmitLocked(false);
         DOM.btnRefundSubmit.textContent = '환불 요청 제출';
     }
 }
@@ -956,9 +1000,16 @@ function showRefundResult(type: RefundResultType, errMsg?: string) {
     DOM.refundResultDesc.textContent = cfg.desc;
     DOM.refundResultBox.className = `refund-result-box ${cfg.cls}`;
 
-    DOM.refundForm.style.display = 'none';
-    DOM.btnRefundSubmit.style.display = 'none';
-    DOM.btnRefundCancel.textContent = '닫기';
+    if (type === 'error') {
+        // 에러는 폼을 유지해서 사유 수정 후 재시도 허용
+        // 버튼 텍스트는 finally에서 복원되므로 여기서는 별도 처리 없음
+    } else {
+        // 성공(auto_refund, review_needed, duplicate) → 폼 숨기고 닫기만 허용
+        DOM.refundForm.style.display = 'none';
+        DOM.btnRefundSubmit.style.display = 'none';
+        DOM.btnRefundCancel.disabled = false;
+        DOM.btnRefundCancel.textContent = '닫기';
+    }
 }
 
 function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['status']) {

@@ -608,6 +608,16 @@
     animation: shimmer 1.4s infinite;
 }
 
+/* 결제 내역 목록 로딩 skeleton */
+.payment-card-skeleton {
+    height: 110px;
+    background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-hover) 50%, var(--bg-card) 75%);
+    background-size: 200% 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    animation: shimmer 1.4s infinite;
+}
+
 @keyframes shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -749,6 +759,14 @@
     color: var(--text-muted);
     margin-top: 6px;
     word-break: break-all;
+}
+
+.payment-card-status-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 8px;
+    line-height: 1.5;
 }
 
 .payment-card-amount {
