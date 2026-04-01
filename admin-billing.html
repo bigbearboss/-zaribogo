@@ -64,6 +64,38 @@
                 </button>
             </div>
 
+            <!-- 요약 카드 -->
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card">
+                    <span class="summary-icon">💳</span>
+                    <div class="summary-body">
+                        <span class="summary-label">오늘 결제</span>
+                        <span class="summary-value" id="summaryTodayPaid">—</span>
+                    </div>
+                </div>
+                <div class="summary-card summary-card-warning">
+                    <span class="summary-icon">⏳</span>
+                    <div class="summary-body">
+                        <span class="summary-label">환불 요청 대기</span>
+                        <span class="summary-value" id="summaryRefundPending">—</span>
+                    </div>
+                </div>
+                <div class="summary-card summary-card-success">
+                    <span class="summary-icon">✅</span>
+                    <div class="summary-body">
+                        <span class="summary-label">자동 환불 완료</span>
+                        <span class="summary-value" id="summaryAutoRefunded">—</span>
+                    </div>
+                </div>
+                <div class="summary-card summary-card-error">
+                    <span class="summary-icon">❌</span>
+                    <div class="summary-body">
+                        <span class="summary-label">결제 실패/취소</span>
+                        <span class="summary-value" id="summaryFailed">—</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- 필터 바 -->
             <div class="admin-filter-bar">
                 <input

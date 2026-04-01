@@ -127,6 +127,12 @@ const D = {
     drawerOrderId:      document.getElementById('drawerOrderId') as HTMLElement,
     eventTimeline:      document.getElementById('eventTimeline') as HTMLElement,
     eventTimelineEmpty: document.getElementById('eventTimelineEmpty') as HTMLElement,
+
+    // 요약 카드
+    summaryTodayPaid:    document.getElementById('summaryTodayPaid') as HTMLElement,
+    summaryRefundPending: document.getElementById('summaryRefundPending') as HTMLElement,
+    summaryAutoRefunded: document.getElementById('summaryAutoRefunded') as HTMLElement,
+    summaryFailed:       document.getElementById('summaryFailed') as HTMLElement,
 };
 
 // ============================================================
@@ -297,6 +303,7 @@ async function loadPayments() {
         }));
 
         renderPaymentsTable();
+        updateSummaryCards();
     } catch (err) {
         console.error('[loadPayments]', err);
         D.paymentsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:rgb(252,165,165)">데이터를 불러오지 못했습니다.</td></tr>';
@@ -352,6 +359,44 @@ function renderPaymentsTable() {
 
         D.paymentsTableBody.appendChild(tr);
     });
+}
+
+// ============================================================
+// 요약 카드 업데이트
+// ============================================================
+
+function updateSummaryCards() {
+    const payments = adminState.payments;
+
+    // 오늘 날짜 기준 (로컬 00:00:00)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    // ── 오늘 결제 건수: paid이고 paid_at이 오늘인 것
+    const todayPaid = payments.filter(p => {
+        if (p.status !== 'paid' || !p.paid_at) return false;
+        return new Date(p.paid_at) >= todayStart;
+    }).length;
+
+    // ── 환불 요청 대기: refund_requests 데이터 우선, 없으면 payments 기반
+    const refundPending = adminState.refunds.length > 0
+        ? adminState.refunds.filter(r => r.status === 'pending').length
+        : payments.filter(p => p.status === 'refund_requested').length;
+
+    // ── 자동 환불 완료: refund_requests 데이터 우선, 없으면 payments.refunded 기반
+    const autoRefunded = adminState.refunds.length > 0
+        ? adminState.refunds.filter(r => r.status === 'auto_approved').length
+        : payments.filter(p => p.status === 'refunded').length;
+
+    // ── 실패/취소: status가 failed 또는 cancelled
+    const failed = payments.filter(p =>
+        p.status === 'failed' || p.status === 'cancelled'
+    ).length;
+
+    if (D.summaryTodayPaid)    D.summaryTodayPaid.textContent    = String(todayPaid);
+    if (D.summaryRefundPending) D.summaryRefundPending.textContent = String(refundPending);
+    if (D.summaryAutoRefunded) D.summaryAutoRefunded.textContent  = String(autoRefunded);
+    if (D.summaryFailed)       D.summaryFailed.textContent        = String(failed);
 }
 
 // ============================================================

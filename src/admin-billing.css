@@ -166,6 +166,78 @@
 
 .hidden { display: none !important; }
 
+/* ── 요약 카드 ── */
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1100px) {
+    .summary-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 620px) {
+    .summary-cards { grid-template-columns: 1fr; }
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--bg-card, rgba(255,255,255,0.03));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+    border-radius: 14px;
+    transition: border-color 0.18s;
+}
+
+.summary-card:hover {
+    border-color: rgba(255,255,255,0.14);
+}
+
+.summary-card-warning { border-color: rgba(245,158,11,0.2); }
+.summary-card-warning:hover { border-color: rgba(245,158,11,0.4); }
+
+.summary-card-success { border-color: rgba(16,185,129,0.2); }
+.summary-card-success:hover { border-color: rgba(16,185,129,0.4); }
+
+.summary-card-error   { border-color: rgba(239,68,68,0.2); }
+.summary-card-error:hover   { border-color: rgba(239,68,68,0.4); }
+
+.summary-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.summary-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.summary-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+.summary-card-warning .summary-value { color: rgb(251,191,36); }
+.summary-card-success .summary-value { color: rgb(52,211,153); }
+.summary-card-error   .summary-value { color: rgb(252,165,165); }
+
 /* ── 탭 영역 ── */
 .admin-tab { display: block; }
 
