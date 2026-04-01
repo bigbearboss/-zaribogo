@@ -408,11 +408,11 @@ function updateSummaryCards() {
         return formatToYMD(new Date(p.paid_at)) === todayKSTString;
     }).length;
 
-    // ── [계산 기준: 환불 요청 대기]
-    // - 환불 요청 데이터(refunds)가 있다면 request_status === 'requested' 건수 (실제 스키마 기준)
+    // ── [계산 기준: 환불 진행 중]
+    // - 환불 요청 데이터(refunds)가 있다면 request_status === 'requested' 또는 'approved' 건수 (실제 스키마 및 운영 기준)
     // - 없다면 차선책으로 payments의 status === 'refund_requested'인 건수
     const refundPending = adminState.refunds.length > 0
-        ? adminState.refunds.filter(r => r.request_status === 'requested').length
+        ? adminState.refunds.filter(r => r.request_status === 'requested' || r.request_status === 'approved').length
         : payments.filter(p => p.status === 'refund_requested').length;
 
     // ── [계산 기준: 환불 완료 (자동 환불 포함)]
