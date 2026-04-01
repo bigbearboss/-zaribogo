@@ -45,27 +45,37 @@ interface PaymentEvent {
 // ============================================================
 
 /**
- * TODO: 실제 서비스에서는 아래 함수를 교체하세요.
- * 예시: Supabase custom claims, profiles.is_admin 컬럼, 또는 별도 admin 테이블 조회
+ * 관리자 권한 체크: profiles.is_admin = true 여부를 Supabase에서 직접 조회합니다.
  *
- * 현재는 구조 분리만 해두고, 로그인 여부만 확인합니다.
- * false를 반환하면 accessDeniedState가 표시됩니다.
+ * RLS 정책 전제:
+ *   - profiles 테이블에 "Users can view own profile" 정책이 있어야 합니다. (기존 정책 유지)
+ *   - is_admin 컬럼이 profiles 테이블에 존재해야 합니다.
+ *     → supabase/migrations/20260401131316_add_admin_flag.sql 을 먼저 실행하세요.
+ *
+ * 관리자 지정 방법 (Supabase SQL Editor):
+ *   UPDATE public.profiles SET is_admin = true WHERE email = 'admin@example.com';
  */
 async function checkAdminAccess(userId: string): Promise<boolean> {
-    // ─────────────────────────────────────────────
-    // 실제 구현 예시 (주석 해제 후 사용):
-    //
-    // const { data } = await supabase
-    //     .from('profiles')
-    //     .select('is_admin')
-    //     .eq('id', userId)
-    //     .single();
-    // return Boolean(data?.is_admin);
-    // ─────────────────────────────────────────────
+    if (!userId) return false;
 
-    // 임시: 로그인만 되면 접근 허용 (운영 시 위 코드로 교체)
-    console.warn('[Admin] checkAdminAccess: 임시 허용 상태입니다. 운영 전 권한 체크를 구현하세요.');
-    return Boolean(userId);
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
+            // is_admin 컬럼이 없거나 네트워크 오류 → 접근 거부
+            console.error('[checkAdminAccess] profiles 조회 실패:', error.message);
+            return false;
+        }
+
+        return data?.is_admin === true;
+    } catch (err) {
+        console.error('[checkAdminAccess] 예외 발생:', err);
+        return false;
+    }
 }
 
 // ============================================================
@@ -127,8 +137,9 @@ async function initAdmin() {
     try {
         const { data: { user }, error } = await supabase.auth.getUser();
 
+        // ① 비로그인 → 메인 랜딩으로
         if (error || !user) {
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
             return;
         }
 
@@ -136,12 +147,14 @@ async function initAdmin() {
 
         const isAdmin = await checkAdminAccess(user.id);
 
+        // ② 로그인은 됐지만 관리자가 아님 → 마이페이지로
         if (!isAdmin) {
-            D.loadingState.classList.add('hidden');
-            D.accessDeniedState.classList.remove('hidden');
+            console.warn('[Admin] 접근 거부: 관리자 권한 없음 (', user.email, ')');
+            window.location.replace('/mypage.html');
             return;
         }
 
+        // ③ 관리자 확인 → 정상 진입
         setupAdminListeners();
         await loadPayments();
 
@@ -150,6 +163,7 @@ async function initAdmin() {
 
     } catch (err) {
         console.error('[initAdmin]', err);
+        // 예외 시에도 안전하게 차단
         D.loadingState.classList.add('hidden');
         D.accessDeniedState.classList.remove('hidden');
     }
@@ -196,10 +210,16 @@ function setupAdminListeners() {
     });
 
     // 결제 새로고침
-    D.btnRefreshPayments.addEventListener('click', () => loadPayments());
+    D.btnRefreshPayments.addEventListener('click', () => {
+        adminState.payments = [];
+        loadPayments();
+    });
 
-    // 환불 새로고침
-    D.btnRefreshRefunds.addEventListener('click', () => loadRefunds());
+    // 환불 새로고침 — 캐시 초기화 후 강제 재조회
+    D.btnRefreshRefunds.addEventListener('click', () => {
+        adminState.refunds = [];
+        loadRefunds();
+    });
 
     // 결제 검색
     D.paymentSearchInput.addEventListener('input', () => {
@@ -315,10 +335,15 @@ function renderPaymentsTable() {
             <td class="td-order-id" title="${escHtml(payment.order_id)}">${escHtml(payment.order_id)}</td>
             <td class="td-user" title="${escHtml(payment.user_id)}">${escHtml(payment.user_id.slice(0, 8))}…</td>
             <td class="td-date">${paidDate}</td>
-            <td><button class="btn-view-events" data-payment-id="${payment.id}" data-order-id="${escHtml(payment.order_id)}">📋 타임라인</button></td>
+            <td><button class="btn-view-events">📋 타임라인</button></td>
         `;
 
-        // 이벤트 버튼
+        // 행 전체 클릭 → 드로어 열기
+        tr.addEventListener('click', () => {
+            openEventDrawer(payment.id, payment.order_id);
+        });
+
+        // 타임라인 버튼도 동일 동작 (이벤트 버블 방지 불필요)
         const evtBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement;
         evtBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -346,14 +371,19 @@ async function loadRefunds() {
             .limit(200);
 
         if (error) {
-            // 테이블이 없거나 RLS 차단 시
+            D.refundsTableBody.innerHTML = '';
             if (error.code === '42P01') {
-                D.refundsTableBody.innerHTML = '';
-                D.refundsEmpty.textContent = 'refund_requests 테이블이 아직 생성되지 않았습니다.';
+                // 테이블 미존재
+                D.refundsEmpty.textContent = 'refund_requests 테이블이 아직 생성되지 않았습니다. 마이그레이션을 확인해주세요.';
                 D.refundsEmpty.classList.remove('hidden');
-                return;
+            } else if (error.code === '42501') {
+                // RLS 차단
+                D.refundsEmpty.textContent = '접근 권한이 없습니다. 관리자 RLS 정책을 확인해주세요.';
+                D.refundsEmpty.classList.remove('hidden');
+            } else {
+                throw error;
             }
-            throw error;
+            return;
         }
 
         adminState.refunds = (data ?? []) as RefundRequest[];
@@ -386,10 +416,13 @@ function renderRefundsTable() {
             ? '<span class="admin-badge badge-review">검토 필요</span>'
             : '—';
 
+        // cancel_reason이 null일 수 있음
+        const reason = refund.cancel_reason ?? '';
+
         tr.innerHTML = `
             <td>${getRefundBadge(refund.status)}</td>
             <td class="td-order-id" title="${escHtml(refund.order_id)}">${escHtml(refund.order_id)}</td>
-            <td class="td-reason" title="${escHtml(refund.cancel_reason)}">${escHtml(refund.cancel_reason)}</td>
+            <td class="td-reason" title="${escHtml(reason)}">${escHtml(reason) || '<span style="color:var(--text-muted)">사유 없음</span>'}</td>
             <td>${autoText}</td>
             <td class="td-date">${formatDate(refund.created_at)}</td>
             <td class="td-date">${refund.processed_at ? formatDate(refund.processed_at) : '—'}</td>
@@ -524,8 +557,9 @@ function formatDate(iso: string): string {
     });
 }
 
-function escHtml(str: string): string {
-    return str
+function escHtml(str: string | null | undefined): string {
+    if (str == null) return '';
+    return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
