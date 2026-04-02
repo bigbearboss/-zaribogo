@@ -35,6 +35,17 @@ interface PaymentEvent {
   created_at: string;
 }
 
+interface AdminActionLog {
+  id: string;
+  admin_user_id: string;
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  order_id: string | null;
+  detail_json: Record<string, unknown> | null;
+  created_at: string;
+}
+
 interface EdgeFunctionErrorResponse {
   code?: number | string;
   message?: string;
@@ -121,6 +132,7 @@ const D = {
   eventDrawer: document.getElementById('eventDrawer') as HTMLElement,
   drawerOverlay: document.getElementById('drawerOverlay') as HTMLElement,
   btnCloseDrawer: document.getElementById('btnCloseDrawer') as HTMLButtonElement,
+  drawerTitle: document.getElementById('drawerTitle') as HTMLElement,
   drawerOrderId: document.getElementById('drawerOrderId') as HTMLElement,
   eventTimeline: document.getElementById('eventTimeline') as HTMLElement,
   eventTimelineEmpty: document.getElementById('eventTimelineEmpty') as HTMLElement,
@@ -379,12 +391,12 @@ function renderPaymentsTable() {
       <td><button class="btn-view-events">📋 타임라인</button></td>
     `;
 
-    tr.addEventListener('click', () => openEventDrawer(payment.id, payment.order_id));
+    tr.addEventListener('click', () => openEventDrawer('payment', payment.id, payment.order_id));
 
     const evtBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement;
     evtBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openEventDrawer(payment.id, payment.order_id);
+      openEventDrawer('payment', payment.id, payment.order_id);
     });
 
     D.paymentsTableBody.appendChild(tr);
@@ -478,6 +490,8 @@ function renderRefundsTable() {
 
   filtered.forEach((refund: RefundRequest) => {
     const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    tr.title = '클릭하면 처리 히스토리를 볼 수 있습니다';
 
     const isAuto = refund.is_auto === true;
     const autoText = isAuto
@@ -502,8 +516,19 @@ function renderRefundsTable() {
       <td>${autoText}</td>
       <td class="td-date">${formatDate(refund.created_at)}</td>
       <td class="td-date" title="${escHtml(refund.admin_note)}">${escHtml(refund.admin_note) || '—'}</td>
+      <td><button class="btn-view-events" style="padding:4px 8px;">📋 내역</button></td>
       <td>${actionTd}</td>
     `;
+
+    tr.addEventListener('click', () => openEventDrawer('refund', refund.id, refund.order_id));
+
+    const histBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement | null;
+    if (histBtn) {
+        histBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEventDrawer('refund', refund.id, refund.order_id);
+        });
+    }
 
     if (refund.request_status === 'requested') {
       const btns = tr.querySelectorAll('.btn-process-refund');
@@ -614,11 +639,6 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       throw new Error(message || '환불 처리 실패');
     }
 
-    await supabase
-      .from('refund_requests')
-      .update({ request_status: 'completed' })
-      .eq('id', refundId);
-
     alert(
       isAlreadyCancelled
         ? '이미 취소된 결제 건으로 확인되어 내부 상태를 완료로 동기화했습니다.'
@@ -639,14 +659,17 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       (b as HTMLButtonElement).disabled = false;
     });
 
-        btnEl.textContent = originalText ?? '환불 실행';
+    btnEl.textContent = originalText ?? '환불 실행';
   } finally {
     adminState.processingRefundIds.delete(refundId);
   }
 }
 
-async function openEventDrawer(paymentId: string, orderId: string) {
-  D.drawerOrderId.textContent = orderId;
+async function openEventDrawer(type: 'payment' | 'refund', targetId: string, referenceId: string) {
+  if (D.drawerTitle) {
+    D.drawerTitle.textContent = type === 'payment' ? '결제 이벤트 타임라인' : '환불 처리 히스토리';
+  }
+  D.drawerOrderId.textContent = referenceId;
   D.eventTimeline.innerHTML = '<div style="color:var(--text-muted);padding:16px 0">불러오는 중...</div>';
   D.eventTimelineEmpty.classList.add('hidden');
 
@@ -655,52 +678,87 @@ async function openEventDrawer(paymentId: string, orderId: string) {
   document.body.style.overflow = 'hidden';
 
   try {
-    const { data, error } = await supabase
-      .from('payment_events')
-      .select('id, payment_id, event_type, payload_json, created_at')
-      .eq('payment_id', paymentId)
-      .order('created_at', { ascending: true });
+    if (type === 'payment') {
+      const { data, error } = await supabase
+        .from('payment_events')
+        .select('id, payment_id, event_type, payload_json, created_at')
+        .eq('payment_id', targetId)
+        .order('created_at', { ascending: true });
 
-    if (error) {
-      if (error.code === '42P01') {
-        D.eventTimeline.innerHTML = '';
-        D.eventTimelineEmpty.textContent = 'payment_events 테이블이 아직 생성되지 않았습니다.';
-        D.eventTimelineEmpty.classList.remove('hidden');
-        return;
+      if (error) {
+        if (error.code === '42P01') {
+          D.eventTimeline.innerHTML = '';
+          D.eventTimelineEmpty.textContent = 'payment_events 테이블이 아직 생성되지 않았습니다.';
+          D.eventTimelineEmpty.classList.remove('hidden');
+          return;
+        }
+        throw error;
       }
-      throw error;
-    }
+      renderTimeline(data ?? [], false);
+    } else {
+      const { data, error } = await supabase
+        .from('admin_action_logs')
+        .select('id, admin_user_id, action_type, detail_json, created_at')
+        .eq('target_type', 'refund_request')
+        .eq('target_id', targetId)
+        .order('created_at', { ascending: false });
 
-    const events = (data ?? []) as PaymentEvent[];
-    renderTimeline(events);
+      if (error) {
+        if (error.code === '42P01') {
+          D.eventTimeline.innerHTML = '';
+          D.eventTimelineEmpty.textContent = 'admin_action_logs 테이블이 없습니다.';
+          D.eventTimelineEmpty.classList.remove('hidden');
+          return;
+        }
+        throw error;
+      }
+      renderTimeline(data ?? [], true);
+    }
   } catch (err: any) {
     console.error('[openEventDrawer]', err);
-    const message = err?.message || '이벤트를 불러오지 못했습니다.';
+    const message = err?.message || '기록을 불러오지 못했습니다.';
     D.eventTimeline.innerHTML = `<div style="color:rgb(252,165,165);padding:8px 0">${escHtml(message)}</div>`;
   }
 }
 
-function renderTimeline(events: PaymentEvent[]) {
+function getActionTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    'refund_request_approved': '검토 승인',
+    'refund_request_rejected': '요청 거절',
+    'refund_executed': '환불 실행',
+    'refund_synced_already_cancelled': '결제사 취소 동기화 완료',
+  };
+  return map[type] || type;
+}
+
+function renderTimeline(events: any[], isActionLog: boolean) {
   D.eventTimeline.innerHTML = '';
-  D.eventTimelineEmpty.classList.toggle('hidden', events.length > 0);
+  D.eventTimelineEmpty.classList.toggle('hidden', events.length === 0);
 
   if (events.length === 0) return;
 
-  events.forEach((evt: PaymentEvent) => {
-    const dotClass = getTimelineDotClass(evt.event_type);
-    const icon = getTimelineIcon(evt.event_type);
+  events.forEach((evt: any) => {
+    const rawType = isActionLog ? evt.action_type : evt.event_type;
+    const mappedType = isActionLog ? getActionTypeLabel(rawType) : rawType;
+    const dotClass = getTimelineDotClass(rawType);
+    const icon = getTimelineIcon(rawType);
+
+    const payload = isActionLog ? evt.detail_json : evt.payload_json;
+    const metaStr = payload ? JSON.stringify(payload, null, 2) : null;
+
+    const adminUserStr =
+      isActionLog && evt.admin_user_id
+        ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
+        : '';
 
     const item = document.createElement('div');
     item.className = 'timeline-item';
 
-    const metaStr = evt.payload_json
-      ? JSON.stringify(evt.payload_json, null, 2)
-      : null;
-
     item.innerHTML = `
       <div class="timeline-dot ${dotClass}">${icon}</div>
       <div class="timeline-content">
-        <div class="timeline-event-type">${escHtml(evt.event_type)}</div>
+        <div class="timeline-event-type">${escHtml(mappedType)}</div>
+        ${adminUserStr}
         <div class="timeline-event-date">${formatDate(evt.created_at)}</div>
         ${metaStr ? `<pre class="timeline-event-meta">${escHtml(metaStr)}</pre>` : ''}
       </div>

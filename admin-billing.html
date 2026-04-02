@@ -1,215 +1,212 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>자리보고 Admin | 결제/환불 추적</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css">
     <link rel="stylesheet" href="./src/admin-billing.css">
 </head>
+
 <body data-theme="dark">
-<div id="admin-app">
+    <div id="admin-app">
 
-    <!-- ── 사이드바 ── -->
-    <aside class="admin-sidebar">
-        <div class="admin-logo">
-            <span class="admin-logo-icon">🔍</span>
-            <div>
-                <span class="admin-logo-text">자리보고</span>
-                <span class="admin-logo-badge">Admin</span>
-            </div>
-        </div>
-
-        <nav class="admin-nav">
-            <a href="#" class="admin-nav-link active" data-tab="payments">
-                <span>💳</span> 결제 내역
-            </a>
-            <a href="#" class="admin-nav-link" data-tab="refunds">
-                <span>↩</span> 환불 요청
-            </a>
-        </nav>
-
-        <div class="admin-sidebar-footer">
-            <div id="adminUserInfo" class="admin-user-info">
-                <span id="adminUserEmail" class="admin-user-email">확인 중...</span>
-                <button id="btnAdminLogout" class="admin-logout-btn">로그아웃</button>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ── 메인 ── -->
-    <main class="admin-main">
-
-        <!-- 접근 불가 상태 -->
-        <div id="accessDeniedState" class="admin-state-box hidden">
-            <div class="state-icon">🚫</div>
-            <h2>접근 권한이 없습니다</h2>
-            <p>이 페이지는 관리자만 접근할 수 있습니다.</p>
-            <a href="/index.html" class="admin-btn admin-btn-primary">메인으로 이동</a>
-        </div>
-
-        <!-- 로딩 상태 -->
-        <div id="adminLoadingState" class="admin-state-box">
-            <div class="admin-spinner"></div>
-            <p>데이터를 불러오는 중입니다...</p>
-        </div>
-
-        <!-- ── 결제 내역 탭 ── -->
-        <section id="tab-payments" class="admin-tab hidden">
-            <div class="admin-tab-header">
-                <h1>결제 내역</h1>
-                <button class="admin-btn admin-btn-ghost" id="btnRefreshPayments">
-                    ↻ 새로고침
-                </button>
+        <!-- ── 사이드바 ── -->
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <span class="admin-logo-icon">🔍</span>
+                <div>
+                    <span class="admin-logo-text">자리보고</span>
+                    <span class="admin-logo-badge">Admin</span>
+                </div>
             </div>
 
-            <!-- 요약 카드 -->
-            <div class="summary-cards" id="summaryCards">
-                <div class="summary-card">
-                    <span class="summary-icon">💳</span>
-                    <div class="summary-body">
-                        <span class="summary-label">오늘 결제</span>
-                        <span class="summary-value" id="summaryTodayPaid">—</span>
+            <nav class="admin-nav">
+                <a href="#" class="admin-nav-link active" data-tab="payments">
+                    <span>💳</span> 결제 내역
+                </a>
+                <a href="#" class="admin-nav-link" data-tab="refunds">
+                    <span>↩</span> 환불 요청
+                </a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <div id="adminUserInfo" class="admin-user-info">
+                    <span id="adminUserEmail" class="admin-user-email">확인 중...</span>
+                    <button id="btnAdminLogout" class="admin-logout-btn">로그아웃</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── 메인 ── -->
+        <main class="admin-main">
+
+            <!-- 접근 불가 상태 -->
+            <div id="accessDeniedState" class="admin-state-box hidden">
+                <div class="state-icon">🚫</div>
+                <h2>접근 권한이 없습니다</h2>
+                <p>이 페이지는 관리자만 접근할 수 있습니다.</p>
+                <a href="/index.html" class="admin-btn admin-btn-primary">메인으로 이동</a>
+            </div>
+
+            <!-- 로딩 상태 -->
+            <div id="adminLoadingState" class="admin-state-box">
+                <div class="admin-spinner"></div>
+                <p>데이터를 불러오는 중입니다...</p>
+            </div>
+
+            <!-- ── 결제 내역 탭 ── -->
+            <section id="tab-payments" class="admin-tab hidden">
+                <div class="admin-tab-header">
+                    <h1>결제 내역</h1>
+                    <button class="admin-btn admin-btn-ghost" id="btnRefreshPayments">
+                        ↻ 새로고침
+                    </button>
+                </div>
+
+                <!-- 요약 카드 -->
+                <div class="summary-cards" id="summaryCards">
+                    <div class="summary-card">
+                        <span class="summary-icon">💳</span>
+                        <div class="summary-body">
+                            <span class="summary-label">오늘 결제</span>
+                            <span class="summary-value" id="summaryTodayPaid">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-warning">
+                        <span class="summary-icon">⏳</span>
+                        <div class="summary-body">
+                            <span class="summary-label">환불 진행 중</span>
+                            <span class="summary-value" id="summaryRefundPending">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-success">
+                        <span class="summary-icon">✅</span>
+                        <div class="summary-body">
+                            <span class="summary-label">환불 완료</span>
+                            <span class="summary-value" id="summaryAutoRefunded">—</span>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-error">
+                        <span class="summary-icon">❌</span>
+                        <div class="summary-body">
+                            <span class="summary-label">결제 실패/취소</span>
+                            <span class="summary-value" id="summaryFailed">—</span>
+                        </div>
                     </div>
                 </div>
-                <div class="summary-card summary-card-warning">
-                    <span class="summary-icon">⏳</span>
-                    <div class="summary-body">
-                        <span class="summary-label">환불 진행 중</span>
-                        <span class="summary-value" id="summaryRefundPending">—</span>
+
+                <!-- 필터 바 -->
+                <div class="admin-filter-bar">
+                    <input type="text" id="paymentSearchInput" class="admin-search-input"
+                        placeholder="주문번호(order_id) 검색..." />
+                    <div class="admin-status-filters" id="paymentStatusFilters">
+                        <button class="status-filter-btn active" data-status="">전체</button>
+                        <button class="status-filter-btn" data-status="paid">결제 완료</button>
+                        <button class="status-filter-btn" data-status="pending">처리 중</button>
+                        <button class="status-filter-btn" data-status="refund_requested">환불 요청</button>
+                        <button class="status-filter-btn" data-status="refunded">환불 완료</button>
+                        <button class="status-filter-btn" data-status="cancelled">취소</button>
+                        <button class="status-filter-btn" data-status="failed">실패</button>
                     </div>
                 </div>
-                <div class="summary-card summary-card-success">
-                    <span class="summary-icon">✅</span>
-                    <div class="summary-body">
-                        <span class="summary-label">환불 완료</span>
-                        <span class="summary-value" id="summaryAutoRefunded">—</span>
+
+                <!-- 결제 테이블 -->
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="paymentsTable">
+                        <thead>
+                            <tr>
+                                <th>상태</th>
+                                <th>상품명</th>
+                                <th>결제금액</th>
+                                <th>주문번호</th>
+                                <th>사용자</th>
+                                <th>결제일시</th>
+                                <th>이벤트</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <!-- JS 렌더링 -->
+                        </tbody>
+                    </table>
+                    <div id="paymentsEmpty" class="admin-empty hidden">결제 내역이 없습니다.</div>
+                </div>
+            </section>
+
+            <!-- ── 환불 요청 탭 ── -->
+            <section id="tab-refunds" class="admin-tab hidden">
+                <div class="admin-tab-header">
+                    <h1>환불 요청</h1>
+                    <button class="admin-btn admin-btn-ghost" id="btnRefreshRefunds">
+                        ↻ 새로고침
+                    </button>
+                </div>
+
+                <p class="admin-tab-desc">
+                    💡 환불 요청은 검토 승인 후 환불 실행 단계로 넘어갑니다. 처리 히스토리는 각 행의 내역 버튼에서 확인할 수 있습니다.
+                </p>
+
+                <!-- 필터 바 -->
+                <div class="admin-filter-bar">
+                    <input type="text" id="refundSearchInput" class="admin-search-input" placeholder="주문번호 검색..." />
+                    <div class="admin-status-filters" id="refundStatusFilters">
+                        <button class="status-filter-btn active" data-status="">전체</button>
+                        <button class="status-filter-btn" data-status="requested">검토 대기</button>
+                        <button class="status-filter-btn" data-status="approved">승인 대기</button>
+                        <button class="status-filter-btn" data-status="completed">환불 완료</button>
+                        <button class="status-filter-btn" data-status="rejected">거절됨</button>
                     </div>
                 </div>
-                <div class="summary-card summary-card-error">
-                    <span class="summary-icon">❌</span>
-                    <div class="summary-body">
-                        <span class="summary-label">결제 실패/취소</span>
-                        <span class="summary-value" id="summaryFailed">—</span>
-                    </div>
+
+                <!-- 환불 테이블 -->
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="refundsTable">
+                        <thead>
+                            <tr>
+                                <th>상태</th>
+                                <th>주문번호</th>
+                                <th>환불 사유</th>
+                                <th>자동 환불</th>
+                                <th>요청일시</th>
+                                <th>관리 메모</th>
+                                <th>히스토리</th>
+                                <th>처리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="refundsTableBody">
+                            <!-- JS 렌더링 -->
+                        </tbody>
+                    </table>
+                    <div id="refundsEmpty" class="admin-empty hidden">환불 요청이 없습니다.</div>
                 </div>
-            </div>
+            </section>
 
-            <!-- 필터 바 -->
-            <div class="admin-filter-bar">
-                <input
-                    type="text"
-                    id="paymentSearchInput"
-                    class="admin-search-input"
-                    placeholder="주문번호(order_id) 검색..."
-                />
-                <div class="admin-status-filters" id="paymentStatusFilters">
-                    <button class="status-filter-btn active" data-status="">전체</button>
-                    <button class="status-filter-btn" data-status="paid">결제 완료</button>
-                    <button class="status-filter-btn" data-status="pending">처리 중</button>
-                    <button class="status-filter-btn" data-status="refund_requested">환불 요청</button>
-                    <button class="status-filter-btn" data-status="refunded">환불 완료</button>
-                    <button class="status-filter-btn" data-status="cancelled">취소</button>
-                    <button class="status-filter-btn" data-status="failed">실패</button>
-                </div>
-            </div>
-
-            <!-- 결제 테이블 -->
-            <div class="admin-table-wrapper">
-                <table class="admin-table" id="paymentsTable">
-                    <thead>
-                        <tr>
-                            <th>상태</th>
-                            <th>상품명</th>
-                            <th>결제금액</th>
-                            <th>주문번호</th>
-                            <th>사용자</th>
-                            <th>결제일시</th>
-                            <th>이벤트</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paymentsTableBody">
-                        <!-- JS 렌더링 -->
-                    </tbody>
-                </table>
-                <div id="paymentsEmpty" class="admin-empty hidden">결제 내역이 없습니다.</div>
-            </div>
-        </section>
-
-        <!-- ── 환불 요청 탭 ── -->
-        <section id="tab-refunds" class="admin-tab hidden">
-            <div class="admin-tab-header">
-                <h1>환불 요청</h1>
-                <button class="admin-btn admin-btn-ghost" id="btnRefreshRefunds">
-                    ↻ 새로고침
-                </button>
-            </div>
-            
-            <p class="admin-tab-desc">
-                💡 검토 승인 후 실제 환불 완료 처리는 별도 프로세스로 진행됩니다.
-            </p>
-
-            <!-- 필터 바 -->
-            <div class="admin-filter-bar">
-                <input
-                    type="text"
-                    id="refundSearchInput"
-                    class="admin-search-input"
-                    placeholder="주문번호 검색..."
-                />
-                <div class="admin-status-filters" id="refundStatusFilters">
-                    <button class="status-filter-btn active" data-status="">전체</button>
-                    <button class="status-filter-btn" data-status="requested">검토 대기</button>
-                    <button class="status-filter-btn" data-status="approved">승인 대기</button>
-                    <button class="status-filter-btn" data-status="completed">환불 완료</button>
-                    <button class="status-filter-btn" data-status="rejected">거절됨</button>
-                </div>
-            </div>
-
-            <!-- 환불 테이블 -->
-            <div class="admin-table-wrapper">
-                <table class="admin-table" id="refundsTable">
-                    <thead>
-                        <tr>
-                            <th>상태</th>
-                            <th>주문번호</th>
-                            <th>환불 사유</th>
-                            <th>자동 환불</th>
-                            <th>요청일시</th>
-                            <th>관리 메모</th>
-                            <th>처리</th>
-                        </tr>
-                    </thead>
-                    <tbody id="refundsTableBody">
-                        <!-- JS 렌더링 -->
-                    </tbody>
-                </table>
-                <div id="refundsEmpty" class="admin-empty hidden">환불 요청이 없습니다.</div>
-            </div>
-        </section>
-
-    </main>
-</div>
-
-<!-- ── 이벤트 타임라인 드로어 ── -->
-<div id="eventDrawer" class="event-drawer hidden" role="dialog" aria-modal="true">
-    <div class="event-drawer-inner">
-        <div class="event-drawer-header">
-            <div>
-                <h3 class="event-drawer-title">결제 이벤트 타임라인</h3>
-                <p class="event-drawer-order-id" id="drawerOrderId">—</p>
-            </div>
-            <button class="event-drawer-close" id="btnCloseDrawer" aria-label="닫기">✕</button>
-        </div>
-        <div id="eventTimeline" class="event-timeline">
-            <!-- JS 렌더링 -->
-        </div>
-        <div id="eventTimelineEmpty" class="admin-empty hidden">이벤트 기록이 없습니다.</div>
+        </main>
     </div>
-</div>
-<div id="drawerOverlay" class="drawer-overlay hidden"></div>
 
-<script type="module" src="./src/admin-billing.ts"></script>
+    <!-- ── 이벤트 타임라인 드로어 ── -->
+    <div id="eventDrawer" class="event-drawer hidden" role="dialog" aria-modal="true">
+        <div class="event-drawer-inner">
+            <div class="event-drawer-header">
+                <div>
+                    <h3 class="event-drawer-title" id="drawerTitle">이벤트 타임라인</h3>
+                    <p class="event-drawer-order-id" id="drawerOrderId">—</p>
+                </div>
+                <button class="event-drawer-close" id="btnCloseDrawer" aria-label="닫기">✕</button>
+            </div>
+            <div id="eventTimeline" class="event-timeline">
+                <!-- JS 렌더링 -->
+            </div>
+            <div id="eventTimelineEmpty" class="admin-empty hidden">이벤트 기록이 없습니다.</div>
+        </div>
+    </div>
+    <div id="drawerOverlay" class="drawer-overlay hidden"></div>
+
+    <script type="module" src="./src/admin-billing.ts"></script>
 </body>
+
 </html>
