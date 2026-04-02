@@ -614,10 +614,7 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       throw new Error(message || '환불 처리 실패');
     }
 
-    await supabase
-      .from('refund_requests')
-      .update({ request_status: 'completed' })
-      .eq('id', refundId);
+
 
     alert(
       isAlreadyCancelled
