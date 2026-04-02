@@ -26,3 +26,6 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/cancel-payment/deno.json"
 entrypoint = "./functions/cancel-payment/index.ts"
+
+[functions.admin-update-refund-request]
+verify_jwt = false
