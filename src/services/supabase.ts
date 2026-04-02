@@ -1,40 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-
-// DB/Auth용: legacy anon 우선
 const supabaseLegacyAnonKey = import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY;
 const supabaseBrowserKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// 1) 일반 DB/Auth 클라이언트
-// - legacy JWT anon key 우선
-const supabaseDbKey = supabaseLegacyAnonKey || supabaseBrowserKey;
+/**
+ * 브라우저에서는 Supabase client를 반드시 하나만 생성한다.
+ *
+ * 우선순위:
+ * 1) legacy anon key (JWT 기반, 기존 Auth/DB 흐름 호환)
+ * 2) browser/publishable key
+ */
+const supabaseKey = supabaseLegacyAnonKey || supabaseBrowserKey;
 
-// 2) Edge Function 호출 전용 클라이언트
-// - publishable / browser key 우선
-const supabaseFunctionKey = supabaseBrowserKey || supabaseLegacyAnonKey;
-
-if (!supabaseUrl || !supabaseDbKey) {
-  console.warn('[Supabase] Missing DB/Auth environment variables.');
-}
-
-if (!supabaseUrl || !supabaseFunctionKey) {
-  console.warn('[Supabase] Missing Function environment variables.');
+if (!supabaseUrl || !supabaseKey) {
+  console.warn(
+    '[Supabase] Missing environment variables. Check VITE_SUPABASE_URL and anon key envs.'
+  );
 }
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseDbKey || 'placeholder'
-);
-
-export const supabaseFunctions = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseFunctionKey || 'placeholder',
+  supabaseKey || 'placeholder',
   {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
   }
 );
