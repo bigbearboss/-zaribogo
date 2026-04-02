@@ -1,22 +1,4 @@
-/**
- * [수정 기준 요약 - 실제 DB 스키마 동기화]
- * 1. refund_requests 테이블 컬럼 반영: 기존 status, auto_refund_eligible, processed_at 등을
- *    실제 존재하는 request_status, admin_note 컬럼으로 변경했습니다.
- * 2. 상태값(request_status) 매핑 수정: pending/auto_approved 대신
- *    requested(검토 대기), approved(승인 대기/자동 환불 대상), completed(환불 완료)를 사용합니다.
- * 3. 자동 환불 판별: admin_note 필드에 'AUTO' 문자열이 포함되었는지 여부로 자동 환불 대상을 구분합니다.
- * 4. 자동 환불 완료 건수(지표): refund_requests 보다는 결제 관점에서 최종 성공을 의미하는
- *    payments 테이블의 status = 'refunded'를 기준으로 삼도록 수정(Source of Truth) 및 주석 추가했습니다.
- * 5. refunds 로드 후 updateSummaryCards() 추가 호출
- * 6. cancel-payment 호출 시 현재 로그인 세션의 access_token(JWT)을 Supabase Functions client에 명시적으로 주입
- * 7. payment_events 조회 시 실제 컬럼명 payload_json 사용
- */
-
 import { supabase } from './services/supabase';
-
-// ============================================================
-// 타입 정의
-// ============================================================
 
 interface AdminPayment {
   id: string;
@@ -57,6 +39,7 @@ interface EdgeFunctionErrorResponse {
   message?: string;
   error?: string;
   details?: string;
+  detail?: string;
   success?: boolean;
 }
 
@@ -64,13 +47,10 @@ interface CancelPaymentSuccessResponse {
   success?: boolean;
   message?: string;
   error?: string;
+  details?: string;
   detail?: string;
   [key: string]: unknown;
 }
-
-// ============================================================
-// 관리자 권한 체크
-// ============================================================
 
 async function checkAdminAccess(userId: string): Promise<boolean> {
   if (!userId) return false;
@@ -94,10 +74,6 @@ async function checkAdminAccess(userId: string): Promise<boolean> {
   }
 }
 
-// ============================================================
-// 상태
-// ============================================================
-
 const adminState = {
   currentTab: 'payments' as 'payments' | 'refunds',
   payments: [] as AdminPayment[],
@@ -107,10 +83,6 @@ const adminState = {
   paymentSearch: '',
   refundSearch: '',
 };
-
-// ============================================================
-// DOM
-// ============================================================
 
 const D = {
   app: document.getElementById('admin-app') as HTMLElement,
@@ -147,33 +119,28 @@ const D = {
   summaryFailed: document.getElementById('summaryFailed') as HTMLElement,
 };
 
-// ============================================================
-// 공통 유틸: 인증된 Edge Function 호출
-// ============================================================
-
-async function ensureFunctionAuth(): Promise<string> {
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
+async function getFreshAccessToken(): Promise<string> {
+  const { data, error } = await supabase.auth.refreshSession();
 
   if (error) {
-    throw new Error(`세션 확인 중 오류가 발생했습니다: ${error.message}`);
+    throw new Error(`세션 갱신 실패: ${error.message}`);
   }
 
-  if (!session?.access_token) {
-    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
+  const accessToken = data.session?.access_token;
+  if (!accessToken) {
+    throw new Error('로그인 세션이 유효하지 않습니다. 다시 로그인해 주세요.');
   }
 
-  supabase.functions.setAuth(session.access_token);
-  return session.access_token;
+  return accessToken;
 }
 
 async function callEdgeFunction<TResponse = unknown>(
   functionName: string,
   body: Record<string, unknown>
 ): Promise<TResponse> {
-  await ensureFunctionAuth();
+  const accessToken = await getFreshAccessToken();
+
+  supabase.functions.setAuth(accessToken);
 
   const { data, error } = await supabase.functions.invoke(functionName, {
     body,
@@ -182,21 +149,34 @@ async function callEdgeFunction<TResponse = unknown>(
   const parsed = (data ?? {}) as EdgeFunctionErrorResponse & TResponse;
 
   if (error) {
-    const detail =
+    let detail =
       parsed?.message ||
       parsed?.error ||
+      parsed?.detail ||
       parsed?.details ||
       error.message ||
       `${functionName} 호출에 실패했습니다.`;
+
+    const errorAny = error as any;
+    if (errorAny?.context && typeof errorAny.context.json === 'function') {
+      try {
+        const errJson = await errorAny.context.json();
+        detail =
+          errJson?.message ||
+          errJson?.error ||
+          errJson?.detail ||
+          errJson?.details ||
+          detail;
+      } catch {
+        // ignore
+      }
+    }
+
     throw new Error(detail);
   }
 
   return parsed as TResponse;
 }
-
-// ============================================================
-// 초기화
-// ============================================================
 
 async function initAdmin() {
   try {
@@ -215,7 +195,6 @@ async function initAdmin() {
     const isAdmin = await checkAdminAccess(user.id);
 
     if (!isAdmin) {
-      console.warn('[Admin] 접근 거부: 관리자 권한 없음 (', user.email, ')');
       window.location.replace('/mypage.html');
       return;
     }
@@ -232,10 +211,6 @@ async function initAdmin() {
   }
 }
 
-// ============================================================
-// 탭 전환
-// ============================================================
-
 function switchTab(tab: 'payments' | 'refunds') {
   adminState.currentTab = tab;
 
@@ -251,10 +226,6 @@ function switchTab(tab: 'payments' | 'refunds') {
     loadRefunds();
   }
 }
-
-// ============================================================
-// 이벤트 리스너 설정
-// ============================================================
 
 function setupAdminListeners() {
   D.navLinks.forEach((link) => {
@@ -310,16 +281,13 @@ function setupAdminListeners() {
 
   D.btnCloseDrawer.addEventListener('click', closeEventDrawer);
   D.drawerOverlay.addEventListener('click', closeEventDrawer);
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !D.eventDrawer.classList.contains('hidden')) {
       closeEventDrawer();
     }
   });
 }
-
-// ============================================================
-// 데이터 로드: 결제 내역
-// ============================================================
 
 async function loadPayments() {
   D.paymentsTableBody.innerHTML =
@@ -399,9 +367,7 @@ function renderPaymentsTable() {
       <td><button class="btn-view-events">📋 타임라인</button></td>
     `;
 
-    tr.addEventListener('click', () => {
-      openEventDrawer(payment.id, payment.order_id);
-    });
+    tr.addEventListener('click', () => openEventDrawer(payment.id, payment.order_id));
 
     const evtBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement;
     evtBtn.addEventListener('click', (e) => {
@@ -412,10 +378,6 @@ function renderPaymentsTable() {
     D.paymentsTableBody.appendChild(tr);
   });
 }
-
-// ============================================================
-// 요약 카드 업데이트
-// ============================================================
 
 function updateSummaryCards() {
   const payments = adminState.payments;
@@ -452,10 +414,6 @@ function updateSummaryCards() {
   if (D.summaryAutoRefunded) D.summaryAutoRefunded.textContent = String(autoRefunded);
   if (D.summaryFailed) D.summaryFailed.textContent = String(failed);
 }
-
-// ============================================================
-// 데이터 로드: 환불 요청
-// ============================================================
 
 async function loadRefunds() {
   D.refundsTableBody.innerHTML =
@@ -606,7 +564,13 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
     });
 
     if (!fnData?.success) {
-      throw new Error(fnData?.message || fnData?.error || 'Edge Function에서 환불 처리에 실패했습니다.');
+      throw new Error(
+        fnData?.message ||
+          fnData?.error ||
+          fnData?.detail ||
+          fnData?.details ||
+          'Edge Function에서 환불 처리에 실패했습니다.'
+      );
     }
 
     alert(fnData?.message || '환불이 성공적으로 실행되었습니다.');
@@ -618,10 +582,6 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
     btnEl.textContent = originalText ?? '환불 실행';
   }
 }
-
-// ============================================================
-// 이벤트 타임라인 드로어
-// ============================================================
 
 async function openEventDrawer(paymentId: string, orderId: string) {
   D.drawerOrderId.textContent = orderId;
@@ -694,10 +654,6 @@ function closeEventDrawer() {
   document.body.style.overflow = '';
 }
 
-// ============================================================
-// 헬퍼
-// ============================================================
-
 function getAdminBadge(status: string): string {
   const map: Record<string, [string, string]> = {
     paid: ['badge-paid', '● 결제 완료'],
@@ -755,9 +711,5 @@ function escHtml(str: string | null | undefined): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-// ============================================================
-// 시작
-// ============================================================
 
 document.addEventListener('DOMContentLoaded', initAdmin);
