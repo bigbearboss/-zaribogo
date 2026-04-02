@@ -761,11 +761,20 @@ function renderTimeline(events: any[], isActionLog: boolean) {
     const icon = getTimelineIcon(rawType);
 
     const payload = isActionLog ? evt.detail_json : evt.payload_json;
-    const metaStr = payload ? JSON.stringify(payload, null, 2) : null;
+    const metaStr = isActionLog
+      ? renderActionLogMeta(payload)
+      : payload
+        ? JSON.stringify(payload, null, 2)
+        : null;
 
     const adminUserStr =
       isActionLog && evt.admin_user_id
-        ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
+        ? `<div class="timeline-admin-meta">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
+        : '';
+
+    const summaryHtml =
+      isActionLog && payload
+        ? renderActionLogSummary(payload)
         : '';
 
     const item = document.createElement('div');
@@ -777,7 +786,11 @@ function renderTimeline(events: any[], isActionLog: boolean) {
         <div class="timeline-event-type">${escHtml(mappedType)}</div>
         ${adminUserStr}
         <div class="timeline-event-date">${formatDate(evt.created_at)}</div>
-        ${metaStr ? `<pre class="timeline-event-meta">${escHtml(metaStr)}</pre>` : ''}
+        ${summaryHtml}
+        ${metaStr ? `<details class="timeline-raw-details">
+          <summary>원본 로그 보기</summary>
+          <pre class="timeline-event-meta">${escHtml(metaStr)}</pre>
+        </details>` : ''}
       </div>
     `;
 
