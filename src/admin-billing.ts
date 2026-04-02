@@ -52,6 +52,16 @@ interface CancelPaymentSuccessResponse {
   [key: string]: unknown;
 }
 
+interface UpdateRefundRequestSuccessResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  details?: string;
+  detail?: string;
+  data?: RefundRequest;
+  [key: string]: unknown;
+}
+
 async function checkAdminAccess(userId: string): Promise<boolean> {
   if (!userId) return false;
 
@@ -530,13 +540,22 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
   btnEl.textContent = '처리 중...';
 
   try {
-    const { error } = await supabase
-      .from('refund_requests')
-      .update({ request_status: action })
-      .eq('id', refundId);
+    const fnData = await callEdgeFunction<UpdateRefundRequestSuccessResponse>('admin-update-refund-request', {
+      refundRequestId: refundId,
+      action,
+    });
 
-    if (error) throw error;
+    if (!fnData?.success) {
+      throw new Error(
+        fnData?.message ||
+          fnData?.error ||
+          fnData?.detail ||
+          fnData?.details ||
+          `${actionText} 처리에 실패했습니다.`
+      );
+    }
 
+    alert(fnData?.message || `${actionText} 완료`);
     await loadRefunds();
   } catch (err: any) {
     console.error('[processRefund]', err);
