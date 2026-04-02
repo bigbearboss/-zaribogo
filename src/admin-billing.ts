@@ -720,7 +720,7 @@ function getAdminBadge(status: string): string {
 function getRefundBadge(status: string): string {
   const map: Record<string, [string, string]> = {
     requested: ['badge-review', '⏳ 검토 대기'],
-    approved: ['badge-auto-approved', '✅ 승인 대기'],
+    approved: ['badge-auto-approved', '🟡 환불 실행 대기'],
     completed: ['badge-refunded', '◆ 환불 완료'],
     rejected: ['badge-failed', '✕ 거절됨'],
   };
@@ -729,7 +729,7 @@ function getRefundBadge(status: string): string {
 }
 
 function getTimelineDotClass(eventType: string): string {
-  if (/paid|success|complet/i.test(eventType)) return 'dot-success';
+  if (/paid|success|complet|approved/i.test(eventType)) return 'dot-success';
   if (/fail|error|reject/i.test(eventType)) return 'dot-error';
   if (/refund|cancel/i.test(eventType)) return 'dot-warning';
   return 'dot-info';
@@ -737,7 +737,8 @@ function getTimelineDotClass(eventType: string): string {
 
 function getTimelineIcon(eventType: string): string {
   if (/paid|success/i.test(eventType)) return '✓';
-  if (/fail|error/i.test(eventType)) return '✕';
+  if (/approved/i.test(eventType)) return '●';
+  if (/fail|error|reject/i.test(eventType)) return '✕';
   if (/refund/i.test(eventType)) return '↩';
   if (/cancel/i.test(eventType)) return '○';
   return '·';
