@@ -93,6 +93,7 @@ const adminState = {
   refundStatusFilter: '',
   paymentSearch: '',
   refundSearch: '',
+  processingRefundIds: new Set<string>(),
 };
 
 const D = {
@@ -529,8 +530,12 @@ function renderRefundsTable() {
 }
 
 async function processRefund(refundId: string, action: 'approved' | 'rejected', btnEl: HTMLButtonElement) {
+  if (adminState.processingRefundIds.has(refundId)) return;
+
   const actionText = action === 'approved' ? '검토 승인' : '요청 거절';
   if (!confirm(`정말 ${actionText}하시겠습니까?`)) return;
+
+  adminState.processingRefundIds.add(refundId);
 
   const allBtns = btnEl.parentElement?.querySelectorAll('button');
   allBtns?.forEach((b) => {
@@ -565,12 +570,17 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
     allBtns?.forEach((b) => {
       (b as HTMLButtonElement).disabled = false;
     });
-    btnEl.textContent = originalText ?? actionText;
+       btnEl.textContent = originalText ?? actionText;
+  } finally {
+    adminState.processingRefundIds.delete(refundId);
   }
 }
 
 async function executeRefund(refundId: string, orderId: string, cancelReason: string, btnEl: HTMLButtonElement) {
+  if (adminState.processingRefundIds.has(refundId)) return;
   if (!confirm('정말 환불을 실행하시겠습니까?')) return;
+
+  adminState.processingRefundIds.add(refundId);
 
   const originalText = btnEl.textContent;
   const parent = btnEl.parentElement;
@@ -629,7 +639,9 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       (b as HTMLButtonElement).disabled = false;
     });
 
-    btnEl.textContent = originalText ?? '환불 실행';
+        btnEl.textContent = originalText ?? '환불 실행';
+  } finally {
+    adminState.processingRefundIds.delete(refundId);
   }
 }
 
