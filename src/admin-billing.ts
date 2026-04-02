@@ -639,6 +639,7 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       throw new Error(message || '환불 처리 실패');
     }
 
+
     alert(
       isAlreadyCancelled
         ? '이미 취소된 결제 건으로 확인되어 내부 상태를 완료로 동기화했습니다.'
