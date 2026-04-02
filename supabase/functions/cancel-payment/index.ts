@@ -251,19 +251,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error: paymentUpdateError } = await supabaseAdmin
-      .from('payments')
-      .update({
-        status: 'refunded',
-      })
-      .eq('id', payment.id);
+   const { data: paymentUpdateData, error: paymentUpdateError } = await supabaseAdmin
+  .from('payments')
+  .update({
+    status: 'refunded',
+  })
+  .eq('id', payment.id)
+  .select();
 
-    if (paymentUpdateError) {
-      return json(500, {
-        error: 'Failed to update payment status',
-        detail: paymentUpdateError.message,
-      });
-    }
+console.log('[cancel-payment] payment update data:', paymentUpdateData);
+console.log('[cancel-payment] payment update error:', paymentUpdateError);
+
+if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) {
+  return json(500, {
+    error: 'Payment update failed',
+    detail: paymentUpdateError?.message ?? 'No rows updated',
+    paymentId: payment.id,
+  });
+}
 
     const { error: refundUpdateError } = await supabaseAdmin
       .from('refund_requests')
