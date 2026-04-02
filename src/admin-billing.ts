@@ -19,7 +19,15 @@ import { supabase } from './services/supabase';
 // ============================================================
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_BROWSER_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_LEGACY_ANON_KEY = import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY as string | undefined;
+
+/**
+ * Edge Function 호출용 apikey
+ * - publishable/browser key 우선
+ * - 없으면 legacy anon key fallback
+ */
+const SUPABASE_FUNCTION_KEY = SUPABASE_BROWSER_KEY || SUPABASE_LEGACY_ANON_KEY;
 
 // ============================================================
 // 타입 정의
@@ -46,7 +54,7 @@ interface RefundRequest {
     order_id: string;
     user_id: string;
     cancel_reason: string;
-    request_status: string; // 'requested' | 'approved' | 'completed' | 'rejected'
+    request_status: string;
     admin_note: string | null;
     created_at: string;
 }
@@ -178,8 +186,8 @@ async function callEdgeFunction<TResponse = unknown>(
     functionName: string,
     body: Record<string, unknown>
 ): Promise<TResponse> {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        throw new Error('Supabase 환경 변수가 누락되었습니다. VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.');
+    if (!SUPABASE_URL || !SUPABASE_FUNCTION_KEY) {
+        throw new Error('Supabase 환경 변수가 누락되었습니다. VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY / VITE_SUPABASE_LEGACY_ANON_KEY를 확인해 주세요.');
     }
 
     const accessToken = await getCurrentAccessToken();
@@ -188,7 +196,7 @@ async function callEdgeFunction<TResponse = unknown>(
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
+            apikey: SUPABASE_FUNCTION_KEY,
             Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(body),
