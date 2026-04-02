@@ -164,6 +164,58 @@ function consumePaymentResultFlags() {
     }
 }
 
+async function checkPaymentResultParam() {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get('payment_fail') === '1') {
+        const message = params.get('message') || '결제가 취소되었거나 실패했습니다.';
+        clearPendingPaymentState();
+        localStorage.setItem('payment_failed', '1');
+        localStorage.setItem('payment_failed_message', message);
+        
+        const cleanUrl = window.location.pathname + (window.location.hash || '');
+        window.location.replace(cleanUrl);
+        return;
+    }
+    
+    if (params.get('payment_success') === '1') {
+        const paymentKey = params.get('paymentKey');
+        const orderId = params.get('orderId');
+        const amount = params.get('amount');
+        
+        if (!paymentKey || !orderId || !amount) {
+            alert('필수 쿼리 파라미터가 누락되었습니다.');
+            return;
+        }
+        
+        try {
+            const { data, error } = await supabase.functions.invoke('confirm-toss-payment', {
+                body: { paymentKey, orderId, amount: Number(amount) }
+            });
+            
+            if (error || !data?.success) {
+                clearPendingPaymentState();
+                localStorage.setItem('payment_failed', '1');
+                localStorage.setItem('payment_failed_message', `결제 승인 오류: ${data?.error || error?.message || '알 수 없는 오류'}`);
+                window.location.replace('/mypage.html');
+                return;
+            }
+            
+            clearPendingPaymentState();
+            localStorage.setItem('payment_completed', '1');
+            localStorage.setItem('payment_completed_order_id', orderId);
+            localStorage.setItem('payment_completed_amount', String(amount));
+            
+            window.location.replace('/mypage.html?credited=1');
+        } catch(err: any) {
+            clearPendingPaymentState();
+            localStorage.setItem('payment_failed', '1');
+            localStorage.setItem('payment_failed_message', `결제 승인 오류: ${err.message}`);
+            window.location.replace('/mypage.html');
+        }
+    }
+}
+
 // ==========================================
 // 5. Initialization
 // ==========================================
@@ -171,6 +223,12 @@ async function initMypage() {
     setupEventListeners();
     initTheme();
     showLoading();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') || params.get('payment_fail')) {
+        await checkPaymentResultParam();
+        if (params.get('payment_success')) return; 
+    }
 
     try {
         const { data, error } = await supabase.auth.getUser();
@@ -538,8 +596,8 @@ async function handleProductPurchase(
             orderId: paymentInit.order_id,
             orderName: `${paymentInit.product_name} · ${paymentInit.total_credits}회 분석 크레딧`,
             customerEmail: paymentInit.user_email || undefined,
-            successUrl: `${window.location.origin}/success.html`,
-            failUrl: `${window.location.origin}/fail.html`,
+            successUrl: `${window.location.origin}/mypage.html?payment_success=1`,
+            failUrl: `${window.location.origin}/mypage.html?payment_fail=1`,
         });
     } catch (err) {
         clearPendingPaymentState();
@@ -953,42 +1011,32 @@ async function submitRefundRequest() {
             throw new Error('로그인 세션이 없어 환불 요청을 보낼 수 없습니다. 다시 로그인해주세요.');
         }
 
-        const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/request-refund-review`;
-        const functionApiKey =
-            import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY;
-
-        if (!functionApiKey) {
-            throw new Error('Supabase Function 호출용 API 키가 없습니다. 환경변수를 확인해주세요.');
-        }
-
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': functionApiKey,
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
+        const { data: responseData, error } = await supabase.functions.invoke('request-refund-review', {
+            body: {
                 orderId: activeRefundPayment.order_id,
                 cancelReason: reason,
-            }),
+            }
         });
 
-        let responseData: any = null;
-        try {
-            responseData = await response.json();
-        } catch {
-            responseData = null;
+        let parsedError = responseData?.error;
+        if (error && error.context && typeof error.context.json === 'function') {
+            try {
+                const errJson = await error.context.json();
+                parsedError = parsedError || errJson?.error;
+            } catch (e) {
+                // ignore
+            }
         }
 
         const derivedErrorMessage =
-            responseData?.error ||
+            parsedError ||
             responseData?.detail ||
-            `환불 요청 처리 중 오류가 발생했습니다. (HTTP ${response.status})`;
+            error?.message ||
+            '환불 요청 처리 중 오류가 발생했습니다.';
 
         if (
-            typeof responseData?.error === 'string' &&
-            responseData.error.toLowerCase().includes('already exists')
+            typeof parsedError === 'string' &&
+            parsedError.toLowerCase().includes('already exists')
         ) {
             showRefundResult('duplicate');
             updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
@@ -996,7 +1044,7 @@ async function submitRefundRequest() {
             return;
         }
 
-        if (!response.ok || !responseData?.success) {
+        if (error || !responseData?.success) {
             throw new Error(derivedErrorMessage);
         }
 

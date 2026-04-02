@@ -1,6 +1,7 @@
 import { PublicDataProvider, LocationPayload, MockPublicDataProvider } from "./PublicDataFetcher";
 import type { PublicDataResult } from "./types";
 import { DataSource } from "./dataMergeRules";
+import { supabase } from "../services/supabase";
 
 type DistrictMetadataResponse = {
   cityName: string;
@@ -104,27 +105,6 @@ export class RealPublicDataProvider implements PublicDataProvider {
     this.cache.set(cacheKey, fetchPromise);
     return fetchPromise;
   }
-
-  private resolveSupabaseKeys() {
-    const supabaseUrl =
-      import.meta.env.VITE_SUPABASE_URL ||
-      import.meta.env.SUPABASE_URL;
-
-    const publishableKey =
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      import.meta.env.VITE_SUPABASE_ANON_KEY ||
-      import.meta.env.SUPABASE_PUBLISHABLE_KEY ||
-      import.meta.env.SUPABASE_ANON_KEY;
-
-    const legacyAnonKey =
-      import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY ||
-      import.meta.env.VITE_SUPABASE_ANON_KEY ||
-      import.meta.env.SUPABASE_LEGACY_ANON_KEY ||
-      import.meta.env.SUPABASE_ANON_KEY;
-
-    return { supabaseUrl, publishableKey, legacyAnonKey };
-  }
-
   private async fetchSgisRegionData(lat: number, lng: number): Promise<SgisRegionProxyResponse | null> {
     const locationKey = this.getLocationCacheKey(lat, lng);
 
@@ -134,45 +114,14 @@ export class RealPublicDataProvider implements PublicDataProvider {
     }
 
     const requestPromise = (async () => {
-      const { supabaseUrl, publishableKey, legacyAnonKey } = this.resolveSupabaseKeys();
-
-      console.log("[SGIS proxy] key presence =", {
-        supabaseUrl: !!supabaseUrl,
-        publishableKey: !!publishableKey,
-        legacyAnonKey: !!legacyAnonKey,
+      const functionPath = `sgis-regiontotal?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`;
+      const { data, error } = await supabase.functions.invoke(functionPath, {
+        method: "GET"
       });
 
-      if (!supabaseUrl || !supabaseUrl.trim()) {
-        throw new Error("Supabase URL is missing");
+      if (error) {
+        throw new Error(`[SGIS proxy] ${error.message || 'Function invocation failed'}`);
       }
-      if (!publishableKey || !publishableKey.trim()) {
-        throw new Error("Supabase publishable/anon key is missing");
-      }
-      if (!legacyAnonKey || !legacyAnonKey.trim()) {
-        throw new Error("Supabase legacy anon key is missing");
-      }
-
-      const url =
-        `${supabaseUrl}/functions/v1/sgis-regiontotal?` +
-        `lat=${encodeURIComponent(String(lat))}` +
-        `&lng=${encodeURIComponent(String(lng))}`;
-
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          apikey: publishableKey,
-          Authorization: `Bearer ${legacyAnonKey}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        throw new Error(`[SGIS proxy] ${res.status} ${text}`);
-      }
-
-      const data = JSON.parse(text) as SgisRegionProxyResponse;
 
       console.log("[SGIS proxy] region data =", data);
 
@@ -183,7 +132,7 @@ export class RealPublicDataProvider implements PublicDataProvider {
         console.warn("[SGIS proxy] regiontotal warning:", data.warnings.regiontotal);
       }
 
-      return data;
+      return data as SgisRegionProxyResponse;
     })();
 
     this.sgisRegionCache.set(locationKey, requestPromise);
