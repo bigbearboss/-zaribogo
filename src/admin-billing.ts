@@ -24,6 +24,7 @@ interface RefundRequest {
   request_status: string;
   admin_note: string | null;
   created_at: string;
+  is_auto: boolean | null;
 }
 
 interface PaymentEvent {
@@ -433,7 +434,7 @@ async function loadRefunds() {
   try {
     const { data, error } = await supabase
       .from('refund_requests')
-      .select('id, order_id, user_id, cancel_reason, request_status, admin_note, created_at')
+      .select('id, order_id, user_id, cancel_reason, request_status, admin_note, created_at, is_auto')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -572,10 +573,12 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
   if (!confirm('정말 환불을 실행하시겠습니까?')) return;
 
   const originalText = btnEl.textContent;
-  await supabase
-  .from('refund_requests')
-  .update({ request_status: 'completed' })
-  .eq('id', refundId);
+  const parent = btnEl.parentElement;
+
+  parent?.querySelectorAll('button').forEach((b) => {
+    (b as HTMLButtonElement).disabled = true;
+  });
+
   btnEl.textContent = '처리 중...';
 
   try {
@@ -586,35 +589,46 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
     });
 
     const message =
-  fnData?.message ||
-  fnData?.error ||
-  fnData?.detail ||
-  fnData?.details ||
-  '';
+      fnData?.message ||
+      fnData?.error ||
+      fnData?.detail ||
+      fnData?.details ||
+      '';
 
-const isAlreadyCancelled =
-  message.includes('already') ||
-  message.includes('이미') ||
-  message.includes('cancelled');
+    const isAlreadyCancelled =
+      message.includes('already') ||
+      message.includes('이미') ||
+      message.includes('cancelled');
 
-if (!fnData?.success && !isAlreadyCancelled) {
-  throw new Error(message || '환불 처리 실패');
-}
+    if (!fnData?.success && !isAlreadyCancelled) {
+      throw new Error(message || '환불 처리 실패');
+    }
 
-await supabase
-  .from('refund_requests')
-  .update({ request_status: 'completed' })
-  .eq('id', refundId);
-    
-    alert(fnData?.message || '환불이 성공적으로 실행되었습니다.');
+    await supabase
+      .from('refund_requests')
+      .update({ request_status: 'completed' })
+      .eq('id', refundId);
+
+    alert(
+      isAlreadyCancelled
+        ? '이미 취소된 결제 건으로 확인되어 내부 상태를 완료로 동기화했습니다.'
+        : fnData?.message || '환불이 성공적으로 실행되었습니다.'
+    );
+
     await Promise.all([loadPayments(), loadRefunds()]);
   } catch (err: any) {
     console.error('[executeRefund]', err);
-    const parent = btnEl.parentElement;
-parent?.querySelectorAll('button').forEach((b) => {
-  (b as HTMLButtonElement).disabled = true;
-});
-    btnEl.disabled = false;
+
+    alert(
+      err.message?.includes('constraint')
+        ? '환불 상태 처리 중 오류가 발생했습니다. 관리자에게 문의하세요.'
+        : `환불 실행 실패: ${err.message || '알 수 없는 오류'}`
+    );
+
+    parent?.querySelectorAll('button').forEach((b) => {
+      (b as HTMLButtonElement).disabled = false;
+    });
+
     btnEl.textContent = originalText ?? '환불 실행';
   }
 }
