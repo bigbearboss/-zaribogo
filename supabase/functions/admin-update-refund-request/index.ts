@@ -11,6 +11,17 @@ type UpdateRefundBody = {
   action?: 'approved' | 'rejected';
 };
 
+type RefundRequestRow = {
+  id: string;
+  order_id: string;
+  user_id: string;
+  cancel_reason: string | null;
+  request_status: string;
+  admin_note: string | null;
+  created_at: string;
+  is_auto?: boolean | null;
+};
+
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
@@ -110,16 +121,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (refundRequest.request_status !== 'requested') {
+    const refundRequestRow = refundRequest as RefundRequestRow;
+
+    if (refundRequestRow.request_status !== 'requested') {
       return json(409, {
-        error: `Refund request status is not updateable: ${refundRequest.request_status}`,
+        error: `Refund request status is not updateable: ${refundRequestRow.request_status}`,
       });
     }
 
     const nextAdminNote =
       action === 'approved'
-        ? `${refundRequest.admin_note ?? ''}\nAPPROVED_BY_ADMIN:${user.email ?? user.id}`.trim()
-        : `${refundRequest.admin_note ?? ''}\nREJECTED_BY_ADMIN:${user.email ?? user.id}`.trim();
+        ? `${refundRequestRow.admin_note ?? ''}\nAPPROVED_BY_ADMIN:${user.email ?? user.id}`.trim()
+        : `${refundRequestRow.admin_note ?? ''}\nREJECTED_BY_ADMIN:${user.email ?? user.id}`.trim();
 
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('refund_requests')
@@ -135,6 +148,32 @@ Deno.serve(async (req) => {
       return json(500, {
         error: 'Failed to update refund request',
         detail: updateError?.message ?? null,
+      });
+    }
+
+    const { error: actionLogError } = await supabaseAdmin
+      .from('admin_action_logs')
+      .insert({
+        admin_user_id: user.id,
+        action_type:
+          action === 'approved'
+            ? 'refund_request_approved'
+            : 'refund_request_rejected',
+        target_type: 'refund_request',
+        target_id: refundRequestId,
+        order_id: refundRequestRow.order_id,
+        detail_json: {
+          previous_status: refundRequestRow.request_status,
+          next_status: action,
+          cancel_reason: refundRequestRow.cancel_reason,
+          is_auto: refundRequestRow.is_auto ?? false,
+        },
+      });
+
+    if (actionLogError) {
+      return json(500, {
+        error: 'Refund request updated but admin action log insert failed',
+        detail: actionLogError.message,
       });
     }
 
