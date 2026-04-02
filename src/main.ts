@@ -28,7 +28,7 @@ import { PublicDataFetcher } from "./engine/PublicDataFetcher";
 import { RealPublicDataProvider } from "./engine/RealPublicDataProvider";
 import { CsvDatasetProvider } from "./engine/CsvDatasetProvider";
 import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
-import { supabase } from "./services/supabase";
+import { supabase } from './services/supabase';
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
 import admCodeMap from "./engine/data/admCodeMap";

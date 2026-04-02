@@ -1,7 +1,7 @@
 import { PublicDataProvider, LocationPayload, MockPublicDataProvider } from "./PublicDataFetcher";
 import type { PublicDataResult } from "./types";
 import { DataSource } from "./dataMergeRules";
-import { supabase } from "../services/supabase";
+import { supabase } from '../services/supabase';
 
 type DistrictMetadataResponse = {
   cityName: string;
