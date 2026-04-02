@@ -8,9 +8,18 @@
  * 4. 자동 환불 완료 건수(지표): refund_requests 보다는 결제 관점에서 최종 성공을 의미하는
  *    payments 테이블의 status = 'refunded'를 기준으로 삼도록 수정(Source of Truth) 및 주석 추가했습니다.
  * 5. [추가] refunds 로드 후 updateSummaryCards() 추가 호출, UI 상의 해당 "자동 환불 완료" 라벨을 "환불 완료"로 수정하여 의미 혼란 방지.
+ * 6. [추가] cancel-payment 호출 시 현재 로그인 세션의 access_token(JWT)을 명시적으로 Authorization 헤더에 넣어 전달하도록 수정했습니다.
+ *    기존 401 Invalid JWT 문제 해결 목적입니다.
  */
 
 import { supabase } from './services/supabase';
+
+// ============================================================
+// 환경 변수
+// ============================================================
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 // ============================================================
 // 타입 정의
@@ -28,7 +37,6 @@ interface AdminPayment {
     paid_at: string | null;
     created_at: string;
     updated_at: string;
-    // 조인 결과
     user_email?: string;
     product_name?: string;
 }
@@ -51,21 +59,25 @@ interface PaymentEvent {
     created_at: string;
 }
 
+interface EdgeFunctionErrorResponse {
+    code?: number | string;
+    message?: string;
+    error?: string;
+    details?: string;
+    success?: boolean;
+}
+
+interface CancelPaymentSuccessResponse {
+    success?: boolean;
+    message?: string;
+    error?: string;
+    [key: string]: unknown;
+}
+
 // ============================================================
-// 관리자 권한 체크 (나중에 실제 체크로 교체)
+// 관리자 권한 체크
 // ============================================================
 
-/**
- * 관리자 권한 체크: profiles.is_admin = true 여부를 Supabase에서 직접 조회합니다.
- *
- * RLS 정책 전제:
- *   - profiles 테이블에 "Users can view own profile" 정책이 있어야 합니다. (기존 정책 유지)
- *   - is_admin 컬럼이 profiles 테이블에 존재해야 합니다.
- *     → supabase/migrations/20260401131316_add_admin_flag.sql 을 먼저 실행하세요.
- *
- * 관리자 지정 방법 (Supabase SQL Editor):
- *   UPDATE public.profiles SET is_admin = true WHERE email = 'admin@example.com';
- */
 async function checkAdminAccess(userId: string): Promise<boolean> {
     if (!userId) return false;
 
@@ -77,7 +89,6 @@ async function checkAdminAccess(userId: string): Promise<boolean> {
             .single();
 
         if (error) {
-            // is_admin 컬럼이 없거나 네트워크 오류 → 접근 거부
             console.error('[checkAdminAccess] profiles 조회 실패:', error.message);
             return false;
         }
@@ -115,7 +126,6 @@ const D = {
     btnAdminLogout:     document.getElementById('btnAdminLogout') as HTMLButtonElement,
     navLinks:           document.querySelectorAll('.admin-nav-link'),
 
-    // 결제 탭
     tabPayments:        document.getElementById('tab-payments') as HTMLElement,
     btnRefreshPayments: document.getElementById('btnRefreshPayments') as HTMLButtonElement,
     paymentSearchInput: document.getElementById('paymentSearchInput') as HTMLInputElement,
@@ -123,7 +133,6 @@ const D = {
     paymentsTableBody:  document.getElementById('paymentsTableBody') as HTMLElement,
     paymentsEmpty:      document.getElementById('paymentsEmpty') as HTMLElement,
 
-    // 환불 탭
     tabRefunds:         document.getElementById('tab-refunds') as HTMLElement,
     btnRefreshRefunds:  document.getElementById('btnRefreshRefunds') as HTMLButtonElement,
     refundSearchInput:  document.getElementById('refundSearchInput') as HTMLInputElement,
@@ -131,7 +140,6 @@ const D = {
     refundsTableBody:   document.getElementById('refundsTableBody') as HTMLElement,
     refundsEmpty:       document.getElementById('refundsEmpty') as HTMLElement,
 
-    // 드로어
     eventDrawer:        document.getElementById('eventDrawer') as HTMLElement,
     drawerOverlay:      document.getElementById('drawerOverlay') as HTMLElement,
     btnCloseDrawer:     document.getElementById('btnCloseDrawer') as HTMLButtonElement,
@@ -139,12 +147,77 @@ const D = {
     eventTimeline:      document.getElementById('eventTimeline') as HTMLElement,
     eventTimelineEmpty: document.getElementById('eventTimelineEmpty') as HTMLElement,
 
-    // 요약 카드
     summaryTodayPaid:    document.getElementById('summaryTodayPaid') as HTMLElement,
     summaryRefundPending: document.getElementById('summaryRefundPending') as HTMLElement,
     summaryAutoRefunded: document.getElementById('summaryAutoRefunded') as HTMLElement,
     summaryFailed:       document.getElementById('summaryFailed') as HTMLElement,
 };
+
+// ============================================================
+// 공통 유틸: 인증된 Edge Function 호출
+// ============================================================
+
+async function getCurrentAccessToken(): Promise<string> {
+    const {
+        data: { session },
+        error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+        throw new Error(`세션 확인 중 오류가 발생했습니다: ${error.message}`);
+    }
+
+    if (!session?.access_token) {
+        throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
+    }
+
+    return session.access_token;
+}
+
+async function callEdgeFunction<TResponse = unknown>(
+    functionName: string,
+    body: Record<string, unknown>
+): Promise<TResponse> {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('Supabase 환경 변수가 누락되었습니다. VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.');
+    }
+
+    const accessToken = await getCurrentAccessToken();
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+    });
+
+    const rawText = await response.text();
+
+    let parsed: EdgeFunctionErrorResponse | TResponse | null = null;
+    if (rawText) {
+        try {
+            parsed = JSON.parse(rawText) as EdgeFunctionErrorResponse | TResponse;
+        } catch {
+            parsed = null;
+        }
+    }
+
+    if (!response.ok) {
+        const errorBody = (parsed ?? {}) as EdgeFunctionErrorResponse;
+        const detail =
+            errorBody?.message ||
+            errorBody?.error ||
+            errorBody?.details ||
+            rawText ||
+            `${functionName} 호출에 실패했습니다.`;
+        throw new Error(detail);
+    }
+
+    return (parsed as TResponse) ?? ({} as TResponse);
+}
 
 // ============================================================
 // 초기화
@@ -154,7 +227,6 @@ async function initAdmin() {
     try {
         const { data: { user }, error } = await supabase.auth.getUser();
 
-        // ① 비로그인 → 메인 랜딩으로
         if (error || !user) {
             window.location.replace('/index.html');
             return;
@@ -164,14 +236,12 @@ async function initAdmin() {
 
         const isAdmin = await checkAdminAccess(user.id);
 
-        // ② 로그인은 됐지만 관리자가 아님 → 마이페이지로
         if (!isAdmin) {
             console.warn('[Admin] 접근 거부: 관리자 권한 없음 (', user.email, ')');
             window.location.replace('/mypage.html');
             return;
         }
 
-        // ③ 관리자 확인 → 정상 진입
         setupAdminListeners();
         await Promise.all([
             loadPayments(),
@@ -183,7 +253,6 @@ async function initAdmin() {
 
     } catch (err) {
         console.error('[initAdmin]', err);
-        // 예외 시에도 안전하게 차단
         D.loadingState.classList.add('hidden');
         D.accessDeniedState.classList.remove('hidden');
     }
@@ -214,7 +283,6 @@ function switchTab(tab: 'payments' | 'refunds') {
 // ============================================================
 
 function setupAdminListeners() {
-    // 탭 nav
     D.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -223,37 +291,31 @@ function setupAdminListeners() {
         });
     });
 
-    // 로그아웃
     D.btnAdminLogout.addEventListener('click', async () => {
         await supabase.auth.signOut();
         window.location.href = '/index.html';
     });
 
-    // 결제 새로고침
     D.btnRefreshPayments.addEventListener('click', () => {
         adminState.payments = [];
         loadPayments();
     });
 
-    // 환불 새로고침 — 캐시 초기화 후 강제 재조회
     D.btnRefreshRefunds.addEventListener('click', () => {
         adminState.refunds = [];
         loadRefunds();
     });
 
-    // 결제 검색
     D.paymentSearchInput.addEventListener('input', () => {
         adminState.paymentSearch = D.paymentSearchInput.value.trim().toLowerCase();
         renderPaymentsTable();
     });
 
-    // 환불 검색
     D.refundSearchInput.addEventListener('input', () => {
         adminState.refundSearch = D.refundSearchInput.value.trim().toLowerCase();
         renderRefundsTable();
     });
 
-    // 결제 상태 필터
     D.paymentStatusFilters.addEventListener('click', (e) => {
         const btn = (e.target as HTMLElement).closest('.status-filter-btn') as HTMLButtonElement | null;
         if (!btn) return;
@@ -263,7 +325,6 @@ function setupAdminListeners() {
         renderPaymentsTable();
     });
 
-    // 환불 상태 필터
     D.refundStatusFilters.addEventListener('click', (e) => {
         const btn = (e.target as HTMLElement).closest('.status-filter-btn') as HTMLButtonElement | null;
         if (!btn) return;
@@ -273,7 +334,6 @@ function setupAdminListeners() {
         renderRefundsTable();
     });
 
-    // 드로어 닫기
     D.btnCloseDrawer.addEventListener('click', closeEventDrawer);
     D.drawerOverlay.addEventListener('click', closeEventDrawer);
     document.addEventListener('keydown', (e) => {
@@ -290,7 +350,6 @@ async function loadPayments() {
     D.paymentsEmpty.classList.add('hidden');
 
     try {
-        // payments 조회 (서비스롤 필요 → 현재는 RLS로 자신 것만, 관리자 RLS 정책 추가 시 전체 조회 가능)
         const { data, error } = await supabase
             .from('payments')
             .select('id, user_id, product_id, order_id, amount, status, pg_provider, pg_tid, paid_at, created_at, updated_at')
@@ -299,7 +358,6 @@ async function loadPayments() {
 
         if (error) throw error;
 
-        // product 이름 보강
         const productIds = [...new Set((data ?? []).map(p => p.product_id).filter(Boolean))] as string[];
         const productMap = new Map<string, string>();
 
@@ -308,6 +366,7 @@ async function loadPayments() {
                 .from('credit_products')
                 .select('id, name')
                 .in('id', productIds);
+
             (products ?? []).forEach((p: any) => productMap.set(p.id, p.name));
         }
 
@@ -359,12 +418,10 @@ function renderPaymentsTable() {
             <td><button class="btn-view-events">📋 타임라인</button></td>
         `;
 
-        // 행 전체 클릭 → 드로어 열기
         tr.addEventListener('click', () => {
             openEventDrawer(payment.id, payment.order_id);
         });
 
-        // 타임라인 버튼도 동일 동작 (이벤트 버블 방지 불필요)
         const evtBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement;
         evtBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -382,54 +439,35 @@ function renderPaymentsTable() {
 function updateSummaryCards() {
     const payments = adminState.payments;
 
-    // ────────────────────────────────────────────────────────────
-    // [요약 카드 계산 기준 - 요구사항 적용]
-    // 1) 전체 데이터 기준: 필터/검색(filtered) 상태와 무관하게 원본(adminState.payments, adminState.refunds) 배열을 기반으로 계산합니다.
-    // 2) 0건일 때도 데이터 길이가 0이므로 Number 타입인 0이 정상적으로 UI에 표시됩니다.
-    // ────────────────────────────────────────────────────────────
-
-    // [KST 기준 오늘 날짜 문자열 구하기 - YYYY-MM-DD]
     const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
         timeZone: 'Asia/Seoul',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
     });
+
     const formatToYMD = (date: Date) => {
         const match = kstFormatter.format(date).match(/(\d{4})[^\d]+(\d{2})[^\d]+(\d{2})/);
         return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
     };
+
     const todayKSTString = formatToYMD(new Date());
 
-    // ── [계산 기준: 오늘 결제]
-    // - status가 'paid'이고, paid_at(결제완료일시)를 KST로 변환했을 때 오늘 날짜와 일치하는 건수
     const todayPaid = payments.filter(p => {
         if (p.status !== 'paid' || !p.paid_at) return false;
         return formatToYMD(new Date(p.paid_at)) === todayKSTString;
     }).length;
 
-    // ── [계산 기준: 환불 진행 중]
-    // - 환불 요청 데이터(refunds)가 있다면 request_status === 'requested' 또는 'approved' 건수 (실제 스키마 및 운영 기준)
-    // - 없다면 차선책으로 payments의 status === 'refund_requested'인 건수
     const refundPending = adminState.refunds.length > 0
         ? adminState.refunds.filter(r => r.request_status === 'requested' || r.request_status === 'approved').length
         : payments.filter(p => p.status === 'refund_requested').length;
 
-    // ── [계산 기준: 환불 완료 (자동 환불 포함)]
-    // - [주석: 신뢰도 기준]
-    //   payments.status = 'refunded'가 결제 관점(PG사 취소 성공 후 업데이트)에서 더 신뢰할 수 있는 "진실 공급원(Source of Truth)"입니다. 
-    //   refund_requests.request_status = 'completed'는 payments 테이블이 업데이트된 직후에 처리되므로,
-    //   네트워크 에러 등으로 부분 실패 시 payments는 환불 완료이지만 refund_requests는 아직 approved 상태로 남을 수 있습니다.
-    //   따라서 환불 "완료" 건수의 가장 정확한 지표는 payments.status === 'refunded' 입니다.
     const autoRefunded = payments.filter(p => p.status === 'refunded').length;
 
-    // ── [계산 기준: 결제 실패/취소]
-    // - payments의 status가 'failed'(결제 실패) 또는 'cancelled'(결제 중도 취소)인 건수의 합
     const failed = payments.filter(p =>
         p.status === 'failed' || p.status === 'cancelled'
     ).length;
 
-    // DOM 업데이트 (데이터 0건일 때도 0 표시)
     if (D.summaryTodayPaid)     D.summaryTodayPaid.textContent     = String(todayPaid);
     if (D.summaryRefundPending) D.summaryRefundPending.textContent = String(refundPending);
     if (D.summaryAutoRefunded)  D.summaryAutoRefunded.textContent  = String(autoRefunded);
@@ -445,7 +483,6 @@ async function loadRefunds() {
     D.refundsEmpty.classList.add('hidden');
 
     try {
-        // refund_requests 테이블 스키마에 맞게 필드명(request_status, admin_note) 수정
         const { data, error } = await supabase
             .from('refund_requests')
             .select('id, order_id, user_id, cancel_reason, request_status, admin_note, created_at')
@@ -455,11 +492,9 @@ async function loadRefunds() {
         if (error) {
             D.refundsTableBody.innerHTML = '';
             if (error.code === '42P01') {
-                // 테이블 미존재
                 D.refundsEmpty.textContent = 'refund_requests 테이블이 아직 생성되지 않았습니다. 마이그레이션을 확인해주세요.';
                 D.refundsEmpty.classList.remove('hidden');
             } else if (error.code === '42501') {
-                // RLS 차단
                 D.refundsEmpty.textContent = '접근 권한이 없습니다. 관리자 RLS 정책을 확인해주세요.';
                 D.refundsEmpty.classList.remove('hidden');
             } else {
@@ -470,7 +505,7 @@ async function loadRefunds() {
 
         adminState.refunds = (data ?? []) as RefundRequest[];
         renderRefundsTable();
-        updateSummaryCards(); // 환불 데이터 로드 후 보류/진행 중인 카운트 최신화
+        updateSummaryCards();
     } catch (err) {
         console.error('[loadRefunds]', err);
         D.refundsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:rgb(252,165,165)">데이터를 불러오지 못했습니다.</td></tr>';
@@ -493,19 +528,18 @@ function renderRefundsTable() {
     filtered.forEach(refund => {
         const tr = document.createElement('tr');
 
-        // admin_note를 기반으로 자동 환불 대상 여부 판별
         const isAuto = refund.admin_note?.includes('AUTO');
         const autoText = isAuto
             ? '<span class="admin-badge badge-auto-approved">자동 환불 대상</span>'
             : '<span class="admin-badge badge-review">수동 검토 대상</span>';
 
-        // cancel_reason이 null일 수 있음
         const reason = refund.cancel_reason ?? '';
 
         let actionTd = '<span style="color:var(--text-muted)">—</span>';
         if (refund.request_status === 'requested') {
-            actionTd = `<button class="admin-btn admin-btn-primary btn-process-refund" data-action="approved" style="padding:4px 8px; font-size:12px; margin-right:4px;">검토 승인</button>` +
-                       `<button class="admin-btn admin-btn-error btn-process-refund" data-action="rejected" style="padding:4px 8px; font-size:12px;">요청 거절</button>`;
+            actionTd =
+                `<button class="admin-btn admin-btn-primary btn-process-refund" data-action="approved" style="padding:4px 8px; font-size:12px; margin-right:4px;">검토 승인</button>` +
+                `<button class="admin-btn admin-btn-error btn-process-refund" data-action="rejected" style="padding:4px 8px; font-size:12px;">요청 거절</button>`;
         } else if (refund.request_status === 'approved') {
             actionTd = `<button class="admin-btn btn-execute-refund" style="background: rgb(16,185,129); color: #fff; padding:4px 8px; font-size:12px;">환불 실행</button>`;
         }
@@ -520,7 +554,6 @@ function renderRefundsTable() {
             <td>${actionTd}</td>
         `;
 
-        // 승인/거절 버튼 이벤트 리스너 추가
         if (refund.request_status === 'requested') {
             const btns = tr.querySelectorAll('.btn-process-refund');
             btns.forEach(btn => {
@@ -551,7 +584,7 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
 
     const allBtns = btnEl.parentElement?.querySelectorAll('button');
     allBtns?.forEach(b => (b.disabled = true));
-    
+
     const originalText = btnEl.textContent;
     btnEl.textContent = '처리 중...';
 
@@ -562,13 +595,12 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
             .eq('id', refundId);
 
         if (error) throw error;
-        
-        // 재조회 시 UI 렌더링 및 summaryCards 자동 업데이트
+
         await loadRefunds();
     } catch (err: any) {
         console.error('[processRefund]', err);
         alert(`${actionText} 처리 중 오류가 발생했습니다: ${err.message}`);
-        
+
         allBtns?.forEach(b => (b.disabled = false));
         btnEl.textContent = originalText ?? actionText;
     }
@@ -582,33 +614,25 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
     btnEl.textContent = '처리 중...';
 
     try {
-        // 1. Edge Function 호출 (실제 결제 취소 요청 및 상태 업데이트 위임)
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('cancel-payment', {
-            body: {
-                orderId: orderId,
-                cancelReason: cancelReason || '관리자의 환불 실행'
-            }
+        const fnData = await callEdgeFunction<CancelPaymentSuccessResponse>('cancel-payment', {
+            refundRequestId: refundId,
+            orderId,
+            cancelReason: cancelReason || '관리자의 환불 실행',
         });
 
-        // HTTP/네트워크 레벨의 에러 처리
-        if (fnError) {
-            throw fnError;
-        }
-
-        // 2. 응답 데이터(data.success) 검증
         if (!fnData?.success) {
             throw new Error(fnData?.message || fnData?.error || 'Edge Function에서 환불 처리에 실패했습니다.');
         }
 
-        // 3. 성공 시 재조회 및 화면 갱신
-        alert('환불이 성공적으로 실행되었습니다.');
+        alert(fnData?.message || '환불이 성공적으로 실행되었습니다.');
+
         await Promise.all([
             loadPayments(),
             loadRefunds()
         ]);
     } catch (err: any) {
         console.error('[executeRefund]', err);
-        alert(`환불 실행 중 오류가 발생했습니다: ${err.message}`);
+        alert(`환불 실행 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
         btnEl.disabled = false;
         btnEl.textContent = originalText ?? '환불 실행';
     }
@@ -628,7 +652,6 @@ async function openEventDrawer(paymentId: string, orderId: string) {
     document.body.style.overflow = 'hidden';
 
     try {
-        // payment_events 테이블이 없으면 gracefully 처리
         const { data, error } = await supabase
             .from('payment_events')
             .select('id, payment_id, event_type, payload, created_at')
@@ -734,8 +757,11 @@ function getTimelineIcon(eventType: string): string {
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString('ko-KR', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
