@@ -32,6 +32,7 @@ type RefundRequestRow = {
   cancel_reason: string | null;
   admin_note: string | null;
   created_at: string;
+  is_auto?: boolean | null;
 };
 
 function json(status: number, body: Record<string, unknown>) {
@@ -90,7 +91,6 @@ Deno.serve(async (req) => {
       },
     });
 
-    // gateway 검증 대신 여기서 직접 JWT 검증
     const {
       data: { user },
       error: userError,
@@ -171,11 +171,11 @@ Deno.serve(async (req) => {
       });
     }
 
-   if (refundRequest.request_status !== 'approved') {
-  return json(409, {
-    error: `Refund request status is not executable: ${refundRequest.request_status}`,
-  });
-}
+    if (refundRequest.request_status !== 'approved') {
+      return json(409, {
+        error: `Refund request status is not executable: ${refundRequest.request_status}`,
+      });
+    }
 
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('payments')
@@ -193,13 +193,46 @@ Deno.serve(async (req) => {
     const payment = paymentData as PaymentRow;
 
     if (payment.status === 'refunded') {
-      await supabaseAdmin
+      const { error: syncRefundError } = await supabaseAdmin
         .from('refund_requests')
         .update({
           request_status: 'completed',
           admin_note: `${refundRequest.admin_note ?? ''}\nALREADY_REFUNDED_SYNCED`.trim(),
         })
         .eq('id', refundRequest.id);
+
+      if (syncRefundError) {
+        return json(500, {
+          error: 'Refund request sync failed',
+          detail: syncRefundError.message,
+        });
+      }
+
+      const { error: syncedActionLogError } = await supabaseAdmin
+        .from('admin_action_logs')
+        .insert({
+          admin_user_id: user.id,
+          action_type: 'refund_synced_already_cancelled',
+          target_type: 'refund_request',
+          target_id: refundRequest.id,
+          order_id: payment.order_id,
+          detail_json: {
+            payment_id: payment.id,
+            previous_payment_status: payment.status,
+            next_payment_status: 'refunded',
+            previous_refund_request_status: refundRequest.request_status,
+            next_refund_request_status: 'completed',
+            cancel_reason: cancelReason || refundRequest.cancel_reason || null,
+            is_auto: refundRequest.is_auto ?? false,
+          },
+        });
+
+      if (syncedActionLogError) {
+        return json(500, {
+          error: 'Refund synced but admin action log insert failed',
+          detail: syncedActionLogError.message,
+        });
+      }
 
       return json(200, {
         success: true,
@@ -229,51 +262,51 @@ Deno.serve(async (req) => {
       }
     );
 
- const tossJson = await tossResponse.json().catch(() => null);
+    const tossJson = await tossResponse.json().catch(() => null);
 
-const tossMessage = `${tossJson?.message ?? ''} ${tossJson?.detail ?? ''}`.trim();
-const alreadyCancelled =
-  tossResponse.status === 400 &&
-  /이미\s*취소된\s*결제/.test(tossMessage);
+    const tossMessage = `${tossJson?.message ?? ''} ${tossJson?.detail ?? ''}`.trim();
+    const alreadyCancelled =
+      tossResponse.status === 400 &&
+      /이미\s*취소된\s*결제/.test(tossMessage);
 
-if (!tossResponse.ok && !alreadyCancelled) {
-  await supabaseAdmin.from('payment_events').insert({
-    payment_id: payment.id,
-    order_id: payment.order_id,
-    event_type: 'refund_failed',
-    source: 'cancel-payment',
-    payload_json: {
-      reason: cancelReason || refundRequest.cancel_reason || null,
-      toss_status: tossResponse.status,
-      toss_response: tossJson,
-    },
-  });
+    if (!tossResponse.ok && !alreadyCancelled) {
+      await supabaseAdmin.from('payment_events').insert({
+        payment_id: payment.id,
+        order_id: payment.order_id,
+        event_type: 'refund_failed',
+        source: 'cancel-payment',
+        payload_json: {
+          reason: cancelReason || refundRequest.cancel_reason || null,
+          toss_status: tossResponse.status,
+          toss_response: tossJson,
+        },
+      });
 
-  return json(502, {
-    error: 'Toss cancel failed',
-    detail: tossJson?.message || tossJson?.detail || null,
-    toss_status: tossResponse.status,
-  });
-}
+      return json(502, {
+        error: 'Toss cancel failed',
+        detail: tossJson?.message || tossJson?.detail || null,
+        toss_status: tossResponse.status,
+      });
+    }
 
-   const { data: paymentUpdateData, error: paymentUpdateError } = await supabaseAdmin
-  .from('payments')
-  .update({
-    status: 'refunded',
-  })
-  .eq('id', payment.id)
-  .select();
+    const { data: paymentUpdateData, error: paymentUpdateError } = await supabaseAdmin
+      .from('payments')
+      .update({
+        status: 'refunded',
+      })
+      .eq('id', payment.id)
+      .select();
 
-console.log('[cancel-payment] payment update data:', paymentUpdateData);
-console.log('[cancel-payment] payment update error:', paymentUpdateError);
+    console.log('[cancel-payment] payment update data:', paymentUpdateData);
+    console.log('[cancel-payment] payment update error:', paymentUpdateError);
 
-if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) {
-  return json(500, {
-    error: 'Payment update failed',
-    detail: paymentUpdateError?.message ?? 'No rows updated',
-    paymentId: payment.id,
-  });
-}
+    if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) {
+      return json(500, {
+        error: 'Payment update failed',
+        detail: paymentUpdateError?.message ?? 'No rows updated',
+        paymentId: payment.id,
+      });
+    }
 
     const { error: refundUpdateError } = await supabaseAdmin
       .from('refund_requests')
@@ -291,20 +324,22 @@ if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) 
     }
 
     const { error: eventInsertError } = await supabaseAdmin
-  .from('payment_events')
-  .insert({
-    payment_id: payment.id,
-    order_id: payment.order_id,
-    event_type: alreadyCancelled ? 'refund_already_cancelled_synced' : 'refund_completed',
-    source: 'cancel-payment',
-    payload_json: {
-      refund_request_id: refundRequest.id,
-      cancelled_by: user.email ?? user.id,
-      cancel_reason: cancelReason || refundRequest.cancel_reason || null,
-      toss_response: tossJson,
-    },
-  });
-    
+      .from('payment_events')
+      .insert({
+        payment_id: payment.id,
+        order_id: payment.order_id,
+        event_type: alreadyCancelled
+          ? 'refund_already_cancelled_synced'
+          : 'refund_completed',
+        source: 'cancel-payment',
+        payload_json: {
+          refund_request_id: refundRequest.id,
+          cancelled_by: user.email ?? user.id,
+          cancel_reason: cancelReason || refundRequest.cancel_reason || null,
+          toss_response: tossJson,
+        },
+      });
+
     if (eventInsertError) {
       return json(500, {
         error: 'Failed to insert payment event',
@@ -312,9 +347,39 @@ if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) 
       });
     }
 
+    const { error: actionLogError } = await supabaseAdmin
+      .from('admin_action_logs')
+      .insert({
+        admin_user_id: user.id,
+        action_type: alreadyCancelled
+          ? 'refund_synced_already_cancelled'
+          : 'refund_executed',
+        target_type: 'refund_request',
+        target_id: refundRequest.id,
+        order_id: payment.order_id,
+        detail_json: {
+          payment_id: payment.id,
+          previous_payment_status: payment.status,
+          next_payment_status: 'refunded',
+          previous_refund_request_status: refundRequest.request_status,
+          next_refund_request_status: 'completed',
+          cancel_reason: cancelReason || refundRequest.cancel_reason || null,
+          is_auto: refundRequest.is_auto ?? false,
+        },
+      });
+
+    if (actionLogError) {
+      return json(500, {
+        error: 'Refund completed but admin action log insert failed',
+        detail: actionLogError.message,
+      });
+    }
+
     return json(200, {
       success: true,
-      message: '환불이 성공적으로 완료되었습니다.',
+      message: alreadyCancelled
+        ? '이미 취소된 결제 건으로 확인되어 내부 상태를 동기화했습니다.'
+        : '환불이 성공적으로 완료되었습니다.',
       data: {
         paymentId: payment.id,
         refundRequestId: refundRequest.id,
