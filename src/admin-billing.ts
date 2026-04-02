@@ -8,20 +8,11 @@
  * 4. 자동 환불 완료 건수(지표): refund_requests 보다는 결제 관점에서 최종 성공을 의미하는
  *    payments 테이블의 status = 'refunded'를 기준으로 삼도록 수정(Source of Truth) 및 주석 추가했습니다.
  * 5. refunds 로드 후 updateSummaryCards() 추가 호출
- * 6. cancel-payment 호출 시 현재 로그인 세션의 access_token(JWT)을 Authorization 헤더에 넣어 전달
+ * 6. cancel-payment 호출 시 현재 로그인 세션의 access_token(JWT)을 Supabase Functions client에 명시적으로 주입
  * 7. payment_events 조회 시 실제 컬럼명 payload_json 사용
  */
 
 import { supabase } from './services/supabase';
-
-// ============================================================
-// 환경 변수
-// ============================================================
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_BROWSER_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const SUPABASE_LEGACY_ANON_KEY = import.meta.env.VITE_SUPABASE_LEGACY_ANON_KEY as string | undefined;
-const SUPABASE_FUNCTION_KEY = SUPABASE_BROWSER_KEY || SUPABASE_LEGACY_ANON_KEY;
 
 // ============================================================
 // 타입 정의
@@ -73,6 +64,7 @@ interface CancelPaymentSuccessResponse {
   success?: boolean;
   message?: string;
   error?: string;
+  detail?: string;
   [key: string]: unknown;
 }
 
@@ -159,7 +151,7 @@ const D = {
 // 공통 유틸: 인증된 Edge Function 호출
 // ============================================================
 
-async function getCurrentAccessToken(): Promise<string> {
+async function ensureFunctionAuth(): Promise<string> {
   const {
     data: { session },
     error,
@@ -173,6 +165,7 @@ async function getCurrentAccessToken(): Promise<string> {
     throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
   }
 
+  supabase.functions.setAuth(session.access_token);
   return session.access_token;
 }
 
@@ -180,47 +173,25 @@ async function callEdgeFunction<TResponse = unknown>(
   functionName: string,
   body: Record<string, unknown>
 ): Promise<TResponse> {
-  if (!SUPABASE_URL || !SUPABASE_FUNCTION_KEY) {
-    throw new Error(
-      'Supabase 환경 변수가 누락되었습니다. VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY / VITE_SUPABASE_LEGACY_ANON_KEY를 확인해 주세요.'
-    );
-  }
+  await ensureFunctionAuth();
 
-  const accessToken = await getCurrentAccessToken();
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_FUNCTION_KEY,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(body),
+  const { data, error } = await supabase.functions.invoke(functionName, {
+    body,
   });
 
-  const rawText = await response.text();
+  const parsed = (data ?? {}) as EdgeFunctionErrorResponse & TResponse;
 
-  let parsed: EdgeFunctionErrorResponse | TResponse | null = null;
-  if (rawText) {
-    try {
-      parsed = JSON.parse(rawText) as EdgeFunctionErrorResponse | TResponse;
-    } catch {
-      parsed = null;
-    }
-  }
-
-  if (!response.ok) {
-    const errorBody = (parsed ?? {}) as EdgeFunctionErrorResponse;
+  if (error) {
     const detail =
-      errorBody?.message ||
-      errorBody?.error ||
-      errorBody?.details ||
-      rawText ||
+      parsed?.message ||
+      parsed?.error ||
+      parsed?.details ||
+      error.message ||
       `${functionName} 호출에 실패했습니다.`;
     throw new Error(detail);
   }
 
-  return (parsed as TResponse) ?? ({} as TResponse);
+  return parsed as TResponse;
 }
 
 // ============================================================
