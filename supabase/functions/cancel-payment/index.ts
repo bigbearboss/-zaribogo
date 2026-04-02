@@ -171,11 +171,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!['approved', 'requested'].includes(refundRequest.request_status)) {
-      return json(409, {
-        error: `Refund request status is not executable: ${refundRequest.request_status}`,
-      });
-    }
+   if (refundRequest.request_status !== 'approved') {
+  return json(409, {
+    error: `Refund request status is not executable: ${refundRequest.request_status}`,
+  });
+}
 
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('payments')
@@ -229,12 +229,12 @@ Deno.serve(async (req) => {
       }
     );
 
-  const tossJson = await tossResponse.json().catch(() => null);
+ const tossJson = await tossResponse.json().catch(() => null);
 
+const tossMessage = `${tossJson?.message ?? ''} ${tossJson?.detail ?? ''}`.trim();
 const alreadyCancelled =
   tossResponse.status === 400 &&
-  typeof tossJson?.message === 'string' &&
-  tossJson.message.includes('이미 취소된 결제');
+  /이미\s*취소된\s*결제/.test(tossMessage);
 
 if (!tossResponse.ok && !alreadyCancelled) {
   await supabaseAdmin.from('payment_events').insert({
@@ -251,7 +251,7 @@ if (!tossResponse.ok && !alreadyCancelled) {
 
   return json(502, {
     error: 'Toss cancel failed',
-    detail: tossJson?.message || null,
+    detail: tossJson?.message || tossJson?.detail || null,
     toss_status: tossResponse.status,
   });
 }
