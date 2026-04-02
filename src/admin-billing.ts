@@ -477,7 +477,7 @@ function renderRefundsTable() {
   filtered.forEach((refund: RefundRequest) => {
     const tr = document.createElement('tr');
 
-    const isAuto = refund.admin_note?.includes('AUTO');
+    const isAuto = refund.is_auto === true;
     const autoText = isAuto
       ? '<span class="admin-badge badge-auto-approved">자동 환불 대상</span>'
       : '<span class="admin-badge badge-review">수동 검토 대상</span>';
@@ -572,7 +572,10 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
   if (!confirm('정말 환불을 실행하시겠습니까?')) return;
 
   const originalText = btnEl.textContent;
-  btnEl.disabled = true;
+  await supabase
+  .from('refund_requests')
+  .update({ request_status: 'completed' })
+  .eq('id', refundId);
   btnEl.textContent = '처리 중...';
 
   try {
@@ -582,21 +585,35 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       cancelReason: cancelReason || '관리자의 환불 실행',
     });
 
-    if (!fnData?.success) {
-      throw new Error(
-        fnData?.message ||
-          fnData?.error ||
-          fnData?.detail ||
-          fnData?.details ||
-          'Edge Function에서 환불 처리에 실패했습니다.'
-      );
-    }
+    const message =
+  fnData?.message ||
+  fnData?.error ||
+  fnData?.detail ||
+  fnData?.details ||
+  '';
 
+const isAlreadyCancelled =
+  message.includes('already') ||
+  message.includes('이미') ||
+  message.includes('cancelled');
+
+if (!fnData?.success && !isAlreadyCancelled) {
+  throw new Error(message || '환불 처리 실패');
+}
+
+await supabase
+  .from('refund_requests')
+  .update({ request_status: 'completed' })
+  .eq('id', refundId);
+    
     alert(fnData?.message || '환불이 성공적으로 실행되었습니다.');
     await Promise.all([loadPayments(), loadRefunds()]);
   } catch (err: any) {
     console.error('[executeRefund]', err);
-    alert(`환불 실행 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
+    const parent = btnEl.parentElement;
+parent?.querySelectorAll('button').forEach((b) => {
+  (b as HTMLButtonElement).disabled = true;
+});
     btnEl.disabled = false;
     btnEl.textContent = originalText ?? '환불 실행';
   }
