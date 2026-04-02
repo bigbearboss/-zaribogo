@@ -21,6 +21,12 @@ entrypoint = "./functions/sgis-regiontotal/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/sgis-regiontotal/*.html" ]
 
+[functions.cancel-payment]
+enabled = true
+verify_jwt = true
+import_map = "./functions/cancel-payment/deno.json"
+entrypoint = "./functions/cancel-payment/index.ts"
+
 
 [functions.cancel-payment]
 enabled = true
