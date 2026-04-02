@@ -24,6 +24,6 @@ entrypoint = "./functions/sgis-regiontotal/index.ts"
 
 [functions.cancel-payment]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/cancel-payment/deno.json"
 entrypoint = "./functions/cancel-payment/index.ts"
