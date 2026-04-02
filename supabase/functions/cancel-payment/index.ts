@@ -55,13 +55,10 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey =
-      Deno.env.get('SUPABASE_ANON_KEY') ||
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const tossSecretKey = Deno.env.get('TOSS_SECRET_KEY');
 
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
       return json(500, {
         error: 'Missing Supabase environment variables',
       });
@@ -73,30 +70,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    const authHeader =
+      req.headers.get('Authorization') || req.headers.get('authorization');
+
     if (!authHeader?.startsWith('Bearer ')) {
       return json(401, { error: 'Missing Authorization header' });
     }
 
     const jwt = authHeader.replace('Bearer ', '').trim();
+
     if (!jwt) {
       return json(401, { error: 'Missing JWT' });
     }
 
-    // 사용자 JWT 검증용 client
-    const supabaseUserClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    // 관리자 작업용 service role client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
@@ -104,10 +90,11 @@ Deno.serve(async (req) => {
       },
     });
 
+    // gateway 검증 대신 여기서 직접 JWT 검증
     const {
       data: { user },
       error: userError,
-    } = await supabaseUserClient.auth.getUser();
+    } = await supabaseAdmin.auth.getUser(jwt);
 
     if (userError || !user) {
       return json(401, {
@@ -118,7 +105,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, email')
       .eq('id', user.id)
       .single();
 
@@ -226,18 +213,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Toss cancel API
     const authValue = btoa(`${tossSecretKey}:`);
-    const tossResponse = await fetch(`https://api.tosspayments.com/v1/payments/${payment.pg_tid}/cancel`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${authValue}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cancelReason: cancelReason || refundRequest.cancel_reason || '관리자의 환불 실행',
-      }),
-    });
+    const tossResponse = await fetch(
+      `https://api.tosspayments.com/v1/payments/${payment.pg_tid}/cancel`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${authValue}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cancelReason:
+            cancelReason || refundRequest.cancel_reason || '관리자의 환불 실행',
+        }),
+      }
+    );
 
     const tossJson = await tossResponse.json().catch(() => null);
 
@@ -261,7 +251,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // DB 상태 업데이트
     const { error: paymentUpdateError } = await supabaseAdmin
       .from('payments')
       .update({
