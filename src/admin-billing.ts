@@ -603,7 +603,24 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
 
 async function executeRefund(refundId: string, orderId: string, cancelReason: string, btnEl: HTMLButtonElement) {
   if (adminState.processingRefundIds.has(refundId)) return;
-  if (!confirm('정말 환불을 실행하시겠습니까?')) return;
+
+  const orderSuffix = orderId.slice(-6);
+  const confirmed = confirm(
+    `정말 환불을 실행하시겠습니까?\n\n주문번호: ${orderId}\n이 작업은 되돌릴 수 없습니다.`
+  );
+  if (!confirmed) return;
+
+  const userInput = prompt(
+    `안전 확인을 위해 주문번호 마지막 6자리를 입력해 주세요.\n\n입력값 예시: ${orderSuffix}`,
+    ''
+  );
+
+  if (userInput === null) return;
+
+  if (userInput.trim() !== orderSuffix) {
+    alert('주문번호 확인값이 일치하지 않아 환불 실행을 취소했습니다.');
+    return;
+  }
 
   adminState.processingRefundIds.add(refundId);
 
@@ -638,7 +655,6 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
     if (!fnData?.success && !isAlreadyCancelled) {
       throw new Error(message || '환불 처리 실패');
     }
-
 
     alert(
       isAlreadyCancelled
