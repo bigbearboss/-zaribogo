@@ -171,11 +171,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!['approved', 'requested'].includes(refundRequest.request_status)) {
-      return json(409, {
-        error: `Refund request status is not executable: ${refundRequest.request_status}`,
-      });
-    }
+   if (refundRequest.request_status !== 'approved') {
+  return json(409, {
+    error: `Refund request status is not executable: ${refundRequest.request_status}`,
+  });
+}
 
     const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('payments')
@@ -229,27 +229,32 @@ Deno.serve(async (req) => {
       }
     );
 
-    const tossJson = await tossResponse.json().catch(() => null);
+ const tossJson = await tossResponse.json().catch(() => null);
 
-    if (!tossResponse.ok) {
-      await supabaseAdmin.from('payment_events').insert({
-        payment_id: payment.id,
-        order_id: payment.order_id,
-        event_type: 'refund_failed',
-        source: 'cancel-payment',
-        payload_json: {
-          reason: cancelReason || refundRequest.cancel_reason || null,
-          toss_status: tossResponse.status,
-          toss_response: tossJson,
-        },
-      });
+const tossMessage = `${tossJson?.message ?? ''} ${tossJson?.detail ?? ''}`.trim();
+const alreadyCancelled =
+  tossResponse.status === 400 &&
+  /이미\s*취소된\s*결제/.test(tossMessage);
 
-      return json(502, {
-        error: 'Toss cancel failed',
-        detail: tossJson?.message || null,
-        toss_status: tossResponse.status,
-      });
-    }
+if (!tossResponse.ok && !alreadyCancelled) {
+  await supabaseAdmin.from('payment_events').insert({
+    payment_id: payment.id,
+    order_id: payment.order_id,
+    event_type: 'refund_failed',
+    source: 'cancel-payment',
+    payload_json: {
+      reason: cancelReason || refundRequest.cancel_reason || null,
+      toss_status: tossResponse.status,
+      toss_response: tossJson,
+    },
+  });
+
+  return json(502, {
+    error: 'Toss cancel failed',
+    detail: tossJson?.message || tossJson?.detail || null,
+    toss_status: tossResponse.status,
+  });
+}
 
    const { data: paymentUpdateData, error: paymentUpdateError } = await supabaseAdmin
   .from('payments')
@@ -286,20 +291,20 @@ if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) 
     }
 
     const { error: eventInsertError } = await supabaseAdmin
-      .from('payment_events')
-      .insert({
-        payment_id: payment.id,
-        order_id: payment.order_id,
-        event_type: 'refund_completed',
-        source: 'cancel-payment',
-        payload_json: {
-          refund_request_id: refundRequest.id,
-          cancelled_by: user.email ?? user.id,
-          cancel_reason: cancelReason || refundRequest.cancel_reason || null,
-          toss_response: tossJson,
-        },
-      });
-
+  .from('payment_events')
+  .insert({
+    payment_id: payment.id,
+    order_id: payment.order_id,
+    event_type: alreadyCancelled ? 'refund_already_cancelled_synced' : 'refund_completed',
+    source: 'cancel-payment',
+    payload_json: {
+      refund_request_id: refundRequest.id,
+      cancelled_by: user.email ?? user.id,
+      cancel_reason: cancelReason || refundRequest.cancel_reason || null,
+      toss_response: tossJson,
+    },
+  });
+    
     if (eventInsertError) {
       return json(500, {
         error: 'Failed to insert payment event',
