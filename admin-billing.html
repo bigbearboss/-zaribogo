@@ -139,12 +139,17 @@
 
             <!-- ── 환불 요청 탭 ── -->
             <section id="tab-refunds" class="admin-tab hidden">
-                <div class="admin-tab-header">
-                    <h1>환불 요청</h1>
-                    <button class="admin-btn admin-btn-ghost" id="btnRefreshRefunds">
-                        ↻ 새로고침
-                    </button>
-                </div>
+               <div class="admin-tab-header">
+    <h1>환불 요청</h1>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <button class="admin-btn" id="btnRunAutoRefundBatch">
+            🤖 자동 환불 배치 실행
+        </button>
+        <button class="admin-btn admin-btn-ghost" id="btnRefreshRefunds">
+            ↻ 새로고침
+        </button>
+    </div>
+</div>
 
                 <p class="admin-tab-desc">
                     💡 환불 요청은 검토 승인 후 환불 실행 단계로 넘어갑니다. 처리 히스토리는 각 행의 내역 버튼에서 확인할 수 있습니다.
