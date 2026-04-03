@@ -441,7 +441,7 @@ function updateSummaryCards() {
 
 async function loadRefunds() {
   D.refundsTableBody.innerHTML =
-    '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">불러오는 중...</td></tr>';
+    '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">불러오는 중...</td></tr>';
   D.refundsEmpty.classList.add('hidden');
 
   try {
@@ -471,7 +471,7 @@ async function loadRefunds() {
   } catch (err) {
     console.error('[loadRefunds]', err);
     D.refundsTableBody.innerHTML =
-      '<tr><td colspan="7" style="text-align:center;padding:24px;color:rgb(252,165,165)">데이터를 불러오지 못했습니다.</td></tr>';
+      '<tr><td colspan="8" style="text-align:center;padding:24px;color:rgb(252,165,165)">데이터를 불러오지 못했습니다.</td></tr>';
   }
 }
 
@@ -524,10 +524,10 @@ function renderRefundsTable() {
 
     const histBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement | null;
     if (histBtn) {
-        histBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openEventDrawer('refund', refund.id, refund.order_id);
-        });
+      histBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEventDrawer('refund', refund.id, refund.order_id);
+      });
     }
 
     if (refund.request_status === 'requested') {
@@ -595,7 +595,8 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
     allBtns?.forEach((b) => {
       (b as HTMLButtonElement).disabled = false;
     });
-       btnEl.textContent = originalText ?? actionText;
+
+    btnEl.textContent = originalText ?? actionText;
   } finally {
     adminState.processingRefundIds.delete(refundId);
   }
@@ -603,7 +604,24 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
 
 async function executeRefund(refundId: string, orderId: string, cancelReason: string, btnEl: HTMLButtonElement) {
   if (adminState.processingRefundIds.has(refundId)) return;
-  if (!confirm('정말 환불을 실행하시겠습니까?')) return;
+
+  const orderSuffix = orderId.slice(-6);
+  const confirmed = confirm(
+    `정말 환불을 실행하시겠습니까?\n\n주문번호: ${orderId}\n이 작업은 되돌릴 수 없습니다.`
+  );
+  if (!confirmed) return;
+
+  const userInput = prompt(
+    `안전 확인을 위해 주문번호 마지막 6자리를 입력해 주세요.\n\n입력값 예시: ${orderSuffix}`,
+    ''
+  );
+
+  if (userInput === null) return;
+
+  if (userInput.trim() !== orderSuffix) {
+    alert('주문번호 확인값이 일치하지 않아 환불 실행을 취소했습니다.');
+    return;
+  }
 
   adminState.processingRefundIds.add(refundId);
 
@@ -639,7 +657,6 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
       throw new Error(message || '환불 처리 실패');
     }
 
-
     alert(
       isAlreadyCancelled
         ? '이미 취소된 결제 건으로 확인되어 내부 상태를 완료로 동기화했습니다.'
@@ -667,9 +684,7 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
 }
 
 async function openEventDrawer(type: 'payment' | 'refund', targetId: string, referenceId: string) {
-  if (D.drawerTitle) {
-    D.drawerTitle.textContent = type === 'payment' ? '결제 이벤트 타임라인' : '환불 처리 히스토리';
-  }
+  D.drawerTitle.textContent = type === 'payment' ? '결제 이벤트 타임라인' : '환불 처리 히스토리';
   D.drawerOrderId.textContent = referenceId;
   D.eventTimeline.innerHTML = '<div style="color:var(--text-muted);padding:16px 0">불러오는 중...</div>';
   D.eventTimelineEmpty.classList.add('hidden');
@@ -695,6 +710,7 @@ async function openEventDrawer(type: 'payment' | 'refund', targetId: string, ref
         }
         throw error;
       }
+
       renderTimeline(data ?? [], false);
     } else {
       const { data, error } = await supabase
@@ -713,6 +729,7 @@ async function openEventDrawer(type: 'payment' | 'refund', targetId: string, ref
         }
         throw error;
       }
+
       renderTimeline(data ?? [], true);
     }
   } catch (err: any) {
@@ -724,12 +741,74 @@ async function openEventDrawer(type: 'payment' | 'refund', targetId: string, ref
 
 function getActionTypeLabel(type: string): string {
   const map: Record<string, string> = {
-    'refund_request_approved': '검토 승인',
-    'refund_request_rejected': '요청 거절',
-    'refund_executed': '환불 실행',
-    'refund_synced_already_cancelled': '결제사 취소 동기화 완료',
+    refund_request_approved: '검토 승인',
+    refund_request_rejected: '요청 거절',
+    refund_executed: '환불 실행',
+    refund_synced_already_cancelled: '결제사 취소 동기화 완료',
   };
   return map[type] || type;
+}
+
+function getReadableStatusLabel(status: string | null | undefined): string {
+  const map: Record<string, string> = {
+    requested: '검토 대기',
+    approved: '환불 실행 대기',
+    completed: '환불 완료',
+    rejected: '거절됨',
+    pending: '처리 중',
+    paid: '결제 완료',
+    refunded: '환불 완료',
+    failed: '실패',
+    cancelled: '취소',
+    refund_requested: '환불 요청',
+  };
+
+  if (!status) return '—';
+  return map[status] || status;
+}
+
+function getReadableBooleanLabel(value: unknown): string {
+  if (value === true) return '자동 환불';
+  if (value === false) return '수동 검토';
+  return '—';
+}
+
+function renderActionLogSummary(detail: Record<string, unknown> | null | undefined): string {
+  if (!detail) return '';
+
+  const previousStatus = getReadableStatusLabel(detail.previous_status as string | undefined);
+  const nextStatus = getReadableStatusLabel(detail.next_status as string | undefined);
+  const cancelReason =
+    typeof detail.cancel_reason === 'string' && detail.cancel_reason.trim().length > 0
+      ? detail.cancel_reason
+      : '—';
+  const autoType = getReadableBooleanLabel(detail.is_auto);
+
+  return `
+    <div class="timeline-summary-grid">
+      <div class="timeline-summary-item">
+        <span class="timeline-summary-label">이전 상태</span>
+        <span class="timeline-summary-value">${escHtml(previousStatus)}</span>
+      </div>
+      <div class="timeline-summary-item">
+        <span class="timeline-summary-label">변경 상태</span>
+        <span class="timeline-summary-value">${escHtml(nextStatus)}</span>
+      </div>
+      <div class="timeline-summary-item">
+        <span class="timeline-summary-label">환불 유형</span>
+        <span class="timeline-summary-value">${escHtml(autoType)}</span>
+      </div>
+      <div class="timeline-summary-item timeline-summary-item-wide">
+        <span class="timeline-summary-label">환불 사유</span>
+        <span class="timeline-summary-value">${escHtml(cancelReason)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderActionLogMeta(detail: Record<string, unknown> | null | undefined): string | null {
+  if (!detail) return null;
+  return JSON.stringify(detail, null, 2);
 }
 
 function renderTimeline(events: any[], isActionLog: boolean) {
@@ -745,11 +824,20 @@ function renderTimeline(events: any[], isActionLog: boolean) {
     const icon = getTimelineIcon(rawType);
 
     const payload = isActionLog ? evt.detail_json : evt.payload_json;
-    const metaStr = payload ? JSON.stringify(payload, null, 2) : null;
+    const metaStr = isActionLog
+      ? renderActionLogMeta(payload)
+      : payload
+        ? JSON.stringify(payload, null, 2)
+        : null;
 
     const adminUserStr =
       isActionLog && evt.admin_user_id
-        ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
+        ? `<div class="timeline-admin-meta">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
+        : '';
+
+    const summaryHtml =
+      isActionLog && payload
+        ? renderActionLogSummary(payload)
         : '';
 
     const item = document.createElement('div');
@@ -761,7 +849,11 @@ function renderTimeline(events: any[], isActionLog: boolean) {
         <div class="timeline-event-type">${escHtml(mappedType)}</div>
         ${adminUserStr}
         <div class="timeline-event-date">${formatDate(evt.created_at)}</div>
-        ${metaStr ? `<pre class="timeline-event-meta">${escHtml(metaStr)}</pre>` : ''}
+        ${summaryHtml}
+        ${metaStr ? `<details class="timeline-raw-details">
+          <summary>원본 로그 보기</summary>
+          <pre class="timeline-event-meta">${escHtml(metaStr)}</pre>
+        </details>` : ''}
       </div>
     `;
 
