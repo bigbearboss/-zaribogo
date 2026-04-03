@@ -751,3 +751,72 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── 환불 실패 추적 UI ── */
+.td-admin-note-cell {
+    min-width: 260px;
+}
+
+.refund-admin-note-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.refund-admin-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary, rgba(255,255,255,0.75));
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.refund-admin-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.retry-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+}
+
+.retry-badge.normal {
+    background: rgba(107,114,128,0.14);
+    color: rgba(229,231,235,0.88);
+    border-color: rgba(156,163,175,0.22);
+}
+
+.retry-badge.warning {
+    background: rgba(245,158,11,0.14);
+    color: rgb(251,191,36);
+    border-color: rgba(251,191,36,0.28);
+}
+
+.retry-badge.danger {
+    background: rgba(239,68,68,0.14);
+    color: rgb(252,165,165);
+    border-color: rgba(252,165,165,0.3);
+}
+
+.refund-error-message {
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: rgb(252,165,165);
+    word-break: break-word;
+}
+
+.refund-error-date {
+    font-size: 0.72rem;
+    color: var(--text-muted, rgba(255,255,255,0.45));
+}
