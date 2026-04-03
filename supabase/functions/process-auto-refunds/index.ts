@@ -41,6 +41,36 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+async function markRefundFailure(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  refundRequestId: string,
+  errorCode: string,
+  errorMessage: string | null
+) {
+  const { error } = await supabaseAdmin.rpc('increment_refund_retry', {
+    p_refund_request_id: refundRequestId,
+    p_error_code: errorCode,
+    p_error_message: errorMessage,
+  });
+
+  if (error) {
+    console.error('[process-auto-refunds] markRefundFailure rpc error:', error);
+  }
+}
+
+async function clearRefundFailure(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  refundRequestId: string
+) {
+  const { error } = await supabaseAdmin.rpc('clear_refund_retry_error', {
+    p_refund_request_id: refundRequestId,
+  });
+
+  if (error) {
+    console.error('[process-auto-refunds] clearRefundFailure rpc error:', error);
+  }
+}
+
 async function cancelTossPayment(pgTid: string, cancelReason: string, tossSecretKey: string) {
   const authValue = btoa(`${tossSecretKey}:`);
 
@@ -95,12 +125,13 @@ Deno.serve(async (req) => {
     });
 
     const { data: refundRequests, error: refundError } = await supabaseAdmin
-      .from('refund_requests')
-      .select('*')
-      .eq('is_auto', true)
-      .eq('request_status', 'approved')
-      .order('created_at', { ascending: true })
-      .limit(10);
+  .from('refund_requests')
+  .select('*')
+  .eq('is_auto', true)
+  .eq('request_status', 'approved')
+  .lt('retry_count', 3)
+  .order('created_at', { ascending: true })
+  .limit(10);
 
     if (refundError) {
       return json(500, {
@@ -120,15 +151,24 @@ Deno.serve(async (req) => {
           .single();
 
         if (paymentError || !paymentData) {
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: false,
-            reason: 'payment_not_found',
-            detail: paymentError?.message ?? null,
-          });
-          continue;
-        }
+  const errorMessage = paymentError?.message ?? null;
+
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'payment_not_found',
+    errorMessage
+  );
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'payment_not_found',
+    detail: errorMessage,
+  });
+  continue;
+}
 
         const payment = paymentData as PaymentRow;
 
@@ -176,41 +216,50 @@ Deno.serve(async (req) => {
           });
 
           await supabaseAdmin.from('admin_action_logs').insert({
-            admin_user_id: refundRequest.user_id,
-            action_type: 'refund_synced_already_cancelled',
-            target_type: 'refund_request',
-            target_id: refundRequest.id,
-            order_id: payment.order_id,
-            detail_json: {
-              payment_id: payment.id,
-              previous_payment_status: payment.status,
-              next_payment_status: 'refunded',
-              previous_refund_request_status: refundRequest.request_status,
-              next_refund_request_status: 'completed',
-              cancel_reason: refundRequest.cancel_reason ?? null,
-              is_auto: true,
-              executed_by: 'auto_batch',
-            },
-          });
+  admin_user_id: refundRequest.user_id,
+  action_type: alreadyCancelled
+    ? 'refund_synced_already_cancelled'
+    : 'refund_executed',
+  target_type: 'refund_request',
+  target_id: refundRequest.id,
+  order_id: payment.order_id,
+  detail_json: {
+    payment_id: payment.id,
+    previous_payment_status: payment.status,
+    next_payment_status: 'refunded',
+    previous_refund_request_status: refundRequest.request_status,
+    next_refund_request_status: 'completed',
+    cancel_reason: refundRequest.cancel_reason ?? null,
+    is_auto: true,
+    executed_by: 'auto_batch',
+  },
+});
 
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: true,
-            action: 'synced_already_refunded',
-          });
-          continue;
-        }
+await clearRefundFailure(supabaseAdmin, refundRequest.id);
+
+results.push({
+  refundRequestId: refundRequest.id,
+  orderId: refundRequest.order_id,
+  success: true,
+  action: alreadyCancelled ? 'synced_already_cancelled' : 'refund_executed',
+});
 
         if (!payment.pg_tid) {
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: false,
-            reason: 'missing_pg_tid',
-          });
-          continue;
-        }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'missing_pg_tid',
+    'pg_tid is missing on payment'
+  );
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'missing_pg_tid',
+  });
+  continue;
+}
 
         const tossResult = await cancelTossPayment(
           payment.pg_tid,
@@ -224,27 +273,37 @@ Deno.serve(async (req) => {
           /이미\s*취소된\s*결제/.test(tossMessage);
 
         if (!tossResult.ok && !alreadyCancelled) {
-          await supabaseAdmin.from('payment_events').insert({
-            payment_id: payment.id,
-            order_id: payment.order_id,
-            event_type: 'refund_failed',
-            source: 'process-auto-refunds',
-            payload_json: {
-              refund_request_id: refundRequest.id,
-              toss_status: tossResult.status,
-              toss_response: tossResult.data,
-            },
-          });
+  const errorMessage =
+    tossResult.data?.message || tossResult.data?.detail || null;
 
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: false,
-            reason: 'toss_cancel_failed',
-            detail: tossResult.data?.message || tossResult.data?.detail || null,
-          });
-          continue;
-        }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'toss_cancel_failed',
+    errorMessage
+  );
+
+  await supabaseAdmin.from('payment_events').insert({
+    payment_id: payment.id,
+    order_id: payment.order_id,
+    event_type: 'refund_failed',
+    source: 'process-auto-refunds',
+    payload_json: {
+      refund_request_id: refundRequest.id,
+      toss_status: tossResult.status,
+      toss_response: tossResult.data,
+    },
+  });
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'toss_cancel_failed',
+    detail: errorMessage,
+  });
+  continue;
+}
 
         const { error: paymentUpdateError } = await supabaseAdmin
           .from('payments')
@@ -252,15 +311,22 @@ Deno.serve(async (req) => {
           .eq('id', payment.id);
 
         if (paymentUpdateError) {
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: false,
-            reason: 'payment_update_failed',
-            detail: paymentUpdateError.message,
-          });
-          continue;
-        }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'payment_update_failed',
+    paymentUpdateError.message
+  );
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'payment_update_failed',
+    detail: paymentUpdateError.message,
+  });
+  continue;
+}
 
         const { error: refundUpdateError } = await supabaseAdmin
           .from('refund_requests')
@@ -271,15 +337,22 @@ Deno.serve(async (req) => {
           .eq('id', refundRequest.id);
 
         if (refundUpdateError) {
-          results.push({
-            refundRequestId: refundRequest.id,
-            orderId: refundRequest.order_id,
-            success: false,
-            reason: 'refund_request_update_failed',
-            detail: refundUpdateError.message,
-          });
-          continue;
-        }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'refund_request_update_failed',
+    refundUpdateError.message
+  );
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'refund_request_update_failed',
+    detail: refundUpdateError.message,
+  });
+  continue;
+}
 
         await supabaseAdmin.from('payment_events').insert({
           payment_id: payment.id,
@@ -320,14 +393,24 @@ Deno.serve(async (req) => {
           action: alreadyCancelled ? 'synced_already_cancelled' : 'refund_executed',
         });
       } catch (itemError) {
-        results.push({
-          refundRequestId: refundRequest.id,
-          orderId: refundRequest.order_id,
-          success: false,
-          reason: 'unexpected_error',
-          detail: itemError instanceof Error ? itemError.message : String(itemError),
-        });
-      }
+  const errorMessage =
+    itemError instanceof Error ? itemError.message : String(itemError);
+
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'unexpected_error',
+    errorMessage
+  );
+
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'unexpected_error',
+    detail: errorMessage,
+  });
+}
     }
 
     return json(200, {
