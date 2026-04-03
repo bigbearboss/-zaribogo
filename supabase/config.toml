@@ -29,3 +29,6 @@ entrypoint = "./functions/cancel-payment/index.ts"
 
 [functions.admin-update-refund-request]
 verify_jwt = false
+
+[functions.process-auto-refunds]
+verify_jwt = false
