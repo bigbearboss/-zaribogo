@@ -1,6 +1,8 @@
 name = "zaribogo-auto-refund-cron"
-main = "src/index.ts"
+main = "src/index.js"
 compatibility_date = "2026-04-03"
+workers_dev = true
+preview_urls = true
 
 [triggers]
 crons = ["0 18 * * *", "0 6 * * *"]
