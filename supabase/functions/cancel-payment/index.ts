@@ -62,6 +62,19 @@ async function markRefundFailure(
   }
 }
 
+async function clearRefundFailure(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  refundRequestId: string
+) {
+  const { error } = await supabaseAdmin.rpc('clear_refund_retry_error', {
+    p_refund_request_id: refundRequestId,
+  });
+
+  if (error) {
+    console.error('[cancel-payment] clearRefundFailure rpc error:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -286,25 +299,35 @@ Deno.serve(async (req) => {
       tossResponse.status === 400 &&
       /이미\s*취소된\s*결제/.test(tossMessage);
 
-    if (!tossResponse.ok && !alreadyCancelled) {
-      await supabaseAdmin.from('payment_events').insert({
-        payment_id: payment.id,
-        order_id: payment.order_id,
-        event_type: 'refund_failed',
-        source: 'cancel-payment',
-        payload_json: {
-          reason: cancelReason || refundRequest.cancel_reason || null,
-          toss_status: tossResponse.status,
-          toss_response: tossJson,
-        },
-      });
+   if (!tossResponse.ok && !alreadyCancelled) {
+  const errorMessage = tossJson?.message || tossJson?.detail || null;
 
-      return json(502, {
-        error: 'Toss cancel failed',
-        detail: tossJson?.message || tossJson?.detail || null,
-        toss_status: tossResponse.status,
-      });
-    }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'toss_cancel_failed',
+    errorMessage
+  );
+
+  await supabaseAdmin.from('payment_events').insert({
+    payment_id: payment.id,
+    order_id: payment.order_id,
+    event_type: 'refund_failed',
+    source: 'cancel-payment',
+    payload_json: {
+      refund_request_id: refundRequest.id,
+      reason: cancelReason || refundRequest.cancel_reason || null,
+      toss_status: tossResponse.status,
+      toss_response: tossJson,
+    },
+  });
+
+  return json(502, {
+    error: 'Toss cancel failed',
+    detail: errorMessage,
+    toss_status: tossResponse.status,
+  });
+}
 
     const { data: paymentUpdateData, error: paymentUpdateError } = await supabaseAdmin
       .from('payments')
@@ -318,13 +341,22 @@ Deno.serve(async (req) => {
     console.log('[cancel-payment] payment update error:', paymentUpdateError);
 
     if (paymentUpdateError || !paymentUpdateData || paymentUpdateData.length === 0) {
-      return json(500, {
-        error: 'Payment update failed',
-        detail: paymentUpdateError?.message ?? 'No rows updated',
-        paymentId: payment.id,
-      });
-    }
+  const errorMessage = paymentUpdateError?.message ?? 'No rows updated';
 
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'payment_update_failed',
+    errorMessage
+  );
+
+  return json(500, {
+    error: 'Payment update failed',
+    detail: errorMessage,
+    paymentId: payment.id,
+  });
+}
+    
     const { error: refundUpdateError } = await supabaseAdmin
       .from('refund_requests')
       .update({
@@ -334,11 +366,18 @@ Deno.serve(async (req) => {
       .eq('id', refundRequest.id);
 
     if (refundUpdateError) {
-      return json(500, {
-        error: 'Failed to update refund request status',
-        detail: refundUpdateError.message,
-      });
-    }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'refund_request_update_failed',
+    refundUpdateError.message
+  );
+
+  return json(500, {
+    error: 'Failed to update refund request status',
+    detail: refundUpdateError.message,
+  });
+}
 
     const { error: eventInsertError } = await supabaseAdmin
       .from('payment_events')
@@ -358,11 +397,18 @@ Deno.serve(async (req) => {
       });
 
     if (eventInsertError) {
-      return json(500, {
-        error: 'Failed to insert payment event',
-        detail: eventInsertError.message,
-      });
-    }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'payment_event_insert_failed',
+    eventInsertError.message
+  );
+
+  return json(500, {
+    error: 'Failed to insert payment event',
+    detail: eventInsertError.message,
+  });
+}
 
     const { error: actionLogError } = await supabaseAdmin
       .from('admin_action_logs')
@@ -386,12 +432,21 @@ Deno.serve(async (req) => {
       });
 
     if (actionLogError) {
-      return json(500, {
-        error: 'Refund completed but admin action log insert failed',
-        detail: actionLogError.message,
-      });
-    }
+  await markRefundFailure(
+    supabaseAdmin,
+    refundRequest.id,
+    'admin_action_log_insert_failed',
+    actionLogError.message
+  );
 
+  return json(500, {
+    error: 'Refund completed but admin action log insert failed',
+    detail: actionLogError.message,
+  });
+}
+
+await clearRefundFailure(supabaseAdmin, refundRequest.id);
+    
     return json(200, {
       success: true,
       message: alreadyCancelled
