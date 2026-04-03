@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const MAX_AUTO_REFUND_AMOUNT = 50000;
+
 type RefundRequestRow = {
   id: string;
   payment_id: string;
@@ -129,6 +131,18 @@ Deno.serve(async (req) => {
         }
 
         const payment = paymentData as PaymentRow;
+
+        if (payment.amount > MAX_AUTO_REFUND_AMOUNT) {
+  results.push({
+    refundRequestId: refundRequest.id,
+    orderId: refundRequest.order_id,
+    success: false,
+    reason: 'amount_exceeds_auto_refund_limit',
+    detail: `자동 환불 한도 초과: ${payment.amount}원`,
+  });
+
+  continue;
+}
 
         if (refundRequest.request_status !== 'approved') {
           results.push({
