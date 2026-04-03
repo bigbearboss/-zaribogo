@@ -45,6 +45,23 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+async function markRefundFailure(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  refundRequestId: string,
+  errorCode: string,
+  errorMessage: string | null
+) {
+  const { error } = await supabaseAdmin.rpc('increment_refund_retry', {
+    p_refund_request_id: refundRequestId,
+    p_error_code: errorCode,
+    p_error_message: errorMessage,
+  });
+
+  if (error) {
+    console.error('[cancel-payment] markRefundFailure rpc error:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
