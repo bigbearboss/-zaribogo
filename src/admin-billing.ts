@@ -122,9 +122,10 @@ const D = {
   paymentsTableBody: document.getElementById('paymentsTableBody') as HTMLElement,
   paymentsEmpty: document.getElementById('paymentsEmpty') as HTMLElement,
 
-  tabRefunds: document.getElementById('tab-refunds') as HTMLElement,
-  btnRefreshRefunds: document.getElementById('btnRefreshRefunds') as HTMLButtonElement,
-  refundSearchInput: document.getElementById('refundSearchInput') as HTMLInputElement,
+ tabRefunds: document.getElementById('tab-refunds') as HTMLElement,
+btnRefreshRefunds: document.getElementById('btnRefreshRefunds') as HTMLButtonElement,
+btnRunAutoRefundBatch: document.getElementById('btnRunAutoRefundBatch') as HTMLButtonElement,
+refundSearchInput: document.getElementById('refundSearchInput') as HTMLInputElement,
   refundStatusFilters: document.getElementById('refundStatusFilters') as HTMLElement,
   refundsTableBody: document.getElementById('refundsTableBody') as HTMLElement,
   refundsEmpty: document.getElementById('refundsEmpty') as HTMLElement,
@@ -274,6 +275,41 @@ function setupAdminListeners() {
     adminState.refunds = [];
     loadRefunds();
   });
+
+  D.btnRunAutoRefundBatch.addEventListener('click', async () => {
+  const confirmed = confirm(
+    '자동 환불 배치를 실행하시겠습니까?\n\n승인된 자동 환불 대상 건들을 순차 처리합니다.'
+  );
+  if (!confirmed) return;
+
+  const originalText = D.btnRunAutoRefundBatch.textContent;
+  D.btnRunAutoRefundBatch.disabled = true;
+  D.btnRunAutoRefundBatch.textContent = '실행 중...';
+
+  try {
+    const result = await callEdgeFunction<any>('process-auto-refunds', {});
+
+    const processedCount = Number(result?.processedCount ?? 0);
+    const successCount = Array.isArray(result?.results)
+      ? result.results.filter((item: any) => item?.success === true).length
+      : 0;
+    const failCount = Array.isArray(result?.results)
+      ? result.results.filter((item: any) => item?.success !== true).length
+      : 0;
+
+    alert(
+      `자동 환불 배치 실행 완료\n\n처리 건수: ${processedCount}\n성공: ${successCount}\n실패: ${failCount}`
+    );
+
+    await Promise.all([loadPayments(), loadRefunds()]);
+  } catch (err: any) {
+    console.error('[btnRunAutoRefundBatch]', err);
+    alert(`자동 환불 실행 실패: ${err.message || '알 수 없는 오류'}`);
+  } finally {
+    D.btnRunAutoRefundBatch.disabled = false;
+    D.btnRunAutoRefundBatch.textContent = originalText ?? '🤖 자동 환불 배치 실행';
+  }
+});
 
   D.paymentSearchInput.addEventListener('input', () => {
     adminState.paymentSearch = D.paymentSearchInput.value.trim().toLowerCase();
