@@ -25,6 +25,10 @@ interface RefundRequest {
   admin_note: string | null;
   created_at: string;
   is_auto: boolean | null;
+  retry_count: number | null;
+  last_error_code: string | null;
+  last_error_message: string | null;
+  last_failed_at: string | null;
 }
 
 interface PaymentEvent {
@@ -356,10 +360,23 @@ async function loadPayments() {
 
   try {
     const { data, error } = await supabase
-      .from('payments')
-      .select('id, user_id, product_id, order_id, amount, status, pg_provider, pg_tid, paid_at, created_at, updated_at')
-      .order('created_at', { ascending: false })
-      .limit(200);
+  .from('refund_requests')
+  .select(`
+    id,
+    order_id,
+    user_id,
+    cancel_reason,
+    request_status,
+    admin_note,
+    created_at,
+    is_auto,
+    retry_count,
+    last_error_code,
+    last_error_message,
+    last_failed_at
+  `)
+  .order('created_at', { ascending: false })
+  .limit(200);
 
     if (error) throw error;
 
@@ -535,6 +552,39 @@ function renderRefundsTable() {
       : '<span class="admin-badge badge-review">수동 검토 대상</span>';
 
     const reason = refund.cancel_reason ?? '';
+    const retryCount = refund.retry_count ?? 0;
+const lastErrorMessage = refund.last_error_message ?? '';
+const lastFailedAt = refund.last_failed_at ? formatDate(refund.last_failed_at) : '';
+
+const retryClass =
+  retryCount >= 3
+    ? 'danger'
+    : retryCount >= 1
+      ? 'warning'
+      : 'normal';
+
+const retryLabel =
+  retryCount >= 3
+    ? `재시도 ${retryCount}회 · 수동 확인 필요`
+    : retryCount >= 1
+      ? `재시도 ${retryCount}회`
+      : '재시도 0회';
+
+const retryMetaHtml = `
+  <div class="refund-admin-meta">
+    <span class="retry-badge ${retryClass}">${escHtml(retryLabel)}</span>
+    ${
+      lastErrorMessage
+        ? `<div class="refund-error-message" title="${escHtml(lastErrorMessage)}">${escHtml(lastErrorMessage)}</div>`
+        : ''
+    }
+    ${
+      lastFailedAt
+        ? `<div class="refund-error-date">마지막 실패: ${escHtml(lastFailedAt)}</div>`
+        : ''
+    }
+  </div>
+`;
 
     let actionTd = '<span style="color:var(--text-muted)">—</span>';
     if (refund.request_status === 'requested') {
@@ -551,7 +601,17 @@ function renderRefundsTable() {
       <td class="td-reason" title="${escHtml(reason)}">${escHtml(reason) || '<span style="color:var(--text-muted)">사유 없음</span>'}</td>
       <td>${autoText}</td>
       <td class="td-date">${formatDate(refund.created_at)}</td>
-      <td class="td-date" title="${escHtml(refund.admin_note)}">${escHtml(refund.admin_note) || '—'}</td>
+      <td class="td-admin-note-cell">
+  <div class="refund-admin-note-wrap">
+    <div
+      class="refund-admin-note"
+      title="${escHtml(refund.admin_note)}"
+    >
+      ${escHtml(refund.admin_note) || '<span style="color:var(--text-muted)">—</span>'}
+    </div>
+    ${retryMetaHtml}
+  </div>
+</td>
       <td><button class="btn-view-events" style="padding:4px 8px;">📋 내역</button></td>
       <td>${actionTd}</td>
     `;
