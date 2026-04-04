@@ -1,5 +1,14 @@
 import { AIInput, AIAnalysisResult } from "./types";
 
+type AIExtendedResult = AIAnalysisResult & {
+  strategicAdvice?: string[];
+  fieldChecklist?: string[];
+  realtorChecklist?: string[];
+  decisionRationale?: string[];
+  growthStrategies?: string[];
+  defensiveStrategies?: string[];
+};
+
 export class AIService {
   private static readonly PROXY_URL =
     import.meta.env.VITE_AI_PROXY_URL || "/api/ai-summary";
@@ -12,7 +21,14 @@ export class AIService {
 
   private static readonly TIMEOUT_MS = 10000;
 
-  static async generateSummary(input: AIInput): Promise<AIAnalysisResult | null> {
+  private static normalizeStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+  }
+
+  static async generateSummary(input: AIInput): Promise<AIExtendedResult | null> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
 
@@ -26,10 +42,6 @@ export class AIService {
         "[AI DEBUG] SUPABASE_LEGACY_ANON_KEY exists =",
         !!this.SUPABASE_LEGACY_ANON_KEY
       );
-      console.log("[AI DEBUG] Header preview =", {
-        apikey: this.SUPABASE_PUBLISHABLE_KEY,
-        authorization: `Bearer ${this.SUPABASE_LEGACY_ANON_KEY}`,
-      });
 
       if (!this.PROXY_URL) {
         console.error("[AI] Missing VITE_AI_PROXY_URL.");
@@ -78,14 +90,38 @@ export class AIService {
         throw new Error("Invalid response format from AI Proxy");
       }
 
-      return {
-        oneLineSummary: data.oneLineSummary || "상권 요약을 불러올 수 없습니다.",
-        keyRisks: Array.isArray(data.keyRisks) ? data.keyRisks : [],
-        recommendedActions: Array.isArray(data.recommendedActions)
-          ? data.recommendedActions
-          : [],
-        precautions: data.precautions || "현장 실사가 필요합니다.",
+      const normalized: AIExtendedResult = {
+        oneLineSummary:
+          typeof data.oneLineSummary === "string" && data.oneLineSummary.trim()
+            ? data.oneLineSummary.trim()
+            : "상권 요약을 불러올 수 없습니다.",
+        keyRisks: this.normalizeStringArray(data.keyRisks),
+        recommendedActions: this.normalizeStringArray(
+          data.recommendedActions ?? data.executionActions
+        ),
+        precautions:
+          typeof data.precautions === "string" && data.precautions.trim()
+            ? data.precautions.trim()
+            : "현장 실사와 부동산 조건 확인이 필요합니다.",
+        strategicAdvice: this.normalizeStringArray(
+          data.strategicAdvice ??
+            data.strategySuggestions ??
+            data.strategyAdvice
+        ),
+        fieldChecklist: this.normalizeStringArray(
+          data.fieldChecklist ?? data.onSiteChecklist ?? data.fieldChecks
+        ),
+        realtorChecklist: this.normalizeStringArray(
+          data.realtorChecklist ?? data.realtorQuestions ?? data.propertyChecks
+        ),
+        decisionRationale: this.normalizeStringArray(
+          data.decisionRationale ?? data.whyThisDecision ?? data.rationale
+        ),
+        growthStrategies: this.normalizeStringArray(data.growthStrategies),
+        defensiveStrategies: this.normalizeStringArray(data.defensiveStrategies),
       };
+
+      return normalized;
     } catch (error: any) {
       clearTimeout(timeoutId);
 
