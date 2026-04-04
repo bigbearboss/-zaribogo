@@ -606,6 +606,23 @@ function getDisplayRiskLevelLabel(level: ResultRiskLevel): string {
   return "높은 리스크";
 }
 
+function getDisplayConfidenceLabel(
+  level: ResultConfidenceLevel,
+  hasEstimatedMetric: boolean
+): string {
+  if (level === "high") {
+    return "높음 (신뢰할 수 있는 데이터)";
+  }
+
+  if (level === "medium") {
+    return hasEstimatedMetric
+      ? "보통 (일부 추정 데이터 포함)"
+      : "보통 (핵심 데이터 확보)";
+  }
+
+  return "낮음 (현장 검증 필요)";
+}
+
 function getDisplayDecisionBadge(totalScore: number): string {
   if (totalScore < 35) return "진입 추천";
   if (totalScore < 55) return "조건부 진입";
