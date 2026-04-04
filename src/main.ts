@@ -184,7 +184,7 @@ function getResultConfidenceLevel(score: number): ResultConfidenceLevel {
   return "low";
 }
 
-function buildMissingEvidenceFields(publicData: any): string[] {
+function buildMissingEvidenceFields(publicData: any, location: LocationState): string[] {
   const checks: Array<[string, unknown]> = [
     ["population", publicData?.population],
     ["households", publicData?.households],
@@ -192,6 +192,10 @@ function buildMissingEvidenceFields(publicData: any): string[] {
     ["poi_total_count", publicData?.poiTotalCount],
     ["district_poi_count", publicData?.districtPoiCount],
     ["diversity_index", publicData?.diversityIndex],
+    ["sido_name", location?.sidoName],
+    ["sigungu_name", location?.sigunguName],
+    ["dong_name", location?.dongName],
+    ["adm_cd", location?.admCd],
   ];
 
   return checks
@@ -221,6 +225,92 @@ function buildStrengthsFromAnalysis(analysis: RiskAnalysis, publicData: any): st
   return strengths.slice(0, 3);
 }
 
+function countAvailableEvidencePoints(publicData: any, location: LocationState): number {
+  const values = [
+    publicData?.population,
+    publicData?.households,
+    publicData?.competitorsCount,
+    publicData?.poiTotalCount,
+    publicData?.districtPoiCount,
+    publicData?.diversityIndex,
+    publicData?.volatilityProxy,
+    location?.sidoName,
+    location?.sigunguName,
+    location?.dongName,
+    location?.admCd,
+  ];
+
+  return values.filter((value) => value != null && value !== "").length;
+}
+
+function normalizeIndustryLabel(
+  businessTypeCode: string,
+  businessTypeLabel: string
+): string {
+  if (
+    businessTypeLabel &&
+    !businessTypeLabel.startsWith("업종 코드:")
+  ) {
+    return businessTypeLabel;
+  }
+
+  const profile = RiskEngine.getProfile(businessTypeCode);
+  if (profile?.display_name_ko) return profile.display_name_ko;
+  if (profile?.display_name_en) return profile.display_name_en;
+
+  return businessTypeCode;
+}
+
+function buildCalibratedSummary(params: {
+  analysis: RiskAnalysis;
+  aiResult: AIAnalysisResult;
+  strengths: string[];
+  confidenceLevel: ResultConfidenceLevel;
+}) {
+  const { analysis, aiResult, strengths, confidenceLevel } = params;
+
+  const risks = Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [];
+  const recommendations = Array.isArray(aiResult?.recommendedActions)
+    ? aiResult.recommendedActions
+    : [];
+
+  let oneLine = aiResult?.oneLineSummary ?? "";
+  let recommendation =
+    recommendations.length > 0 ? recommendations[0] : "";
+
+  const isLowDemand = analysis.layerScores.marketDemand.score <= 20;
+  const isHighFinancialPressure = analysis.layerScores.financialPressure.score >= 80;
+  const isMediumOrWorse = analysis.cri >= 35;
+
+  if (isLowDemand && isHighFinancialPressure) {
+    oneLine =
+      "수요 기반이 약하고 재무 부담이 높아, 보수적으로 접근해야 하는 입지입니다.";
+    recommendation =
+      "충분한 사전 수요 검증 없이 즉시 진입하는 것은 권장되지 않습니다.";
+  } else if (isMediumOrWorse) {
+    oneLine =
+      "일부 장점은 있으나 리스크 요인이 함께 존재해 조건부 접근이 필요한 입지입니다.";
+    if (!recommendation) {
+      recommendation = "입지 강점보다 약점을 먼저 보완할 전략이 필요합니다.";
+    }
+  }
+
+  if (confidenceLevel === "low") {
+    oneLine += " 다만 데이터 신뢰도가 낮아 현장 확인이 반드시 필요합니다.";
+  } else if (confidenceLevel === "medium") {
+    oneLine += " 일부 지표는 추정치가 포함되어 있어 보조 검증이 필요합니다.";
+  }
+
+  return {
+    one_line: oneLine,
+    strengths,
+    risk: risks,
+    recommendation,
+    recommendations,
+    precautions: aiResult?.precautions ?? "",
+  };
+}
+
 function buildStructuredResultData(params: {
   analysis: RiskAnalysis;
   aiResult: AIAnalysisResult;
@@ -232,9 +322,20 @@ function buildStructuredResultData(params: {
 }) {
   const { analysis, aiResult, location, businessTypeCode, businessTypeLabel, radius, publicData } = params;
 
-  const missingFields = buildMissingEvidenceFields(publicData);
-  const confidenceLevel = getResultConfidenceLevel(analysis.confidenceScore);
-  const strengths = buildStrengthsFromAnalysis(analysis, publicData);
+  const missingFields = buildMissingEvidenceFields(publicData, location);
+const evidencePoints = countAvailableEvidencePoints(publicData, location);
+const confidenceLevel = getResultConfidenceLevel(analysis.confidenceScore);
+const strengths = buildStrengthsFromAnalysis(analysis, publicData);
+const calibratedSummary = buildCalibratedSummary({
+  analysis,
+  aiResult,
+  strengths,
+  confidenceLevel,
+});
+const normalizedIndustryLabel = normalizeIndustryLabel(
+  businessTypeCode,
+  businessTypeLabel
+);
 
   const resultData = {
     version: "v2",
@@ -266,29 +367,14 @@ function buildStructuredResultData(params: {
     },
 
     confidence: {
-      level: confidenceLevel,
-      score: analysis.confidenceScore,
-      data_points: Object.keys(analysis.sourceSummary ?? {}).reduce((acc, key) => {
-        const value = (analysis.sourceSummary as Record<string, number>)[key] ?? 0;
-        return acc + value;
-      }, 0),
-      missing: missingFields,
-      has_estimated_metric: Boolean(analysis.hasEstimatedMetric),
-    },
+  level: confidenceLevel,
+  score: analysis.confidenceScore,
+  data_points: evidencePoints,
+  missing: missingFields,
+  has_estimated_metric: Boolean(analysis.hasEstimatedMetric),
+},
 
-    summary: {
-      one_line: aiResult?.oneLineSummary ?? "",
-      strengths,
-      risk: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
-      recommendation:
-        Array.isArray(aiResult?.recommendedActions) && aiResult.recommendedActions.length > 0
-          ? aiResult.recommendedActions[0]
-          : "",
-      recommendations: Array.isArray(aiResult?.recommendedActions)
-        ? aiResult.recommendedActions
-        : [],
-      precautions: aiResult?.precautions ?? "",
-    },
+    summary: calibratedSummary,
 
     location: {
       lat: location.lat,
@@ -302,9 +388,9 @@ function buildStructuredResultData(params: {
     },
 
     industry: {
-      code: businessTypeCode,
-      label: businessTypeLabel,
-    },
+  code: businessTypeCode,
+  label: normalizedIndustryLabel,
+},
 
     analysis_meta: {
       radius_m: radius,
@@ -315,12 +401,10 @@ function buildStructuredResultData(params: {
     cri: analysis.cri,
     riskTier: analysis.riskTier,
     confidenceScore: analysis.confidenceScore,
-    oneLineSummary: aiResult?.oneLineSummary ?? "",
+    oneLineSummary: calibratedSummary.one_line,
     keyRisks: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
-    recommendedActions: Array.isArray(aiResult?.recommendedActions)
-      ? aiResult.recommendedActions
-      : [],
-    precautions: aiResult?.precautions ?? "",
+    recommendedActions: calibratedSummary.recommendations,
+    precautions: calibratedSummary.precautions,
   };
 
   return resultData;
