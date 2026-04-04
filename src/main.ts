@@ -46,7 +46,8 @@ const getNum = (id: string, defaultVal: number = 0) =>
 const getCheck = (id: string) => (getEl(id) as HTMLInputElement)?.checked || false;
 
 let lastAnalysisResult: RiskAnalysis | null = null;
-
+let selectedHistoryForComparison: AnalysisHistoryItem[] = [];
+let selectedLocationsForComparison: any[] = [];
 const elements = {
   authContainer: getEl("authContainer"),
   btnLogin: getEl("btnLogin"),
@@ -597,6 +598,12 @@ function buildStructuredResultData(params: {
     recommendedActions: calibratedSummary.recommendations,
     precautions: calibratedSummary.precautions,
   };
+}
+
+function getDisplayRiskLevelLabel(level: ResultRiskLevel): string {
+  if (level === "low") return "낮은 리스크";
+  if (level === "medium") return "중간 리스크";
+  return "높은 리스크";
 }
 
 function getDisplayDecisionBadge(totalScore: number): string {
