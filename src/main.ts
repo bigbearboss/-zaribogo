@@ -412,6 +412,107 @@ const normalizedIndustryLabel = normalizeIndustryLabel(
 let selectedHistoryForComparison: AnalysisHistoryItem[] = [];
 let selectedLocationsForComparison: any[] = [];
 
+function getDisplayRiskLevelLabel(level: ResultRiskLevel): string {
+  if (level === "low") return "낮은 리스크";
+  if (level === "medium") return "중간 리스크";
+  return "높은 리스크";
+}
+
+function getDisplayConfidenceLabel(
+  level: ResultConfidenceLevel,
+  hasEstimatedMetric: boolean
+): string {
+  if (level === "high") {
+    return "높음 (신뢰할 수 있는 데이터)";
+  }
+
+  if (level === "medium") {
+    return hasEstimatedMetric
+      ? "보통 (일부 추정 데이터 포함)"
+      : "보통 (핵심 데이터 확보)";
+  }
+
+  return "낮음 (현장 검증 필요)";
+}
+
+function getDisplayDecisionBadge(totalScore: number): string {
+  if (totalScore < 35) return "진입 추천";
+  if (totalScore < 55) return "조건부 진입";
+  return "진입 비추천";
+}
+
+function renderStructuredResultUI(
+  resultData: ReturnType<typeof buildStructuredResultData>
+) {
+  // 1) 상단 리스크 라벨 보정
+  if (elements.riskTier) {
+    elements.riskTier.textContent = getDisplayRiskLevelLabel(
+      resultData.score.risk_level
+    );
+  }
+
+  // 2) 판단 요약
+  if (elements.reportSummary) {
+    elements.reportSummary.textContent = resultData.summary.one_line;
+  }
+
+  // 3) 핵심 리스크 리스트
+  if (elements.reportReasons) {
+    elements.reportReasons.innerHTML = (resultData.summary.risk || [])
+      .map((item) => `<li>${item}</li>`)
+      .join("");
+  }
+
+  // 4) 추천 액션 리스트
+  if (elements.reportActions) {
+    elements.reportActions.innerHTML = (resultData.summary.recommendations || [])
+      .map((item) => `<li>${item}</li>`)
+      .join("");
+  }
+
+  // 5) 신뢰도 UI
+  if (elements.confidenceScore) {
+    elements.confidenceScore.textContent = resultData.confidence.score.toFixed(2);
+  }
+
+  if (elements.confidenceBar) {
+    elements.confidenceBar.style.width = `${resultData.confidence.score * 100}%`;
+  }
+
+  if (elements.confidenceLabel) {
+    const label = getDisplayConfidenceLabel(
+      resultData.confidence.level,
+      resultData.confidence.has_estimated_metric
+    );
+
+    elements.confidenceLabel.className = `conf-label ${resultData.confidence.level}`;
+    elements.confidenceLabel.textContent = label;
+  }
+
+  // 6) 최종 판단 배지
+  if (elements.mainDecisionBadge) {
+    elements.mainDecisionBadge.classList.remove("recommend", "moderate", "risk");
+
+    const badgeText = getDisplayDecisionBadge(resultData.score.total);
+    elements.mainDecisionBadge.textContent = badgeText;
+
+    if (badgeText === "진입 추천") {
+      elements.mainDecisionBadge.classList.add("recommend");
+    } else if (badgeText === "조건부 진입") {
+      elements.mainDecisionBadge.classList.add("moderate");
+    } else {
+      elements.mainDecisionBadge.classList.add("risk");
+    }
+  }
+
+  // 7) 상태 뱃지
+  if (elements.reportStatusBadge) {
+    elements.reportStatusBadge.textContent = `${getDisplayRiskLevelLabel(
+      resultData.score.risk_level
+    )} · Grade ${resultData.score.grade}`;
+  }
+}
+
 function setupProductActions() {
   elements.btnSaveLocation?.addEventListener("click", () => {
     const saveKey = "riskx_saved_locations";
@@ -1326,6 +1427,7 @@ async function saveAnalysisAndConsumeCredit(params: {
   analysis: RiskAnalysis;
   aiResult: AIAnalysisResult;
   publicData: any;
+  resultDataOverride?: ReturnType<typeof buildStructuredResultData>;
 }) {
   const {
     userId,
@@ -1337,7 +1439,9 @@ async function saveAnalysisAndConsumeCredit(params: {
     publicData,
   } = params;
 
-  const normalizedResult = buildStructuredResultData({
+  const normalizedResult =
+  params.resultDataOverride ??
+  buildStructuredResultData({
     analysis,
     aiResult,
     location,
@@ -1810,17 +1914,41 @@ if (persist) {
     throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
   }
 
-  await saveAnalysisAndConsumeCredit({
-  userId,
-  location: currentLocation,
-  businessTypeCode: industryCode,
-  businessTypeLabel: industry.name,
-  analysis,
-  aiResult,
-  publicData: pData,
-});
+    const structuredResultData = buildStructuredResultData({
+    analysis,
+    aiResult,
+    location: currentLocation,
+    businessTypeCode: industryCode,
+    businessTypeLabel: industry.name,
+    radius: currentRadius,
+    publicData: pData,
+  });
 
-  await saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
+  renderStructuredResultUI(structuredResultData);
+
+  await saveAnalysisAndConsumeCredit({
+    userId,
+    location: currentLocation,
+    businessTypeCode: industryCode,
+    businessTypeLabel: industry.name,
+    analysis,
+    aiResult,
+    publicData: pData,
+    resultDataOverride: structuredResultData,
+  });
+
+  const calibratedAiResult = {
+    ...aiResult,
+    oneLineSummary: structuredResultData.summary.one_line,
+  } as AIAnalysisResult;
+
+  await saveToHistory(
+    currentLocation,
+    industry,
+    currentRadius,
+    analysis,
+    calibratedAiResult
+  );
 } else {
   if (elements.llmCard) {
     elements.llmCard.style.display = "none";
