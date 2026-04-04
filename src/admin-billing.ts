@@ -972,7 +972,7 @@ function renderActionLogMeta(
   return JSON.stringify(detail, null, 2);
 }
 
-function renderTimeline(events: (PaymentEvent | AdminActionLog)[], isActionLog: boolean) {
+function renderTimeline(events: any[], isActionLog: boolean) {
   D.eventTimeline.innerHTML = '';
   D.eventTimelineEmpty.classList.toggle('hidden', events.length === 0);
 
