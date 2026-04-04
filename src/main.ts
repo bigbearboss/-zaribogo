@@ -161,6 +161,170 @@ const elements = {
 };
 
 let currentCRI = 0;
+type ResultConfidenceLevel = "high" | "medium" | "low";
+type ResultRiskLevel = "low" | "medium" | "high";
+
+function getResultGrade(cri: number): string {
+  if (cri < 25) return "A";
+  if (cri < 40) return "B";
+  if (cri < 55) return "C";
+  if (cri < 70) return "D";
+  return "E";
+}
+
+function getResultRiskLevel(cri: number): ResultRiskLevel {
+  if (cri < 35) return "low";
+  if (cri < 55) return "medium";
+  return "high";
+}
+
+function getResultConfidenceLevel(score: number): ResultConfidenceLevel {
+  if (score >= 0.8) return "high";
+  if (score >= 0.6) return "medium";
+  return "low";
+}
+
+function buildMissingEvidenceFields(publicData: any): string[] {
+  const checks: Array<[string, unknown]> = [
+    ["population", publicData?.population],
+    ["households", publicData?.households],
+    ["competitors", publicData?.competitorsCount],
+    ["poi_total_count", publicData?.poiTotalCount],
+    ["district_poi_count", publicData?.districtPoiCount],
+    ["diversity_index", publicData?.diversityIndex],
+  ];
+
+  return checks
+    .filter(([, value]) => value == null || value === "")
+    .map(([key]) => key);
+}
+
+function buildStrengthsFromAnalysis(analysis: RiskAnalysis, publicData: any): string[] {
+  const strengths: string[] = [];
+
+  if (analysis.layerScores.marketDemand.score <= 40) {
+    strengths.push("배후 수요 관련 리스크가 상대적으로 낮습니다.");
+  }
+
+  if (analysis.layerScores.competitiveStructure.score <= 40) {
+    strengths.push("경쟁 강도가 과도하지 않아 초기 진입 부담이 비교적 낮습니다.");
+  }
+
+  if ((publicData?.competitorsCount ?? 999) <= 3) {
+    strengths.push("주변 경쟁 점포 수가 낮아 차별화 여지가 있습니다.");
+  }
+
+  if (analysis.confidenceScore >= 0.8) {
+    strengths.push("핵심 지표의 데이터 신뢰도가 높은 편입니다.");
+  }
+
+  return strengths.slice(0, 3);
+}
+
+function buildStructuredResultData(params: {
+  analysis: RiskAnalysis;
+  aiResult: AIAnalysisResult;
+  location: LocationState;
+  businessTypeCode: string;
+  businessTypeLabel: string;
+  radius: number;
+  publicData: any;
+}) {
+  const { analysis, aiResult, location, businessTypeCode, businessTypeLabel, radius, publicData } = params;
+
+  const missingFields = buildMissingEvidenceFields(publicData);
+  const confidenceLevel = getResultConfidenceLevel(analysis.confidenceScore);
+  const strengths = buildStrengthsFromAnalysis(analysis, publicData);
+
+  const resultData = {
+    version: "v2",
+    savedAt: new Date().toISOString(),
+
+    score: {
+      total: analysis.cri,
+      grade: getResultGrade(analysis.cri),
+      risk_level: getResultRiskLevel(analysis.cri),
+      tier_label: analysis.riskTier,
+    },
+
+    breakdown: {
+      financial_pressure: analysis.layerScores.financialPressure.score,
+      market_demand: analysis.layerScores.marketDemand.score,
+      competition: analysis.layerScores.competitiveStructure.score,
+      structural_stability: analysis.layerScores.structuralStability.score,
+    },
+
+    evidence: {
+      population: publicData?.population ?? null,
+      households: publicData?.households ?? null,
+      competitors: publicData?.competitorsCount ?? null,
+      poi_total_count: publicData?.poiTotalCount ?? null,
+      district_poi_count: publicData?.districtPoiCount ?? null,
+      diversity_index: publicData?.diversityIndex ?? null,
+      volatility_proxy: publicData?.volatilityProxy ?? null,
+      source_summary: analysis.sourceSummary ?? {},
+    },
+
+    confidence: {
+      level: confidenceLevel,
+      score: analysis.confidenceScore,
+      data_points: Object.keys(analysis.sourceSummary ?? {}).reduce((acc, key) => {
+        const value = (analysis.sourceSummary as Record<string, number>)[key] ?? 0;
+        return acc + value;
+      }, 0),
+      missing: missingFields,
+      has_estimated_metric: Boolean(analysis.hasEstimatedMetric),
+    },
+
+    summary: {
+      one_line: aiResult?.oneLineSummary ?? "",
+      strengths,
+      risk: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
+      recommendation:
+        Array.isArray(aiResult?.recommendedActions) && aiResult.recommendedActions.length > 0
+          ? aiResult.recommendedActions[0]
+          : "",
+      recommendations: Array.isArray(aiResult?.recommendedActions)
+        ? aiResult.recommendedActions
+        : [],
+      precautions: aiResult?.precautions ?? "",
+    },
+
+    location: {
+      lat: location.lat,
+      lng: location.lng,
+      address: location.address,
+      placeName: location.placeName,
+      sidoName: location.sidoName ?? null,
+      sigunguName: location.sigunguName ?? null,
+      dongName: location.dongName ?? null,
+      admCd: location.admCd ?? null,
+    },
+
+    industry: {
+      code: businessTypeCode,
+      label: businessTypeLabel,
+    },
+
+    analysis_meta: {
+      radius_m: radius,
+      estimated_metric_used: Boolean(analysis.hasEstimatedMetric),
+    },
+
+    // 기존 화면/히스토리 호환용
+    cri: analysis.cri,
+    riskTier: analysis.riskTier,
+    confidenceScore: analysis.confidenceScore,
+    oneLineSummary: aiResult?.oneLineSummary ?? "",
+    keyRisks: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
+    recommendedActions: Array.isArray(aiResult?.recommendedActions)
+      ? aiResult.recommendedActions
+      : [],
+    precautions: aiResult?.precautions ?? "",
+  };
+
+  return resultData;
+}
 let selectedHistoryForComparison: AnalysisHistoryItem[] = [];
 let selectedLocationsForComparison: any[] = [];
 
@@ -1077,31 +1241,27 @@ async function saveAnalysisAndConsumeCredit(params: {
   businessTypeLabel: string;
   analysis: RiskAnalysis;
   aiResult: AIAnalysisResult;
+  publicData: any;
 }) {
-  const { userId, location, businessTypeCode, businessTypeLabel, analysis, aiResult } = params;
+  const {
+    userId,
+    location,
+    businessTypeCode,
+    businessTypeLabel,
+    analysis,
+    aiResult,
+    publicData,
+  } = params;
 
-  const normalizedResult = {
-    oneLineSummary: aiResult?.oneLineSummary ?? "",
-    keyRisks: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
-    recommendedActions: Array.isArray(aiResult?.recommendedActions)
-      ? aiResult.recommendedActions
-      : [],
-    precautions: aiResult?.precautions ?? "",
-    cri: analysis.cri,
-    riskTier: analysis.riskTier,
-    confidenceScore: analysis.confidenceScore,
-    location: {
-      lat: location.lat,
-      lng: location.lng,
-      address: location.address,
-      placeName: location.placeName,
-    },
-    industry: {
-      code: businessTypeCode,
-      label: businessTypeLabel,
-    },
-    savedAt: new Date().toISOString(),
-  };
+  const normalizedResult = buildStructuredResultData({
+    analysis,
+    aiResult,
+    location,
+    businessTypeCode,
+    businessTypeLabel,
+    radius: currentRadius,
+    publicData,
+  });
 
   const reportTitle = `[${businessTypeLabel}] ${location.placeName || location.address} 분석 리포트`;
 
@@ -1567,13 +1727,14 @@ if (persist) {
   }
 
   await saveAnalysisAndConsumeCredit({
-    userId,
-    location: currentLocation,
-    businessTypeCode: industryCode,
-    businessTypeLabel: industry.name,
-    analysis,
-    aiResult,
-  });
+  userId,
+  location: currentLocation,
+  businessTypeCode: industryCode,
+  businessTypeLabel: industry.name,
+  analysis,
+  aiResult,
+  publicData: pData,
+});
 
   await saveToHistory(currentLocation, industry, currentRadius, analysis, aiResult);
 } else {
