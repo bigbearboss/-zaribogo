@@ -5,7 +5,7 @@ export default {
         {
           success: true,
           message: "Worker is alive",
-          url: request.url,
+          supabaseFunctionUrl: env.SUPABASE_FUNCTION_URL,
           time: new Date().toISOString(),
         },
         null,
