@@ -206,9 +206,9 @@ function buildMissingEvidenceFields(publicData: any, location: LocationState): s
 function buildStrengthsFromAnalysis(analysis: RiskAnalysis, publicData: any): string[] {
   const strengths: string[] = [];
 
-  if (analysis.layerScores.marketDemand.score <= 40) {
-    strengths.push("배후 수요 관련 리스크가 상대적으로 낮습니다.");
-  }
+  if (analysis.layerScores.marketDemand.score >= 60) {
+  strengths.push("배후 수요 기반이 비교적 안정적으로 확보된 입지입니다.");
+}
 
   if (analysis.layerScores.competitiveStructure.score <= 40) {
     strengths.push("경쟁 강도가 과도하지 않아 초기 진입 부담이 비교적 낮습니다.");
