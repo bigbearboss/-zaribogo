@@ -2446,12 +2446,14 @@ footer {
 }
 
 .ai-summary-one-line {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), transparent);
+  border-left: 4px solid #818cf8;
+  padding: 16px 20px;
+  border-radius: 8px;
   font-size: 1.15rem;
   font-weight: 700;
   color: #fff;
   line-height: 1.5;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--glass-border);
 }
 
 .ai-grid {
@@ -2460,11 +2462,102 @@ footer {
   gap: 24px;
 }
 
+/* Base column style - Strategic Consulting Card */
+.ai-column {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 1. 왜 이런 판단인가요? (Rationale) */
+.ai-grid:nth-of-type(1) .ai-column:nth-child(1) {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+  border-left: 4px solid var(--accent-primary);
+}
+.ai-grid:nth-of-type(1) .ai-column:nth-child(1) .ai-section-label {
+  color: #c4b5fd;
+}
+
+/* 2. 대응 전략 (Strategy) */
+.ai-grid:nth-of-type(1) .ai-column:nth-child(2) {
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.05), rgba(14, 165, 233, 0.02));
+  border-left: 4px solid #38bdf8;
+}
+.ai-grid:nth-of-type(1) .ai-column:nth-child(2) .ai-section-label {
+  color: #7dd3fc;
+}
+
+/* 3. 지금 실행하면 좋은 것 (Actions) */
+.ai-grid:nth-of-type(2) .ai-column:nth-child(1) {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.02));
+  border-left: 4px solid #10b981;
+}
+.ai-grid:nth-of-type(2) .ai-column:nth-child(1) .ai-section-label {
+  color: #6ee7b7;
+}
+
+/* 4. 현장 확인 체크리스트 */
+.ai-grid:nth-of-type(2) .ai-column:nth-child(2) {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+.ai-grid:nth-of-type(2) .ai-column:nth-child(2) .ai-list li::before {
+  content: '✓';
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  left: 0;
+  top: 8px;
+}
+.ai-grid:nth-of-type(2) .ai-column:nth-child(2) .ai-list li {
+  padding-left: 28px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 10px 10px 32px;
+  border-radius: 8px;
+}
+
+/* 5. 부동산/임대인에게 꼭 확인할 것 */
+.ai-grid:nth-of-type(3) .ai-column:nth-child(1) {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.ai-grid:nth-of-type(3) .ai-column:nth-child(1) .ai-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.ai-grid:nth-of-type(3) .ai-column:nth-child(1) .ai-list li::before {
+  content: '✓';
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  left: 0;
+  top: 8px;
+}
+
+.ai-grid:nth-of-type(3) .ai-column:nth-child(1) .ai-list li {
+  padding-left: 28px;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 10px 10px 32px;
+  border-radius: 8px;
+}
+
 .ai-section-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
   margin-bottom: 12px;
   display: block;
@@ -2494,16 +2587,23 @@ footer {
 }
 
 .ai-precautions {
-  background: rgba(239, 68, 68, 0.05);
-  border-left: 4px solid #ef4444;
+  background: rgba(251, 191, 36, 0.05);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-left: 4px solid #f59e0b;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
+}
+
+.ai-precautions .ai-section-label {
+  color: #f59e0b !important;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
 }
 
 .ai-precautions p {
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #fca5a5;
+  color: #fcd34d;
   margin: 0;
 }
 
@@ -2521,6 +2621,9 @@ footer {
 
 @media (max-width: 768px) {
   .ai-grid {
+    grid-template-columns: 1fr;
+  }
+  .ai-grid:nth-of-type(3) .ai-column:nth-child(1) .ai-list {
     grid-template-columns: 1fr;
   }
 }
