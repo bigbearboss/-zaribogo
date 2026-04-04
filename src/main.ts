@@ -2047,7 +2047,7 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
     document.documentElement.style.setProperty("--accent-secondary", secondaryColor);
   }
 
-  updateJudgmentUI(analysis);
+  //updateJudgmentUI(analysis);
   renderEvidenceCards(analysis.evidenceCards);
   renderRadiusComparison(radiusComparison, currentRadius);
 
@@ -2211,6 +2211,7 @@ if (persist) {
   });
 
   renderStructuredResultUI(structuredResultData);
+    updateJudgmentUI(analysis, structuredResultData);
 
   await saveAnalysisAndConsumeCredit({
     userId,
@@ -2623,7 +2624,10 @@ if (originalRadiusToggle) {
   });
 }
 
-function updateJudgmentUI(analysis: RiskAnalysis) {
+function updateJudgmentUI(
+  analysis: RiskAnalysis,
+  structuredResult?: ReturnType<typeof buildStructuredResultData>
+) {
   if (!elements.judgmentReport) return;
 
   const reportLocationHeader = document.getElementById("reportLocationHeader");
@@ -2680,57 +2684,40 @@ function updateJudgmentUI(analysis: RiskAnalysis) {
     }
   }
 
-  const sectorLabel = elements.selectedSectorLabel.innerText || "해당 업종";
-  const reasons: string[] = [];
-  const competitorsCount = (analysis as any).competitorsCount ?? rawPData?.competitorsCount;
+    const reasons =
+    structuredResult?.summary?.decision_rationale?.length
+      ? structuredResult.summary.decision_rationale
+      : [];
 
-  if (competitorsCount === 0 || competitorsCount === "0") {
-    reasons.push(`현재 데이터상으로 경쟁점이 확인되지 않아 현장 검증이 반드시 필요합니다.`);
-  } else if (cScore > 70) {
-    reasons.push(`주변 경쟁 밀도가 높은 편이라 차별화된 매력이 없으면 고전할 수 있습니다.`);
-  } else {
-    reasons.push(`경쟁 환경은 비교적 안정적이라 초기 안착에 유리한 조건입니다.`);
-  }
-
-  if (mScore < 30) {
-    reasons.push(`배후 수요가 기대에 못 미쳐 초기 매출 확보가 더딜 가능성이 큽니다.`);
-  } else if (mScore > 70) {
-    reasons.push(`유동 인구와 배후 수요가 풍부하여 기본적인 잠재력은 충분한 입지입니다.`);
-  }
-
-  if (analysis.layerScores.financialPressure.score > 60) {
-    reasons.push(`임대료를 포함한 고정비 비중이 높아 수익성 확보에 대한 정밀한 검토가 필요합니다.`);
-  }
+  const actions =
+    structuredResult?.summary?.strategic_advice?.length
+      ? structuredResult.summary.strategic_advice
+      : [];
 
   if (elements.decisionReasonList) {
-    elements.decisionReasonList.innerHTML = reasons.slice(0, 3).map((r) => `<li>${r}</li>`).join("");
-  }
-
-  const actions: string[] = [];
-  if (decisionLevel >= 0.7) {
-    actions.push("오픈 초기에 공격적인 홍보를 통해 충성 고객을 빠르게 확보하세요.");
-    actions.push("안정적인 운영을 위해 재방문 유도 프로그램을 조기에 도입하시길 추천합니다.");
-  } else if (decisionLevel >= 0.4) {
-    actions.push("주변 이동 동선을 고려하여 피크 타임에 마케팅 역량을 집중해 보세요.");
-    actions.push("가격보다는 서비스 품질 중심의 차별화로 브랜드 가치를 키우는 것이 좋습니다.");
-  } else {
-    actions.push("투자비를 낮추기 위해 소형 매장이나 배달 중심의 모델 전환을 검토해 보세요.");
-    actions.push("기존 점포들과는 확실히 구분되는 핵심 타겟용 특화 메뉴가 반드시 필요합니다.");
+    elements.decisionReasonList.innerHTML = reasons
+      .slice(0, 3)
+      .map((r) => `<li>${r}</li>`)
+      .join("");
   }
 
   if (elements.decisionActionList) {
-    elements.decisionActionList.innerHTML = actions.slice(0, 3).map((a) => `<li>${a}</li>`).join("");
-  }
-
-  if (elements.estimationBanner) {
-    elements.estimationBanner.classList.toggle("hidden", !analysis.hasEstimatedMetric);
+    elements.decisionActionList.innerHTML = actions
+      .slice(0, 3)
+      .map((a) => `<li>${a}</li>`)
+      .join("");
   }
 
   if (elements.reportReasons) {
-    elements.reportReasons.innerHTML = reasons.map((r) => `<li>${r}</li>`).join("");
+    elements.reportReasons.innerHTML = reasons
+      .map((r) => `<li>${r}</li>`)
+      .join("");
   }
+
   if (elements.reportActions) {
-    elements.reportActions.innerHTML = actions.map((a) => `<li>${a}</li>`).join("");
+    elements.reportActions.innerHTML = actions
+      .map((a) => `<li>${a}</li>`)
+      .join("");
   }
 
   elements.judgmentReport.classList.remove("hidden", "status-recommend", "status-caution", "status-risk");
