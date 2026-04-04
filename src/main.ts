@@ -1328,12 +1328,24 @@ const sDataMock = {
 async function renderAIInsights(
   analysis: RiskAnalysis,
   pData: any,
-  structuredDraftResult: ReturnType<typeof buildStructuredResultData>
+  structuredDraftResult?: ReturnType<typeof buildStructuredResultData>
 ): Promise<AIExtendedResult | null> {
   if (!elements.llmCard || !elements.llmContent) return null;
 
+  const fallbackStructured =
+    structuredDraftResult ??
+    buildStructuredResultData({
+      analysis,
+      aiResult: null,
+      location: currentLocation,
+      businessTypeCode: elements.businessType.value,
+      businessTypeLabel: elements.selectedSectorLabel?.textContent || "선택 업종",
+      radius: currentRadius,
+      publicData: pData,
+    });
+
   const aiInput: any = {
-    industry: structuredDraftResult.industry.label,
+    industry: fallbackStructured.industry.label,
     location: {
       lat: currentLocation.lat,
       lng: currentLocation.lng,
@@ -1342,8 +1354,8 @@ async function renderAIInsights(
     radiusM: currentRadius,
     cri: analysis.cri,
     riskTier: analysis.riskTier,
-    decision: getDisplayDecisionBadge(structuredDraftResult.score.total),
-    confidence: structuredDraftResult.confidence,
+    decision: getDisplayDecisionBadge(fallbackStructured.score.total),
+    confidence: fallbackStructured.confidence,
     metrics: {
       competitionStrength: analysis.layerScores.competitiveStructure.score,
       demandIndex: analysis.layerScores.marketDemand.score,
@@ -1360,11 +1372,11 @@ async function renderAIInsights(
       volatilityProxy: pData.volatilityProxy,
     },
     structuredSummary: {
-      oneLine: structuredDraftResult.summary.one_line,
-      decisionRationale: structuredDraftResult.summary.decision_rationale,
-      strategicAdvice: structuredDraftResult.summary.strategic_advice,
-      fieldChecklist: structuredDraftResult.summary.field_checklist,
-      realtorChecklist: structuredDraftResult.summary.realtor_checklist,
+      oneLine: fallbackStructured.summary.one_line,
+      decisionRationale: fallbackStructured.summary.decision_rationale,
+      strategicAdvice: fallbackStructured.summary.strategic_advice,
+      fieldChecklist: fallbackStructured.summary.field_checklist,
+      realtorChecklist: fallbackStructured.summary.realtor_checklist,
     },
   };
 
@@ -1386,12 +1398,12 @@ async function renderAIInsights(
   const ai = result as AIExtendedResult | null;
 
   const oneLine =
-    ai?.oneLineSummary || structuredDraftResult.summary.one_line;
+    ai?.oneLineSummary || fallbackStructured.summary.one_line;
 
   const decisionRationale = uniqueText(
     [
       ...(ai?.decisionRationale ?? []),
-      ...(structuredDraftResult.summary.decision_rationale ?? []),
+      ...(fallbackStructured.summary.decision_rationale ?? []),
     ],
     4
   );
@@ -1399,7 +1411,7 @@ async function renderAIInsights(
   const strategicAdvice = uniqueText(
     [
       ...(ai?.strategicAdvice ?? []),
-      ...(structuredDraftResult.summary.strategic_advice ?? []),
+      ...(fallbackStructured.summary.strategic_advice ?? []),
     ],
     4
   );
@@ -1407,7 +1419,7 @@ async function renderAIInsights(
   const executionActions = uniqueText(
     [
       ...(ai?.recommendedActions ?? []),
-      ...(structuredDraftResult.summary.recommendations ?? []),
+      ...(fallbackStructured.summary.recommendations ?? []),
     ],
     5
   );
@@ -1415,7 +1427,7 @@ async function renderAIInsights(
   const fieldChecklist = uniqueText(
     [
       ...(ai?.fieldChecklist ?? []),
-      ...(structuredDraftResult.summary.field_checklist ?? []),
+      ...(fallbackStructured.summary.field_checklist ?? []),
     ],
     6
   );
@@ -1423,13 +1435,13 @@ async function renderAIInsights(
   const realtorChecklist = uniqueText(
     [
       ...(ai?.realtorChecklist ?? []),
-      ...(structuredDraftResult.summary.realtor_checklist ?? []),
+      ...(fallbackStructured.summary.realtor_checklist ?? []),
     ],
     6
   );
 
   const precautions =
-    ai?.precautions || structuredDraftResult.summary.local_verification_note;
+    ai?.precautions || fallbackStructured.summary.local_verification_note;
 
   if (contentEl) {
     contentEl.innerHTML = `
@@ -1461,16 +1473,18 @@ async function renderAIInsights(
 
         <div class="ai-column">
           <span class="ai-section-label">📍 현장 확인 체크리스트</span>
-          <ul class="ai-list">
+          <p class="ai-sub-note">AI는 모든 현장 변수를 알 수 없습니다. 아래 항목은 직접 확인하세요.</p>
+          <ul class="ai-list ai-check-list">
             ${fieldChecklist.map((item) => `<li>${item}</li>`).join("")}
           </ul>
         </div>
       </div>
 
       <div class="ai-grid">
-        <div class="ai-column" style="grid-column: 1 / -1;">
+        <div class="ai-column ai-full-width">
           <span class="ai-section-label">🏢 부동산/임대인에게 꼭 확인할 것</span>
-          <ul class="ai-list">
+          <p class="ai-sub-note">계약 전 반드시 질문하고 문서로 확인해야 할 항목입니다.</p>
+          <ul class="ai-list ai-check-list">
             ${realtorChecklist.map((item) => `<li>${item}</li>`).join("")}
           </ul>
         </div>
@@ -1485,7 +1499,6 @@ async function renderAIInsights(
 
   return ai;
 }
-
 
 const csvProvider = new CsvDatasetProvider();
 let csvDataLoaded = false;
