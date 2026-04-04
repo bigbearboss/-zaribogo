@@ -163,6 +163,128 @@ const elements = {
 let currentCRI = 0;
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
+type AIExtendedResult = AIAnalysisResult & {
+  strategicAdvice?: string[];
+  fieldChecklist?: string[];
+  realtorChecklist?: string[];
+  decisionRationale?: string[];
+  growthStrategies?: string[];
+  defensiveStrategies?: string[];
+};
+
+type StrategyMode = "growth" | "conditional" | "defensive";
+
+function uniqueText(items: Array<string | null | undefined>, limit = 6): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  items.forEach((item) => {
+    const normalized = (item || "").trim();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    result.push(normalized);
+  });
+
+  return result.slice(0, limit);
+}
+
+function buildDecisionPlaybook(params: {
+  analysis: RiskAnalysis;
+  publicData: any;
+  businessTypeLabel: string;
+  radius: number;
+}) {
+  const { analysis, publicData, businessTypeLabel, radius } = params;
+
+  const demandScore = analysis.layerScores.marketDemand.score;
+  const competitionScore = analysis.layerScores.competitiveStructure.score;
+  const financialScore = analysis.layerScores.financialPressure.score;
+  const structuralScore = analysis.layerScores.structuralStability.score;
+  const competitorsCount = Number(publicData?.competitorsCount ?? 0);
+
+  const mode: StrategyMode =
+    analysis.cri >= 55 ? "defensive" : analysis.cri >= 35 ? "conditional" : "growth";
+
+  const rationale: string[] = [];
+  const primaryStrategies: string[] = [];
+  const executionActions: string[] = [];
+
+  if (financialScore >= 80) {
+    rationale.push("고정비와 인건비 부담이 매우 높아 손익분기점 도달 난도가 큽니다.");
+    primaryStrategies.push("임대료·관리비·인건비를 동시에 재점검해 월 고정비 비중을 낮추는 전략이 우선입니다.");
+    executionActions.push("임대료 협상 시 월 매출 목표 대비 15~20% 이내 수준을 목표로 조정안을 준비하세요.");
+    executionActions.push("오픈 전 3개월 운영자금이 버틸 수 있는지 현금흐름표를 다시 계산하세요.");
+  }
+
+  if (demandScore <= 20) {
+    rationale.push("배후 수요가 약해 오픈 초기 고객 확보 속도가 느릴 수 있습니다.");
+    primaryStrategies.push("계약 전 점심·저녁·주말 시간대 유동과 실구매층을 현장에서 직접 검증하는 전략이 필요합니다.");
+    executionActions.push("배달/포장 매출을 포함한 보수적 매출 시나리오로 손익분기점을 다시 계산하세요.");
+    executionActions.push("반경 300m와 1km를 비교해 실제 유입 동선이 더 강한 대안 위치도 함께 검토하세요.");
+  }
+
+  if (competitorsCount === 0) {
+    rationale.push("동일 업종이 없다는 것은 기회일 수 있지만, 실제 수요 부재 가능성도 함께 의미합니다.");
+    primaryStrategies.push("주문앱 검색량, 리뷰 수, 인근 직장인·주거층 인터뷰로 숨은 수요와 숨은 경쟁을 같이 확인해야 합니다.");
+    executionActions.push("배달앱에서 같은 메뉴군 검색 노출량과 리뷰수를 확인해 온라인 경쟁을 먼저 검증하세요.");
+  } else if (competitionScore >= 70) {
+    rationale.push("경쟁 밀도가 높아 차별화 포인트 없이 진입하면 가격 경쟁에 휘말릴 수 있습니다.");
+    primaryStrategies.push("메뉴/가격/포장/배달 속도 중 최소 1개는 확실한 차별화 포인트를 설계해야 합니다.");
+    executionActions.push("인근 상위 경쟁점 3곳의 가격대, 대표 메뉴, 리뷰 키워드를 비교표로 정리하세요.");
+  }
+
+  if (structuralScore >= 70) {
+    rationale.push("운영 안정성 측면에서 계약 조건과 점포 설비 리스크를 더 꼼꼼히 확인해야 합니다.");
+    primaryStrategies.push("임대차 조건, 시설 사용 가능 범위, 공사비 발생 요인을 계약 전에 최대한 확정해야 합니다.");
+  }
+
+  if (mode === "growth") {
+    primaryStrategies.push("초기 고정비를 통제하면서도 재방문 고객 확보 구조를 설계하면 안정 운영 가능성이 높습니다.");
+    executionActions.push("오픈 4주 내 재방문 유도 프로모션과 리뷰 확보 캠페인을 같이 운영하세요.");
+    executionActions.push("점심/저녁 시간대별 대표 메뉴를 분리해 객단가와 회전율을 동시에 관리하세요.");
+  } else if (mode === "conditional") {
+    primaryStrategies.push("입지 자체는 완전히 나쁘지 않지만, 약점을 보완하는 실행력이 성패를 좌우합니다.");
+    executionActions.push("오픈 전 계약조건, 예상 매출, 초기 홍보비를 함께 조정하는 보수적 계획을 세우세요.");
+  } else {
+    primaryStrategies.push("현재 조건 그대로의 진입보다는, 비용 구조를 조정하거나 대체 입지를 병행 검토하는 접근이 더 안전합니다.");
+    executionActions.push("현재 자리와 유사 권역 내 대체 후보 2~3개를 함께 비교해 계약 전 의사결정을 분산하세요.");
+  }
+
+  const fieldChecklist = uniqueText(
+    [
+      `${radius}m 반경의 점심·저녁·주말 유동량을 최소 3회 이상 직접 확인하기`,
+      "비 오는 날과 맑은 날의 유동 차이가 큰지 확인하기",
+      "주변 직장인/주거민이 실제로 이 업종을 찾는지 짧게 인터뷰하기",
+      competitorsCount === 0
+        ? "지도에 안 잡히는 숨은 경쟁점, 배달 전문점, 샵인샵이 없는지 확인하기"
+        : "상위 경쟁점의 대기열, 회전율, 리뷰 반응을 직접 확인하기",
+      "건물 전면 가시성, 간판 노출, 주차/정차 편의성 확인하기",
+      "배달기사 접근성, 픽업 동선, 포장 대기 공간이 가능한지 확인하기",
+    ],
+    6
+  );
+
+  const realtorChecklist = uniqueText(
+    [
+      "실제 월세·관리비 외에 추가 부담금(전기·수도·냉난방·주차비)이 있는지 확인하기",
+      "권리금, 원상복구 범위, 중도해지 조건, 렌트프리 가능 여부 확인하기",
+      "업종 제한, 간판 규정, 외부 배기/덕트/가스 증설 가능 여부 확인하기",
+      "이전 임차인의 업종과 퇴점 사유, 공실 기간 확인하기",
+      "건물 하자, 누수, 전력 용량, 배수/그리스트랩 상태 확인하기",
+      "인근 개발계획, 도로 공사, 상권 이동 가능성 등 향후 변수 확인하기",
+    ],
+    6
+  );
+
+  return {
+    mode,
+    rationale: uniqueText(rationale, 4),
+    primaryStrategies: uniqueText(primaryStrategies, 4),
+    executionActions: uniqueText(executionActions, 5),
+    fieldChecklist,
+    realtorChecklist,
+  };
+}
 
 function getResultGrade(cri: number): string {
   if (cri < 25) return "A";
@@ -263,20 +385,66 @@ function normalizeIndustryLabel(
 
 function buildCalibratedSummary(params: {
   analysis: RiskAnalysis;
-  aiResult: AIAnalysisResult;
+  aiResult?: AIAnalysisResult | null;
   strengths: string[];
   confidenceLevel: ResultConfidenceLevel;
+  playbook: ReturnType<typeof buildDecisionPlaybook>;
 }) {
-  const { analysis, aiResult, strengths, confidenceLevel } = params;
+  const { analysis, aiResult, strengths, confidenceLevel, playbook } = params;
 
-  const risks = Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [];
-  const recommendations = Array.isArray(aiResult?.recommendedActions)
-    ? aiResult.recommendedActions
-    : [];
+  const ai = (aiResult ?? null) as AIExtendedResult | null;
 
-  let oneLine = aiResult?.oneLineSummary ?? "";
-  let recommendation =
-    recommendations.length > 0 ? recommendations[0] : "";
+  const risks = uniqueText(
+    [
+      ...(ai?.keyRisks ?? []),
+      ...playbook.rationale,
+    ],
+    4
+  );
+
+  const strategicAdvice = uniqueText(
+    [
+      ...(ai?.strategicAdvice ?? []),
+      ...(playbook.mode === "growth" ? ai?.growthStrategies ?? [] : []),
+      ...(playbook.mode === "defensive" ? ai?.defensiveStrategies ?? [] : []),
+      ...playbook.primaryStrategies,
+    ],
+    4
+  );
+
+  const recommendations = uniqueText(
+    [
+      ...(ai?.recommendedActions ?? []),
+      ...playbook.executionActions,
+    ],
+    5
+  );
+
+  const decisionRationale = uniqueText(
+    [
+      ...(ai?.decisionRationale ?? []),
+      ...playbook.rationale,
+    ],
+    4
+  );
+
+  const fieldChecklist = uniqueText(
+    [
+      ...(ai?.fieldChecklist ?? []),
+      ...playbook.fieldChecklist,
+    ],
+    6
+  );
+
+  const realtorChecklist = uniqueText(
+    [
+      ...(ai?.realtorChecklist ?? []),
+      ...playbook.realtorChecklist,
+    ],
+    6
+  );
+
+  let oneLine = ai?.oneLineSummary ?? "";
 
   const isLowDemand = analysis.layerScores.marketDemand.score <= 20;
   const isHighFinancialPressure = analysis.layerScores.financialPressure.score >= 80;
@@ -285,14 +453,12 @@ function buildCalibratedSummary(params: {
   if (isLowDemand && isHighFinancialPressure) {
     oneLine =
       "수요 기반이 약하고 재무 부담이 높아, 보수적으로 접근해야 하는 입지입니다.";
-    recommendation =
-      "충분한 사전 수요 검증 없이 즉시 진입하는 것은 권장되지 않습니다.";
   } else if (isMediumOrWorse) {
     oneLine =
       "일부 장점은 있으나 리스크 요인이 함께 존재해 조건부 접근이 필요한 입지입니다.";
-    if (!recommendation) {
-      recommendation = "입지 강점보다 약점을 먼저 보완할 전략이 필요합니다.";
-    }
+  } else if (!oneLine) {
+    oneLine =
+      "핵심 지표상 진입을 검토할 수 있는 입지이며, 운영 전략에 따라 성과 차이가 커질 수 있습니다.";
   }
 
   if (confidenceLevel === "low") {
@@ -305,39 +471,65 @@ function buildCalibratedSummary(params: {
     one_line: oneLine,
     strengths,
     risk: risks,
-    recommendation,
+    recommendation: recommendations[0] || "",
     recommendations,
-    precautions: aiResult?.precautions ?? "",
+    precautions:
+      ai?.precautions ||
+      "AI는 현장 동선·건물 상태·임대 협상 여지·실제 매출을 직접 확인할 수 없으므로 현장 실사와 부동산 확인이 필수입니다.",
+    strategic_advice: strategicAdvice,
+    decision_rationale: decisionRationale,
+    field_checklist: fieldChecklist,
+    realtor_checklist: realtorChecklist,
+    strategy_mode: playbook.mode,
+    local_verification_note:
+      "현장 동선, 숨어 있는 경쟁점, 건물 하자, 임대 협상 조건, 실제 매출 형성 가능성은 반드시 현장과 중개사를 통해 재확인하세요.",
   };
 }
 
 function buildStructuredResultData(params: {
   analysis: RiskAnalysis;
-  aiResult: AIAnalysisResult;
+  aiResult?: AIAnalysisResult | null;
   location: LocationState;
   businessTypeCode: string;
   businessTypeLabel: string;
   radius: number;
   publicData: any;
 }) {
-  const { analysis, aiResult, location, businessTypeCode, businessTypeLabel, radius, publicData } = params;
+  const {
+    analysis,
+    aiResult,
+    location,
+    businessTypeCode,
+    businessTypeLabel,
+    radius,
+    publicData,
+  } = params;
 
   const missingFields = buildMissingEvidenceFields(publicData, location);
-const evidencePoints = countAvailableEvidencePoints(publicData, location);
-const confidenceLevel = getResultConfidenceLevel(analysis.confidenceScore);
-const strengths = buildStrengthsFromAnalysis(analysis, publicData);
-const calibratedSummary = buildCalibratedSummary({
-  analysis,
-  aiResult,
-  strengths,
-  confidenceLevel,
-});
-const normalizedIndustryLabel = normalizeIndustryLabel(
-  businessTypeCode,
-  businessTypeLabel
-);
+  const evidencePoints = countAvailableEvidencePoints(publicData, location);
+  const confidenceLevel = getResultConfidenceLevel(analysis.confidenceScore);
+  const strengths = buildStrengthsFromAnalysis(analysis, publicData);
+  const normalizedIndustryLabel = normalizeIndustryLabel(
+    businessTypeCode,
+    businessTypeLabel
+  );
 
-  const resultData = {
+  const playbook = buildDecisionPlaybook({
+    analysis,
+    publicData,
+    businessTypeLabel: normalizedIndustryLabel,
+    radius,
+  });
+
+  const calibratedSummary = buildCalibratedSummary({
+    analysis,
+    aiResult,
+    strengths,
+    confidenceLevel,
+    playbook,
+  });
+
+  return {
     version: "v2",
     savedAt: new Date().toISOString(),
 
@@ -367,12 +559,12 @@ const normalizedIndustryLabel = normalizeIndustryLabel(
     },
 
     confidence: {
-  level: confidenceLevel,
-  score: analysis.confidenceScore,
-  data_points: evidencePoints,
-  missing: missingFields,
-  has_estimated_metric: Boolean(analysis.hasEstimatedMetric),
-},
+      level: confidenceLevel,
+      score: analysis.confidenceScore,
+      data_points: evidencePoints,
+      missing: missingFields,
+      has_estimated_metric: Boolean(analysis.hasEstimatedMetric),
+    },
 
     summary: calibratedSummary,
 
@@ -388,51 +580,23 @@ const normalizedIndustryLabel = normalizeIndustryLabel(
     },
 
     industry: {
-  code: businessTypeCode,
-  label: normalizedIndustryLabel,
-},
+      code: businessTypeCode,
+      label: normalizedIndustryLabel,
+    },
 
     analysis_meta: {
       radius_m: radius,
       estimated_metric_used: Boolean(analysis.hasEstimatedMetric),
     },
 
-    // 기존 화면/히스토리 호환용
     cri: analysis.cri,
     riskTier: analysis.riskTier,
     confidenceScore: analysis.confidenceScore,
     oneLineSummary: calibratedSummary.one_line,
-    keyRisks: Array.isArray(aiResult?.keyRisks) ? aiResult.keyRisks : [],
+    keyRisks: calibratedSummary.risk,
     recommendedActions: calibratedSummary.recommendations,
     precautions: calibratedSummary.precautions,
   };
-
-  return resultData;
-}
-let selectedHistoryForComparison: AnalysisHistoryItem[] = [];
-let selectedLocationsForComparison: any[] = [];
-
-function getDisplayRiskLevelLabel(level: ResultRiskLevel): string {
-  if (level === "low") return "낮은 리스크";
-  if (level === "medium") return "중간 리스크";
-  return "높은 리스크";
-}
-
-function getDisplayConfidenceLabel(
-  level: ResultConfidenceLevel,
-  hasEstimatedMetric: boolean
-): string {
-  if (level === "high") {
-    return "높음 (신뢰할 수 있는 데이터)";
-  }
-
-  if (level === "medium") {
-    return hasEstimatedMetric
-      ? "보통 (일부 추정 데이터 포함)"
-      : "보통 (핵심 데이터 확보)";
-  }
-
-  return "낮음 (현장 검증 필요)";
 }
 
 function getDisplayDecisionBadge(totalScore: number): string {
@@ -444,33 +608,28 @@ function getDisplayDecisionBadge(totalScore: number): string {
 function renderStructuredResultUI(
   resultData: ReturnType<typeof buildStructuredResultData>
 ) {
-  // 1) 상단 리스크 라벨 보정
   if (elements.riskTier) {
     elements.riskTier.textContent = getDisplayRiskLevelLabel(
       resultData.score.risk_level
     );
   }
 
-  // 2) 판단 요약
   if (elements.reportSummary) {
     elements.reportSummary.textContent = resultData.summary.one_line;
   }
 
-  // 3) 핵심 리스크 리스트
   if (elements.reportReasons) {
-    elements.reportReasons.innerHTML = (resultData.summary.risk || [])
-      .map((item) => `<li>${item}</li>`)
+    elements.reportReasons.innerHTML = (resultData.summary.decision_rationale || [])
+      .map((item: string) => `<li>${item}</li>`)
       .join("");
   }
 
-  // 4) 추천 액션 리스트
   if (elements.reportActions) {
-    elements.reportActions.innerHTML = (resultData.summary.recommendations || [])
-      .map((item) => `<li>${item}</li>`)
+    elements.reportActions.innerHTML = (resultData.summary.strategic_advice || [])
+      .map((item: string) => `<li>${item}</li>`)
       .join("");
   }
 
-  // 5) 신뢰도 UI
   if (elements.confidenceScore) {
     elements.confidenceScore.textContent = resultData.confidence.score.toFixed(2);
   }
@@ -489,7 +648,6 @@ function renderStructuredResultUI(
     elements.confidenceLabel.textContent = label;
   }
 
-  // 6) 최종 판단 배지
   if (elements.mainDecisionBadge) {
     elements.mainDecisionBadge.classList.remove("recommend", "moderate", "risk");
 
@@ -505,7 +663,6 @@ function renderStructuredResultUI(
     }
   }
 
-  // 7) 상태 뱃지
   if (elements.reportStatusBadge) {
     elements.reportStatusBadge.textContent = `${getDisplayRiskLevelLabel(
       resultData.score.risk_level
@@ -1146,12 +1303,13 @@ const sDataMock = {
 
 async function renderAIInsights(
   analysis: RiskAnalysis,
-  pData: any
-): Promise<AIAnalysisResult | null> {
+  pData: any,
+  structuredDraftResult: ReturnType<typeof buildStructuredResultData>
+): Promise<AIExtendedResult | null> {
   if (!elements.llmCard || !elements.llmContent) return null;
 
-  const aiInput: AIInput = {
-    industry: elements.selectedSectorLabel?.textContent || "선택 업종",
+  const aiInput: any = {
+    industry: structuredDraftResult.industry.label,
     location: {
       lat: currentLocation.lat,
       lng: currentLocation.lng,
@@ -1160,6 +1318,8 @@ async function renderAIInsights(
     radiusM: currentRadius,
     cri: analysis.cri,
     riskTier: analysis.riskTier,
+    decision: getDisplayDecisionBadge(structuredDraftResult.score.total),
+    confidence: structuredDraftResult.confidence,
     metrics: {
       competitionStrength: analysis.layerScores.competitiveStructure.score,
       demandIndex: analysis.layerScores.marketDemand.score,
@@ -1172,55 +1332,134 @@ async function renderAIInsights(
       districtPoiCount: pData.districtPoiCount || 0,
       population: pData.population,
       households: pData.households,
+      diversityIndex: pData.diversityIndex,
+      volatilityProxy: pData.volatilityProxy,
+    },
+    structuredSummary: {
+      oneLine: structuredDraftResult.summary.one_line,
+      decisionRationale: structuredDraftResult.summary.decision_rationale,
+      strategicAdvice: structuredDraftResult.summary.strategic_advice,
+      fieldChecklist: structuredDraftResult.summary.field_checklist,
+      realtorChecklist: structuredDraftResult.summary.realtor_checklist,
     },
   };
 
   elements.llmCard.style.display = "block";
   elements.llmCard.innerHTML = `
-        <div class="ai-header">
-            <h4>✨ AI 참고 요약 (데이터 기반 해석)</h4>
-            <span class="ai-badge">🤖 AI 수립 데이터 기반</span>
-        </div>
-        <div class="llm-content" id="llmContent">
-            <div class="loading" style="padding: 20px; text-align: center; color: var(--text-muted);">✨ 자리보고 AI가 판단 내용을 정리 중입니다...</div>
-        </div>
-    `;
+    <div class="ai-header">
+      <h4>✨ AI 참고 요약 (전략 제안 포함)</h4>
+      <span class="ai-badge">🤖 데이터 기반 + 전략 보조</span>
+    </div>
+    <div class="llm-content" id="llmContent">
+      <div class="loading" style="padding: 20px; text-align: center; color: var(--text-muted);">
+        ✨ 자리보고 AI가 해석과 전략 제안을 정리 중입니다...
+      </div>
+    </div>
+  `;
 
   const contentEl = document.getElementById("llmContent") as HTMLElement;
   const result = await AIService.generateSummary(aiInput);
+  const ai = result as AIExtendedResult | null;
 
-  if (!result) {
-    elements.llmCard.style.display = "none";
-    return null;
-  }
+  const oneLine =
+    ai?.oneLineSummary || structuredDraftResult.summary.one_line;
+
+  const decisionRationale = uniqueText(
+    [
+      ...(ai?.decisionRationale ?? []),
+      ...(structuredDraftResult.summary.decision_rationale ?? []),
+    ],
+    4
+  );
+
+  const strategicAdvice = uniqueText(
+    [
+      ...(ai?.strategicAdvice ?? []),
+      ...(structuredDraftResult.summary.strategic_advice ?? []),
+    ],
+    4
+  );
+
+  const executionActions = uniqueText(
+    [
+      ...(ai?.recommendedActions ?? []),
+      ...(structuredDraftResult.summary.recommendations ?? []),
+    ],
+    5
+  );
+
+  const fieldChecklist = uniqueText(
+    [
+      ...(ai?.fieldChecklist ?? []),
+      ...(structuredDraftResult.summary.field_checklist ?? []),
+    ],
+    6
+  );
+
+  const realtorChecklist = uniqueText(
+    [
+      ...(ai?.realtorChecklist ?? []),
+      ...(structuredDraftResult.summary.realtor_checklist ?? []),
+    ],
+    6
+  );
+
+  const precautions =
+    ai?.precautions || structuredDraftResult.summary.local_verification_note;
 
   if (contentEl) {
     contentEl.innerHTML = `
-            <div class="ai-summary-one-line">
-                ${result.oneLineSummary}
-            </div>
-            <div class="ai-grid">
-                <div class="ai-column">
-                    <span class="ai-section-label">🚩 핵심 리스크</span>
-                    <ul class="ai-list">
-                        ${result.keyRisks.map((risk) => `<li>${risk}</li>`).join("")}
-                    </ul>
-                </div>
-                <div class="ai-column">
-                    <span class="ai-section-label">🚀 추천 액션</span>
-                    <ul class="ai-list">
-                        ${result.recommendedActions.map((action) => `<li>${action}</li>`).join("")}
-                    </ul>
-                </div>
-            </div>
-            <div class="ai-precautions">
-                <span class="ai-section-label" style="color: #ef4444;">⚠️ 주의사항</span>
-                <p>${result.precautions}</p>
-            </div>
-        `;
+      <div class="ai-summary-one-line">${oneLine}</div>
+
+      <div class="ai-grid">
+        <div class="ai-column">
+          <span class="ai-section-label">🧭 왜 이런 판단인가요?</span>
+          <ul class="ai-list">
+            ${decisionRationale.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ai-column">
+          <span class="ai-section-label">💡 대응 전략</span>
+          <ul class="ai-list">
+            ${strategicAdvice.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+      </div>
+
+      <div class="ai-grid">
+        <div class="ai-column">
+          <span class="ai-section-label">🚀 지금 실행하면 좋은 것</span>
+          <ul class="ai-list">
+            ${executionActions.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="ai-column">
+          <span class="ai-section-label">📍 현장 확인 체크리스트</span>
+          <ul class="ai-list">
+            ${fieldChecklist.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+      </div>
+
+      <div class="ai-grid">
+        <div class="ai-column" style="grid-column: 1 / -1;">
+          <span class="ai-section-label">🏢 부동산/임대인에게 꼭 확인할 것</span>
+          <ul class="ai-list">
+            ${realtorChecklist.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+      </div>
+
+      <div class="ai-precautions">
+        <span class="ai-section-label" style="color: #ef4444;">⚠️ 최종 유의사항</span>
+        <p>${precautions}</p>
+      </div>
+    `;
   }
 
-  return result;
+  return ai;
 }
 
 
@@ -1899,12 +2138,6 @@ if (persist) {
     elements.llmCard.style.display = "block";
   }
 
-  const aiResult = await renderAIInsights(analysis, pData);
-
-  if (!aiResult) {
-    throw new Error("AI 요약 생성에 실패했습니다.");
-  }
-
   const industry = {
     code: industryCode,
     name: elements.selectedSectorLabel?.textContent || "선택 업종",
@@ -1914,7 +2147,23 @@ if (persist) {
     throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
   }
 
-    const structuredResultData = buildStructuredResultData({
+  const draftStructuredResultData = buildStructuredResultData({
+    analysis,
+    aiResult: null,
+    location: currentLocation,
+    businessTypeCode: industryCode,
+    businessTypeLabel: industry.name,
+    radius: currentRadius,
+    publicData: pData,
+  });
+
+  const aiResult = await renderAIInsights(
+    analysis,
+    pData,
+    draftStructuredResultData
+  );
+
+  const structuredResultData = buildStructuredResultData({
     analysis,
     aiResult,
     location: currentLocation,
@@ -1932,13 +2181,20 @@ if (persist) {
     businessTypeCode: industryCode,
     businessTypeLabel: industry.name,
     analysis,
-    aiResult,
+    aiResult:
+      aiResult ??
+      ({
+        oneLineSummary: structuredResultData.summary.one_line,
+        keyRisks: structuredResultData.summary.risk,
+        recommendedActions: structuredResultData.summary.recommendations,
+        precautions: structuredResultData.summary.precautions,
+      } as AIAnalysisResult),
     publicData: pData,
     resultDataOverride: structuredResultData,
   });
 
   const calibratedAiResult = {
-    ...aiResult,
+    ...(aiResult || {}),
     oneLineSummary: structuredResultData.summary.one_line,
   } as AIAnalysisResult;
 
