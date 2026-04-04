@@ -126,10 +126,10 @@ const D = {
   paymentsTableBody: document.getElementById('paymentsTableBody') as HTMLElement,
   paymentsEmpty: document.getElementById('paymentsEmpty') as HTMLElement,
 
- tabRefunds: document.getElementById('tab-refunds') as HTMLElement,
-btnRefreshRefunds: document.getElementById('btnRefreshRefunds') as HTMLButtonElement,
-btnRunAutoRefundBatch: document.getElementById('btnRunAutoRefundBatch') as HTMLButtonElement,
-refundSearchInput: document.getElementById('refundSearchInput') as HTMLInputElement,
+  tabRefunds: document.getElementById('tab-refunds') as HTMLElement,
+  btnRefreshRefunds: document.getElementById('btnRefreshRefunds') as HTMLButtonElement,
+  btnRunAutoRefundBatch: document.getElementById('btnRunAutoRefundBatch') as HTMLButtonElement,
+  refundSearchInput: document.getElementById('refundSearchInput') as HTMLInputElement,
   refundStatusFilters: document.getElementById('refundStatusFilters') as HTMLElement,
   refundsTableBody: document.getElementById('refundsTableBody') as HTMLElement,
   refundsEmpty: document.getElementById('refundsEmpty') as HTMLElement,
@@ -281,39 +281,39 @@ function setupAdminListeners() {
   });
 
   D.btnRunAutoRefundBatch.addEventListener('click', async () => {
-  const confirmed = confirm(
-    '자동 환불 배치를 실행하시겠습니까?\n\n승인된 자동 환불 대상 건들을 순차 처리합니다.'
-  );
-  if (!confirmed) return;
-
-  const originalText = D.btnRunAutoRefundBatch.textContent;
-  D.btnRunAutoRefundBatch.disabled = true;
-  D.btnRunAutoRefundBatch.textContent = '실행 중...';
-
-  try {
-    const result = await callEdgeFunction<any>('process-auto-refunds', {});
-
-    const processedCount = Number(result?.processedCount ?? 0);
-    const successCount = Array.isArray(result?.results)
-      ? result.results.filter((item: any) => item?.success === true).length
-      : 0;
-    const failCount = Array.isArray(result?.results)
-      ? result.results.filter((item: any) => item?.success !== true).length
-      : 0;
-
-    alert(
-      `자동 환불 배치 실행 완료\n\n처리 건수: ${processedCount}\n성공: ${successCount}\n실패: ${failCount}`
+    const confirmed = confirm(
+      '자동 환불 배치를 실행하시겠습니까?\n\n승인된 자동 환불 대상 건들을 순차 처리합니다.'
     );
+    if (!confirmed) return;
 
-    await Promise.all([loadPayments(), loadRefunds()]);
-  } catch (err: any) {
-    console.error('[btnRunAutoRefundBatch]', err);
-    alert(`자동 환불 실행 실패: ${err.message || '알 수 없는 오류'}`);
-  } finally {
-    D.btnRunAutoRefundBatch.disabled = false;
-    D.btnRunAutoRefundBatch.textContent = originalText ?? '🤖 자동 환불 배치 실행';
-  }
-});
+    const originalText = D.btnRunAutoRefundBatch.textContent;
+    D.btnRunAutoRefundBatch.disabled = true;
+    D.btnRunAutoRefundBatch.textContent = '실행 중...';
+
+    try {
+      const result = await callEdgeFunction<any>('process-auto-refunds', {});
+
+      const processedCount = Number(result?.processedCount ?? 0);
+      const successCount = Array.isArray(result?.results)
+        ? result.results.filter((item: any) => item?.success === true).length
+        : 0;
+      const failCount = Array.isArray(result?.results)
+        ? result.results.filter((item: any) => item?.success !== true).length
+        : 0;
+
+      alert(
+        `자동 환불 배치 실행 완료\n\n처리 건수: ${processedCount}\n성공: ${successCount}\n실패: ${failCount}`
+      );
+
+      await Promise.all([loadPayments(), loadRefunds()]);
+    } catch (err: any) {
+      console.error('[btnRunAutoRefundBatch]', err);
+      alert(`자동 환불 실행 실패: ${err.message || '알 수 없는 오류'}`);
+    } finally {
+      D.btnRunAutoRefundBatch.disabled = false;
+      D.btnRunAutoRefundBatch.textContent = originalText ?? '🤖 자동 환불 배치 실행';
+    }
+  });
 
   D.paymentSearchInput.addEventListener('input', () => {
     adminState.paymentSearch = D.paymentSearchInput.value.trim().toLowerCase();
@@ -328,7 +328,9 @@ function setupAdminListeners() {
   D.paymentStatusFilters.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.status-filter-btn') as HTMLButtonElement | null;
     if (!btn) return;
-    D.paymentStatusFilters.querySelectorAll('.status-filter-btn').forEach((b) => b.classList.remove('active'));
+    D.paymentStatusFilters
+      .querySelectorAll('.status-filter-btn')
+      .forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     adminState.paymentStatusFilter = btn.dataset.status ?? '';
     renderPaymentsTable();
@@ -337,7 +339,9 @@ function setupAdminListeners() {
   D.refundStatusFilters.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.status-filter-btn') as HTMLButtonElement | null;
     if (!btn) return;
-    D.refundStatusFilters.querySelectorAll('.status-filter-btn').forEach((b) => b.classList.remove('active'));
+    D.refundStatusFilters
+      .querySelectorAll('.status-filter-btn')
+      .forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     adminState.refundStatusFilter = btn.dataset.status ?? '';
     renderRefundsTable();
@@ -360,27 +364,16 @@ async function loadPayments() {
 
   try {
     const { data, error } = await supabase
-  .from('refund_requests')
-  .select(`
-    id,
-    order_id,
-    user_id,
-    cancel_reason,
-    request_status,
-    admin_note,
-    created_at,
-    is_auto,
-    retry_count,
-    last_error_code,
-    last_error_message,
-    last_failed_at
-  `)
-  .order('created_at', { ascending: false })
-  .limit(200);
+      .from('payments')
+      .select('id, user_id, product_id, order_id, amount, status, pg_provider, pg_tid, paid_at, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) throw error;
 
-    const productIds = [...new Set((data ?? []).map((p: any) => p.product_id).filter(Boolean))] as string[];
+    const productIds = [
+      ...new Set((data ?? []).map((p: any) => p.product_id).filter(Boolean)),
+    ] as string[];
     const productMap = new Map<string, string>();
 
     if (productIds.length > 0) {
@@ -392,18 +385,18 @@ async function loadPayments() {
       (products ?? []).forEach((p: any) => productMap.set(p.id, p.name));
     }
 
-   adminState.payments = (data ?? []).map((p: any) => ({
-  ...p,
-  user_id: p.user_id ?? null,
-  order_id: p.order_id ?? null,
-  amount:
-    typeof p.amount === 'number'
-      ? p.amount
-      : p.amount == null
-        ? 0
-        : Number(p.amount) || 0,
-  product_name: p.product_id ? productMap.get(p.product_id) ?? '알 수 없음' : '—',
-}));
+    adminState.payments = (data ?? []).map((p: any) => ({
+      ...p,
+      user_id: p.user_id ?? null,
+      order_id: p.order_id ?? null,
+      amount:
+        typeof p.amount === 'number'
+          ? p.amount
+          : p.amount == null
+            ? 0
+            : Number(p.amount) || 0,
+      product_name: p.product_id ? productMap.get(p.product_id) ?? '알 수 없음' : '—',
+    }));
 
     renderPaymentsTable();
     updateSummaryCards();
@@ -420,11 +413,16 @@ function renderPaymentsTable() {
 
   const filtered = adminState.payments.filter((p: AdminPayment) => {
     const matchStatus = !statusFilter || p.status === statusFilter;
+    const safeOrderId = (p.order_id ?? '').toLowerCase();
+    const safeProductName = (p.product_name ?? '').toLowerCase();
+    const safeUserId = (p.user_id ?? '').toLowerCase();
+
     const matchSearch =
       !search ||
-      p.order_id.toLowerCase().includes(search) ||
-      (p.product_name ?? '').toLowerCase().includes(search) ||
-      (p.user_id ?? '').toLowerCase().includes(search);
+      safeOrderId.includes(search) ||
+      safeProductName.includes(search) ||
+      safeUserId.includes(search);
+
     return matchStatus && matchSearch;
   });
 
@@ -437,34 +435,34 @@ function renderPaymentsTable() {
     tr.title = '클릭하면 이벤트 타임라인을 볼 수 있습니다';
 
     const paidDate = payment.paid_at
-  ? formatDate(payment.paid_at)
-  : payment.status === 'pending'
-    ? '처리 중'
-    : '—';
+      ? formatDate(payment.paid_at)
+      : payment.status === 'pending'
+        ? '처리 중'
+        : '—';
 
-const safeOrderId = payment.order_id ?? '—';
-const safeUserId = payment.user_id ?? '—';
-const safeUserIdShort =
-  payment.user_id && payment.user_id.length > 8
-    ? `${payment.user_id.slice(0, 8)}…`
-    : safeUserId;
+    const safeOrderId = payment.order_id ?? '—';
+    const safeUserId = payment.user_id ?? '—';
+    const safeUserIdShort =
+      payment.user_id && payment.user_id.length > 8
+        ? `${payment.user_id.slice(0, 8)}…`
+        : safeUserId;
 
-tr.innerHTML = `
-  <td>${getAdminBadge(payment.status)}</td>
-  <td>${escHtml(payment.product_name ?? '—')}</td>
-  <td class="td-amount">${formatAmount(payment.amount)}원</td>
-  <td class="td-order-id" title="${escHtml(safeOrderId)}">${escHtml(safeOrderId)}</td>
-  <td class="td-user" title="${escHtml(safeUserId)}">${escHtml(safeUserIdShort)}</td>
-  <td class="td-date">${paidDate}</td>
-  <td><button class="btn-view-events">📋 타임라인</button></td>
-`;
+    tr.innerHTML = `
+      <td>${getAdminBadge(payment.status)}</td>
+      <td>${escHtml(payment.product_name ?? '—')}</td>
+      <td class="td-amount">${formatAmount(payment.amount)}원</td>
+      <td class="td-order-id" title="${escHtml(safeOrderId)}">${escHtml(safeOrderId)}</td>
+      <td class="td-user" title="${escHtml(safeUserId)}">${escHtml(safeUserIdShort)}</td>
+      <td class="td-date">${paidDate}</td>
+      <td><button class="btn-view-events">📋 타임라인</button></td>
+    `;
 
-    tr.addEventListener('click', () => openEventDrawer('payment', payment.id, payment.order_id));
+    tr.addEventListener('click', () => openEventDrawer('payment', payment.id, safeOrderId));
 
     const evtBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement;
     evtBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openEventDrawer('payment', payment.id, payment.order_id);
+      openEventDrawer('payment', payment.id, safeOrderId);
     });
 
     D.paymentsTableBody.appendChild(tr);
@@ -482,7 +480,9 @@ function updateSummaryCards() {
   });
 
   const formatToYMD = (date: Date) => {
-    const match = kstFormatter.format(date).match(/(\d{4})[^\d]+(\d{2})[^\d]+(\d{2})/);
+    const match = kstFormatter
+      .format(date)
+      .match(/(\d{4})[^\d]+(\d{2})[^\d]+(\d{2})/);
     return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
   };
 
@@ -495,11 +495,16 @@ function updateSummaryCards() {
 
   const refundPending =
     adminState.refunds.length > 0
-      ? adminState.refunds.filter((r: RefundRequest) => r.request_status === 'requested' || r.request_status === 'approved').length
+      ? adminState.refunds.filter(
+          (r: RefundRequest) =>
+            r.request_status === 'requested' || r.request_status === 'approved'
+        ).length
       : payments.filter((p: AdminPayment) => p.status === 'refund_requested').length;
 
   const autoRefunded = payments.filter((p: AdminPayment) => p.status === 'refunded').length;
-  const failed = payments.filter((p: AdminPayment) => p.status === 'failed' || p.status === 'cancelled').length;
+  const failed = payments.filter(
+    (p: AdminPayment) => p.status === 'failed' || p.status === 'cancelled'
+  ).length;
 
   if (D.summaryTodayPaid) D.summaryTodayPaid.textContent = String(todayPaid);
   if (D.summaryRefundPending) D.summaryRefundPending.textContent = String(refundPending);
@@ -515,17 +520,32 @@ async function loadRefunds() {
   try {
     const { data, error } = await supabase
       .from('refund_requests')
-      .select('id, order_id, user_id, cancel_reason, request_status, admin_note, created_at, is_auto')
+      .select(`
+        id,
+        order_id,
+        user_id,
+        cancel_reason,
+        request_status,
+        admin_note,
+        created_at,
+        is_auto,
+        retry_count,
+        last_error_code,
+        last_error_message,
+        last_failed_at
+      `)
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (error) {
       D.refundsTableBody.innerHTML = '';
       if (error.code === '42P01') {
-        D.refundsEmpty.textContent = 'refund_requests 테이블이 아직 생성되지 않았습니다. 마이그레이션을 확인해주세요.';
+        D.refundsEmpty.textContent =
+          'refund_requests 테이블이 아직 생성되지 않았습니다. 마이그레이션을 확인해주세요.';
         D.refundsEmpty.classList.remove('hidden');
       } else if (error.code === '42501') {
-        D.refundsEmpty.textContent = '접근 권한이 없습니다. 관리자 RLS 정책을 확인해주세요.';
+        D.refundsEmpty.textContent =
+          '접근 권한이 없습니다. 관리자 RLS 정책을 확인해주세요.';
         D.refundsEmpty.classList.remove('hidden');
       } else {
         throw error;
@@ -533,7 +553,19 @@ async function loadRefunds() {
       return;
     }
 
-    adminState.refunds = (data ?? []) as RefundRequest[];
+    adminState.refunds = (data ?? []).map((r: any) => ({
+      ...r,
+      retry_count:
+        typeof r.retry_count === 'number'
+          ? r.retry_count
+          : r.retry_count == null
+            ? 0
+            : Number(r.retry_count) || 0,
+      last_error_code: r.last_error_code ?? null,
+      last_error_message: r.last_error_message ?? null,
+      last_failed_at: r.last_failed_at ?? null,
+    })) as RefundRequest[];
+
     renderRefundsTable();
     updateSummaryCards();
   } catch (err) {
@@ -549,7 +581,7 @@ function renderRefundsTable() {
 
   const filtered = adminState.refunds.filter((r: RefundRequest) => {
     const matchStatus = !statusFilter || r.request_status === statusFilter;
-    const matchSearch = !search || r.order_id.toLowerCase().includes(search);
+    const matchSearch = !search || (r.order_id ?? '').toLowerCase().includes(search);
     return matchStatus && matchSearch;
   });
 
@@ -568,38 +600,34 @@ function renderRefundsTable() {
 
     const reason = refund.cancel_reason ?? '';
     const retryCount = refund.retry_count ?? 0;
-const lastErrorMessage = refund.last_error_message ?? '';
-const lastFailedAt = refund.last_failed_at ? formatDate(refund.last_failed_at) : '';
+    const lastErrorMessage = refund.last_error_message ?? '';
+    const lastFailedAt = refund.last_failed_at ? formatDate(refund.last_failed_at) : '';
 
-const retryClass =
-  retryCount >= 3
-    ? 'danger'
-    : retryCount >= 1
-      ? 'warning'
-      : 'normal';
+    const retryClass =
+      retryCount >= 3 ? 'danger' : retryCount >= 1 ? 'warning' : 'normal';
 
-const retryLabel =
-  retryCount >= 3
-    ? `재시도 ${retryCount}회 · 수동 확인 필요`
-    : retryCount >= 1
-      ? `재시도 ${retryCount}회`
-      : '재시도 0회';
+    const retryLabel =
+      retryCount >= 3
+        ? `재시도 ${retryCount}회 · 수동 확인 필요`
+        : retryCount >= 1
+          ? `재시도 ${retryCount}회`
+          : '재시도 0회';
 
-const retryMetaHtml = `
-  <div class="refund-admin-meta">
-    <span class="retry-badge ${retryClass}">${escHtml(retryLabel)}</span>
-    ${
-      lastErrorMessage
-        ? `<div class="refund-error-message" title="${escHtml(lastErrorMessage)}">${escHtml(lastErrorMessage)}</div>`
-        : ''
-    }
-    ${
-      lastFailedAt
-        ? `<div class="refund-error-date">마지막 실패: ${escHtml(lastFailedAt)}</div>`
-        : ''
-    }
-  </div>
-`;
+    const retryMetaHtml = `
+      <div class="refund-admin-meta">
+        <span class="retry-badge ${retryClass}">${escHtml(retryLabel)}</span>
+        ${
+          lastErrorMessage
+            ? `<div class="refund-error-message" title="${escHtml(lastErrorMessage)}">${escHtml(lastErrorMessage)}</div>`
+            : ''
+        }
+        ${
+          lastFailedAt
+            ? `<div class="refund-error-date">마지막 실패: ${escHtml(lastFailedAt)}</div>`
+            : ''
+        }
+      </div>
+    `;
 
     let actionTd = '<span style="color:var(--text-muted)">—</span>';
     if (refund.request_status === 'requested') {
@@ -607,7 +635,8 @@ const retryMetaHtml = `
         `<button class="admin-btn admin-btn-primary btn-process-refund" data-action="approved" style="padding:4px 8px; font-size:12px; margin-right:4px;">검토 승인</button>` +
         `<button class="admin-btn admin-btn-error btn-process-refund" data-action="rejected" style="padding:4px 8px; font-size:12px;">요청 거절</button>`;
     } else if (refund.request_status === 'approved') {
-      actionTd = `<button class="admin-btn btn-execute-refund" style="background: rgb(16,185,129); color: #fff; padding:4px 8px; font-size:12px;">환불 실행</button>`;
+      actionTd =
+        '<button class="admin-btn btn-execute-refund" style="background: rgb(16,185,129); color: #fff; padding:4px 8px; font-size:12px;">환불 실행</button>';
     }
 
     tr.innerHTML = `
@@ -617,21 +646,20 @@ const retryMetaHtml = `
       <td>${autoText}</td>
       <td class="td-date">${formatDate(refund.created_at)}</td>
       <td class="td-admin-note-cell">
-  <div class="refund-admin-note-wrap">
-    <div
-      class="refund-admin-note"
-      title="${escHtml(refund.admin_note)}"
-    >
-      ${escHtml(refund.admin_note) || '<span style="color:var(--text-muted)">—</span>'}
-    </div>
-    ${retryMetaHtml}
-  </div>
-</td>
+        <div class="refund-admin-note-wrap">
+          <div class="refund-admin-note" title="${escHtml(refund.admin_note)}">
+            ${escHtml(refund.admin_note) || '<span style="color:var(--text-muted)">—</span>'}
+          </div>
+          ${retryMetaHtml}
+        </div>
+      </td>
       <td><button class="btn-view-events" style="padding:4px 8px;">📋 내역</button></td>
       <td>${actionTd}</td>
     `;
 
-    tr.addEventListener('click', () => openEventDrawer('refund', refund.id, refund.order_id));
+    tr.addEventListener('click', () =>
+      openEventDrawer('refund', refund.id, refund.order_id)
+    );
 
     const histBtn = tr.querySelector('.btn-view-events') as HTMLButtonElement | null;
     if (histBtn) {
@@ -665,7 +693,11 @@ const retryMetaHtml = `
   });
 }
 
-async function processRefund(refundId: string, action: 'approved' | 'rejected', btnEl: HTMLButtonElement) {
+async function processRefund(
+  refundId: string,
+  action: 'approved' | 'rejected',
+  btnEl: HTMLButtonElement
+) {
   if (adminState.processingRefundIds.has(refundId)) return;
 
   const actionText = action === 'approved' ? '검토 승인' : '요청 거절';
@@ -682,10 +714,13 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
   btnEl.textContent = '처리 중...';
 
   try {
-    const fnData = await callEdgeFunction<UpdateRefundRequestSuccessResponse>('admin-update-refund-request', {
-      refundRequestId: refundId,
-      action,
-    });
+    const fnData = await callEdgeFunction<UpdateRefundRequestSuccessResponse>(
+      'admin-update-refund-request',
+      {
+        refundRequestId: refundId,
+        action,
+      }
+    );
 
     if (!fnData?.success) {
       throw new Error(
@@ -713,7 +748,12 @@ async function processRefund(refundId: string, action: 'approved' | 'rejected', 
   }
 }
 
-async function executeRefund(refundId: string, orderId: string, cancelReason: string, btnEl: HTMLButtonElement) {
+async function executeRefund(
+  refundId: string,
+  orderId: string,
+  cancelReason: string,
+  btnEl: HTMLButtonElement
+) {
   if (adminState.processingRefundIds.has(refundId)) return;
 
   const orderSuffix = orderId.slice(-6);
@@ -794,10 +834,16 @@ async function executeRefund(refundId: string, orderId: string, cancelReason: st
   }
 }
 
-async function openEventDrawer(type: 'payment' | 'refund', targetId: string, referenceId: string) {
-  D.drawerTitle.textContent = type === 'payment' ? '결제 이벤트 타임라인' : '환불 처리 히스토리';
+async function openEventDrawer(
+  type: 'payment' | 'refund',
+  targetId: string,
+  referenceId: string
+) {
+  D.drawerTitle.textContent =
+    type === 'payment' ? '결제 이벤트 타임라인' : '환불 처리 히스토리';
   D.drawerOrderId.textContent = referenceId;
-  D.eventTimeline.innerHTML = '<div style="color:var(--text-muted);padding:16px 0">불러오는 중...</div>';
+  D.eventTimeline.innerHTML =
+    '<div style="color:var(--text-muted);padding:16px 0">불러오는 중...</div>';
   D.eventTimelineEmpty.classList.add('hidden');
 
   D.eventDrawer.classList.remove('hidden');
@@ -884,7 +930,9 @@ function getReadableBooleanLabel(value: unknown): string {
   return '—';
 }
 
-function renderActionLogSummary(detail: Record<string, unknown> | null | undefined): string {
+function renderActionLogSummary(
+  detail: Record<string, unknown> | null | undefined
+): string {
   if (!detail) return '';
 
   const previousStatus = getReadableStatusLabel(detail.previous_status as string | undefined);
@@ -917,12 +965,14 @@ function renderActionLogSummary(detail: Record<string, unknown> | null | undefin
   `;
 }
 
-function renderActionLogMeta(detail: Record<string, unknown> | null | undefined): string | null {
+function renderActionLogMeta(
+  detail: Record<string, unknown> | null | undefined
+): string | null {
   if (!detail) return null;
   return JSON.stringify(detail, null, 2);
 }
 
-function renderTimeline(events: any[], isActionLog: boolean) {
+function renderTimeline(events: (PaymentEvent | AdminActionLog)[], isActionLog: boolean) {
   D.eventTimeline.innerHTML = '';
   D.eventTimelineEmpty.classList.toggle('hidden', events.length === 0);
 
@@ -946,10 +996,7 @@ function renderTimeline(events: any[], isActionLog: boolean) {
         ? `<div class="timeline-admin-meta">관리자 ID: ${escHtml(evt.admin_user_id)}</div>`
         : '';
 
-    const summaryHtml =
-      isActionLog && payload
-        ? renderActionLogSummary(payload)
-        : '';
+    const summaryHtml = isActionLog && payload ? renderActionLogSummary(payload) : '';
 
     const item = document.createElement('div');
     item.className = 'timeline-item';
@@ -961,10 +1008,14 @@ function renderTimeline(events: any[], isActionLog: boolean) {
         ${adminUserStr}
         <div class="timeline-event-date">${formatDate(evt.created_at)}</div>
         ${summaryHtml}
-        ${metaStr ? `<details class="timeline-raw-details">
-          <summary>원본 로그 보기</summary>
-          <pre class="timeline-event-meta">${escHtml(metaStr)}</pre>
-        </details>` : ''}
+        ${
+          metaStr
+            ? `<details class="timeline-raw-details">
+                <summary>원본 로그 보기</summary>
+                <pre class="timeline-event-meta">${escHtml(metaStr)}</pre>
+              </details>`
+            : ''
+        }
       </div>
     `;
 
