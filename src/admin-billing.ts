@@ -2,10 +2,10 @@ import { supabase } from './services/supabase';
 
 interface AdminPayment {
   id: string;
-  user_id: string;
+  user_id: string | null;
   product_id: string | null;
-  order_id: string;
-  amount: number;
+  order_id: string | null;
+  amount: number | null;
   status: string;
   pg_provider: string | null;
   pg_tid: string | null;
@@ -392,10 +392,18 @@ async function loadPayments() {
       (products ?? []).forEach((p: any) => productMap.set(p.id, p.name));
     }
 
-    adminState.payments = (data ?? []).map((p: any) => ({
-      ...p,
-      product_name: p.product_id ? productMap.get(p.product_id) ?? '알 수 없음' : '—',
-    }));
+   adminState.payments = (data ?? []).map((p: any) => ({
+  ...p,
+  user_id: p.user_id ?? null,
+  order_id: p.order_id ?? null,
+  amount:
+    typeof p.amount === 'number'
+      ? p.amount
+      : p.amount == null
+        ? 0
+        : Number(p.amount) || 0,
+  product_name: p.product_id ? productMap.get(p.product_id) ?? '알 수 없음' : '—',
+}));
 
     renderPaymentsTable();
     updateSummaryCards();
@@ -429,20 +437,27 @@ function renderPaymentsTable() {
     tr.title = '클릭하면 이벤트 타임라인을 볼 수 있습니다';
 
     const paidDate = payment.paid_at
-      ? formatDate(payment.paid_at)
-      : payment.status === 'pending'
-        ? '처리 중'
-        : '—';
+  ? formatDate(payment.paid_at)
+  : payment.status === 'pending'
+    ? '처리 중'
+    : '—';
 
-    tr.innerHTML = `
-      <td>${getAdminBadge(payment.status)}</td>
-      <td>${escHtml(payment.product_name ?? '—')}</td>
-      <td class="td-amount">${payment.amount.toLocaleString('ko-KR')}원</td>
-      <td class="td-order-id" title="${escHtml(payment.order_id)}">${escHtml(payment.order_id)}</td>
-      <td class="td-user" title="${escHtml(payment.user_id)}">${escHtml(payment.user_id.slice(0, 8))}…</td>
-      <td class="td-date">${paidDate}</td>
-      <td><button class="btn-view-events">📋 타임라인</button></td>
-    `;
+const safeOrderId = payment.order_id ?? '—';
+const safeUserId = payment.user_id ?? '—';
+const safeUserIdShort =
+  payment.user_id && payment.user_id.length > 8
+    ? `${payment.user_id.slice(0, 8)}…`
+    : safeUserId;
+
+tr.innerHTML = `
+  <td>${getAdminBadge(payment.status)}</td>
+  <td>${escHtml(payment.product_name ?? '—')}</td>
+  <td class="td-amount">${formatAmount(payment.amount)}원</td>
+  <td class="td-order-id" title="${escHtml(safeOrderId)}">${escHtml(safeOrderId)}</td>
+  <td class="td-user" title="${escHtml(safeUserId)}">${escHtml(safeUserIdShort)}</td>
+  <td class="td-date">${paidDate}</td>
+  <td><button class="btn-view-events">📋 타임라인</button></td>
+`;
 
     tr.addEventListener('click', () => openEventDrawer('payment', payment.id, payment.order_id));
 
@@ -1001,6 +1016,13 @@ function getTimelineIcon(eventType: string): string {
   if (/refund/i.test(eventType)) return '↩';
   if (/cancel/i.test(eventType)) return '○';
   return '·';
+}
+
+function formatAmount(value: number | null | undefined): string {
+  const safeNumber =
+    typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+  return safeNumber.toLocaleString('ko-KR');
 }
 
 function formatDate(iso: string): string {
