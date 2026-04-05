@@ -177,11 +177,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  position: sticky;
-  top: -1.5rem;
-  background: var(--bg-sidebar);
-  z-index: 10;
-  backdrop-filter: blur(20px);
 }
 
 /* Scenario Toggle */
@@ -202,12 +197,25 @@ body {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 8px 0;
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 8px 4px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.scen-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.scen-desc {
+  font-size: 0.65rem;
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 .scenario-btn:hover {
@@ -361,10 +369,11 @@ body {
 
 /* ── Advanced Settings <details> accordion ────────────────────────────────── */
 .advanced-settings {
+  background: var(--panel-bg);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
-  margin: 8px 0;
-  overflow: hidden;
+  margin: 16px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .advanced-settings>summary {
@@ -372,14 +381,15 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 14px 16px;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--panel-bg);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: var(--panel-highlight);
   user-select: none;
-  transition: background 0.15s;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid transparent;
 }
 
 .advanced-settings>summary::-webkit-details-marker {
@@ -389,8 +399,8 @@ body {
 .advanced-settings>summary::after {
   content: '›';
   margin-left: auto;
-  font-size: 1.1rem;
-  transition: transform 0.2s;
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
   color: var(--text-muted);
 }
 
@@ -399,7 +409,16 @@ body {
 }
 
 .advanced-settings>summary:hover {
-  background: var(--panel-bg);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .advanced-settings>summary:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.advanced-settings[open]>summary {
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 16px;
 }
 
 .advanced-hint {
@@ -2667,12 +2686,13 @@ footer {
   background: transparent;
   color: var(--accent-primary);
   border: 1px solid var(--accent-primary);
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-auth-lite:hover {
@@ -3653,4 +3673,31 @@ footer {
   margin: 0;
   color: #cbd5e1;
   line-height: 1.6;
+}
+
+/* ── Light Mode Specific Overrides ─────────────────────────────────────── */
+[data-theme="light"] #btnSaveLocation, [data-theme="light"] #btnSaveSpot {
+  background: #ffffff;
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+}
+
+[data-theme="light"] #btnSaveLocation:hover, [data-theme="light"] #btnSaveSpot:hover {
+  background: rgba(79, 70, 229, 0.05);
+}
+
+/* Ensure no dark-gray backgrounds remain on decision cards in light mode */
+[data-theme="light"] .decision-reasons-card,
+[data-theme="light"] .decision-actions-card {
+  background: #ffffff;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .decision-list.highlight li {
+  color: #1e293b;
+}
+
+[data-theme="light"] .decision-list.highlight li::before {
+  color: var(--accent-primary);
 }

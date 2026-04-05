@@ -119,7 +119,7 @@
                     </div>
 
                     <div id="upgradeContainer" class="upgrade-container">
-                        <button id="btnUpgrade" class="btn-upgrade-pro hidden">결정까지 확인하기</button>
+                        <button id="btnUpgrade" class="btn-upgrade-pro hidden" style="display: none !important;">결정까지 확인하기</button>
                         <div id="proBenefits" class="pro-benefits-list hidden">
                             <h6>Pro에서 확인할 수 있는 것</h6>
                             <ul>
@@ -140,9 +140,18 @@
             </div>
             <div class="scenario-toggle-container">
                 <div class="scenario-toggle" id="scenarioToggle">
-                    <button class="scenario-btn" data-scenario="conservative">보수</button>
-                    <button class="scenario-btn active" data-scenario="base">기본</button>
-                    <button class="scenario-btn" data-scenario="aggressive">공격</button>
+                    <button class="scenario-btn" data-scenario="conservative">
+                        <span class="scen-title">보수</span>
+                        <span class="scen-desc">안전 중심</span>
+                    </button>
+                    <button class="scenario-btn active" data-scenario="base">
+                        <span class="scen-title">기본</span>
+                        <span class="scen-desc">균형형</span>
+                    </button>
+                    <button class="scenario-btn" data-scenario="aggressive">
+                        <span class="scen-title">공격</span>
+                        <span class="scen-desc">성장 기대형</span>
+                    </button>
                 </div>
             </div>
             <div class="radius-toggle-container">
@@ -172,7 +181,7 @@
                 </div>
 
                 <!-- ── 최근 검색 기록 ───────────────────────────────── -->
-                <div class="kakao-history-section">
+                <div class="kakao-history-section" style="display: none;">
                     <div class="input-field history-field">
                         <label>🕒 최근 확인한 자리</label>
                     </div>
@@ -213,21 +222,21 @@
             <nav class="input-nav">
 
                 <!-- ── 🤖 자동 채움 항목 ──────────────────────────────────── -->
-                <div class="input-group">
+                <section class="nested-group auto-filled-group">
                     <h3>📈 상권 자동 판단 <span class="field-badge badge-auto">🤖 자동</span></h3>
-                    <p class="section-hint">위치·반경·업종을 기준으로 자동으로 조회됩니다. 직접 수정할 수 없습니다.</p>
+                    <p class="section-hint">선택하신 위치·반경·업종 기준으로 실시간 조회됩니다.</p>
                     <div class="input-grid">
                         <div class="input-field input-auto-filled">
                             <label>반경 내 세대 수</label>
-                            <input type="number" id="householdCount" readonly placeholder="판단 후 자동 표시">
+                            <input type="number" id="householdCount" readonly placeholder="판단 후 표시">
                         </div>
-                        <div class="input-item">
+                        <div class="input-field input-auto-filled">
                             <label>📍 인구수 (500m)</label>
-                            <input type="number" id="officeBuildingCount" readonly placeholder="판단 후 자동 표시">
+                            <input type="number" id="officeBuildingCount" readonly placeholder="판단 후 표시">
                         </div>
-                        <div class="input-item">
+                        <div class="input-field input-auto-filled">
                             <label>🏢 동일 업종 수</label>
-                            <input type="number" id="competitorCount" readonly placeholder="판단 후 자동 표시">
+                            <input type="number" id="competitorCount" readonly placeholder="판단 후 표시">
                         </div>
                         <div class="input-field input-auto-filled">
                             <label>상권 활성도</label>
@@ -239,7 +248,7 @@
                             </select>
                         </div>
                     </div>
-                    </section>
+                </section>
 
                     <!-- ── ✏️ 직접 입력 항목 (필수) ─────────────────────────── -->
                     <section class="nested-group">
