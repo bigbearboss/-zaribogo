@@ -1448,14 +1448,14 @@ async function renderAIInsights(
       <div class="ai-summary-one-line">${oneLine}</div>
 
       <div class="ai-grid">
-        <div class="ai-column">
+        <div class="ai-column ai-col-rationale">
           <span class="ai-section-label">🧭 왜 이런 판단인가요?</span>
           <ul class="ai-list">
             ${decisionRationale.map((item) => `<li>${item}</li>`).join("")}
           </ul>
         </div>
 
-        <div class="ai-column">
+        <div class="ai-column ai-col-strategy">
           <span class="ai-section-label">💡 대응 전략</span>
           <ul class="ai-list">
             ${strategicAdvice.map((item) => `<li>${item}</li>`).join("")}
@@ -1464,14 +1464,14 @@ async function renderAIInsights(
       </div>
 
       <div class="ai-grid">
-        <div class="ai-column">
+        <div class="ai-column ai-col-action">
           <span class="ai-section-label">🚀 지금 실행하면 좋은 것</span>
           <ul class="ai-list">
             ${executionActions.map((item) => `<li>${item}</li>`).join("")}
           </ul>
         </div>
 
-        <div class="ai-column">
+        <div class="ai-column ai-col-field">
           <span class="ai-section-label">📍 현장 확인 체크리스트</span>
           <p class="ai-sub-note">AI는 모든 현장 변수를 알 수 없습니다. 아래 항목은 직접 확인하세요.</p>
           <ul class="ai-list ai-check-list">
@@ -1481,7 +1481,7 @@ async function renderAIInsights(
       </div>
 
       <div class="ai-grid">
-        <div class="ai-column ai-full-width">
+        <div class="ai-column ai-full-width ai-col-realtor">
           <span class="ai-section-label">🏢 부동산/임대인에게 꼭 확인할 것</span>
           <p class="ai-sub-note">계약 전 반드시 질문하고 문서로 확인해야 할 항목입니다.</p>
           <ul class="ai-list ai-check-list">
