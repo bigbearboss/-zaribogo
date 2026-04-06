@@ -1065,6 +1065,26 @@ function showAnalysisProgress(message: string) {
   `;
 }
 
+function showAnalysisCompleteToast(message: string = "분석 결과가 준비되었습니다.") {
+  const existing = document.querySelector(".analysis-complete-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = "analysis-complete-toast";
+  toast.textContent = message;
+
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.add("visible");
+  });
+
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => toast.remove(), 250);
+  }, 2200);
+}
+
 async function saveToHistory(
   loc: LocationState,
   industry: { code: string; name: string },
@@ -1794,7 +1814,7 @@ async function handleStartAnalysisClick() {
       userId: user.id,
     });
 
-    alert("분석이 완료되었어요.");
+ 
   } catch (error: any) {
     console.error("[handleStartAnalysisClick] Error:", error);
     alert(error?.message || "분석 처리 중 문제가 발생했습니다.");
@@ -2210,8 +2230,9 @@ if (persist) {
     publicData: pData,
   });
 
-  renderStructuredResultUI(structuredResultData);
-    updateJudgmentUI(analysis, structuredResultData);
+   renderStructuredResultUI(structuredResultData);
+  updateJudgmentUI(analysis, structuredResultData);
+  showAnalysisCompleteToast("분석 결과가 준비되었습니다. 저장을 이어서 진행하고 있어요.");
 
   await saveAnalysisAndConsumeCredit({
     userId,
