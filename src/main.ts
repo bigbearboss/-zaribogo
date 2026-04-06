@@ -2162,17 +2162,26 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
         <div class="adj-items">
   ${adjs
     .map((item) => {
-      const monthlyInterest =
-        (fData.loanAmount || 0) > 0 && (fData.interestRate || 0) > 0
-          ? Math.round((fData.loanAmount * (fData.interestRate / 100)) / 12)
-          : 0;
+     const safeLoanAmount = fData.loanAmount ?? 0;
+const safeInterestRate = fData.interestRate ?? 0;
+const safeRent = fData.rent ?? 0;
+const safeMaintenanceFee = fData.maintenanceFee ?? 0;
+const safeLaborCost = fData.laborCost ?? 0;
+const safeOperatingExpenses = fData.operatingExpenses ?? 0;
 
-      const monthlyFixedCost =
-        (fData.rent || 0) +
-        (fData.maintenanceFee || 0) +
-        (fData.laborCost || 0) +
-        (fData.operatingExpenses || 0) +
-        monthlyInterest;
+const monthlyInterest =
+  safeLoanAmount > 0 && safeInterestRate > 0
+    ? Math.round((safeLoanAmount * (safeInterestRate / 100)) / 12)
+    : 0;
+
+const monthlyFixedCost =
+  safeRent +
+  safeMaintenanceFee +
+  safeLaborCost +
+  safeOperatingExpenses +
+  monthlyInterest;
+
+  
 
       const effectiveMarginRate = Math.max(
         Math.min(fData.margin ?? 0.28, 0.9),
