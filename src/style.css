@@ -3910,3 +3910,34 @@ footer {
 [data-theme="light"] .decision-list.highlight li::before {
   color: var(--accent-primary);
 }
+
+.analysis-complete-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(17, 24, 39, 0.96);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.analysis-complete-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+body[data-theme="light"] .analysis-complete-toast {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
