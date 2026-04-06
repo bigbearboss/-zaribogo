@@ -2162,12 +2162,13 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
         <div class="adj-items">
   ${adjs
     .map((item) => {
-     const safeLoanAmount = fData.loanAmount ?? 0;
+    const safeLoanAmount = fData.loanAmount ?? 0;
 const safeInterestRate = fData.interestRate ?? 0;
 const safeRent = fData.rent ?? 0;
 const safeMaintenanceFee = fData.maintenanceFee ?? 0;
 const safeLaborCost = fData.laborCost ?? 0;
 const safeOperatingExpenses = fData.operatingExpenses ?? 0;
+const currentMonthlyRevenue = fData.monthlyRevenue ?? item.current ?? 0;
 
 const monthlyInterest =
   safeLoanAmount > 0 && safeInterestRate > 0
@@ -2181,31 +2182,37 @@ const monthlyFixedCost =
   safeOperatingExpenses +
   monthlyInterest;
 
-  
+// 마진율이 너무 낮거나 비정상값이면 안전한 기본값 사용
+const effectiveMarginRate = Math.max(
+  Math.min(fData.margin ?? 0.28, 0.9),
+  0.08
+);
 
-      const effectiveMarginRate = Math.max(
-        Math.min(fData.margin ?? 0.28, 0.9),
-        0.08
-      );
+// 손익분기 월매출 = 월고정비 / 마진율
+const breakEvenRevenue =
+  effectiveMarginRate > 0
+    ? Math.ceil(monthlyFixedCost / effectiveMarginRate)
+    : monthlyFixedCost;
 
-      const estimatedOperatingProfit = Math.round(
-        item.target * effectiveMarginRate - monthlyFixedCost
-      );
+// 안정권 목표 월매출 = 손익분기 월매출 + 안전 버퍼(12%)
+const safeTargetRevenue = Math.ceil(breakEvenRevenue * 1.12);
 
-      const fmtManwon = (n: number) =>
-        `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
+// 안정권 목표 달성 시 예상 월 영업이익
+const expectedOperatingProfitAtSafeTarget = Math.round(
+  safeTargetRevenue * effectiveMarginRate - monthlyFixedCost
+);
 
-      const fmtSignedManwon = (n: number) =>
-        `${n < 0 ? "-" : ""}${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
+const fmtManwon = (n: number) =>
+  `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
 
-      if (item.type === "targetRevenue") {
-        const currentGoal = Math.round(item.current / 10_000).toLocaleString();
-        const minimumGoal = Math.round(item.target / 10_000).toLocaleString();
-        const marginPct = Math.round(effectiveMarginRate * 100);
-        const expectedProfitLabel =
-          estimatedOperatingProfit >= 0
-            ? `약 ${fmtManwon(estimatedOperatingProfit)}`
-            : `약 ${fmtSignedManwon(estimatedOperatingProfit)}`;
+const fmtSignedManwon = (n: number) =>
+  `${n < 0 ? "-" : ""}${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
+
+const revenueGap = safeTargetRevenue - currentMonthlyRevenue;
+const revenueGapLabel =
+  revenueGap > 0
+    ? `현재 목표보다 ${fmtManwon(revenueGap)} 더 필요`
+    : `현재 목표가 안정권 기준보다 ${fmtManwon(revenueGap)} 높음`;
 
         return `
           <div class="adj-item adj-item-revenue">
