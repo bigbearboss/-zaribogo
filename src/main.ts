@@ -2160,29 +2160,103 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
         </div>
         <p class="adj-disclaimer">현재 입력값과 추정 데이터 기준의 가이드라인입니다. 실제 상황에 맞게 직접 판단하세요.</p>
         <div class="adj-items">
-          ${adjs
-            .map(
-              (item) => `
-            <div class="adj-item">
-              <div class="adj-item-top">
-                <span class="adj-priority-num">${item.priority}</span>
-                <span class="adj-icon">${ICONS[item.type] || "📌"}</span>
-                <span class="adj-label">${item.label}${
-                  item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
-                }</span>
-              </div>
-              <div class="adj-values">
-                <span class="adj-current">${Math.round(item.current / 10_000).toLocaleString()}만원</span>
-                <span class="adj-arrow">→</span>
-                <span class="adj-target">${Math.round(item.target / 10_000).toLocaleString()}만원</span>
-                <span class="${deltaClass(item)}">${deltaLabel(item)}</span>
-              </div>
-              <p class="adj-desc">${item.description}</p>
+  ${adjs
+    .map((item) => {
+      const monthlyInterest =
+        (fData.loanAmount || 0) > 0 && (fData.interestRate || 0) > 0
+          ? Math.round((fData.loanAmount * (fData.interestRate / 100)) / 12)
+          : 0;
+
+      const monthlyFixedCost =
+        (fData.rent || 0) +
+        (fData.maintenanceFee || 0) +
+        (fData.laborCost || 0) +
+        (fData.operatingExpenses || 0) +
+        monthlyInterest;
+
+      const effectiveMarginRate = Math.max(
+        Math.min(fData.margin ?? 0.28, 0.9),
+        0.08
+      );
+
+      const estimatedOperatingProfit = Math.round(
+        item.target * effectiveMarginRate - monthlyFixedCost
+      );
+
+      const fmtManwon = (n: number) =>
+        `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
+
+      const fmtSignedManwon = (n: number) =>
+        `${n < 0 ? "-" : ""}${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
+
+      if (item.type === "targetRevenue") {
+        const currentGoal = Math.round(item.current / 10_000).toLocaleString();
+        const minimumGoal = Math.round(item.target / 10_000).toLocaleString();
+        const marginPct = Math.round(effectiveMarginRate * 100);
+        const expectedProfitLabel =
+          estimatedOperatingProfit >= 0
+            ? `약 ${fmtManwon(estimatedOperatingProfit)}`
+            : `약 ${fmtSignedManwon(estimatedOperatingProfit)}`;
+
+        return `
+          <div class="adj-item adj-item-revenue">
+            <div class="adj-item-top">
+              <span class="adj-priority-num">${item.priority}</span>
+              <span class="adj-icon">💰</span>
+              <span class="adj-label">안정권 진입 최소 월매출${
+                item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
+              }</span>
             </div>
-          `
-            )
-            .join("")}
+
+            <div class="adj-values adj-values-revenue">
+              <span class="adj-current">현재 목표 ${currentGoal}만원</span>
+              <span class="adj-arrow">→</span>
+              <span class="adj-target">최소 필요 ${minimumGoal}만원</span>
+            </div>
+
+            <div class="adj-meta">
+              <div class="adj-meta-row">
+                <span class="adj-meta-label">산정 근거</span>
+                <span class="adj-meta-value">
+                  월 고정비 ${fmtManwon(monthlyFixedCost)} + 목표 마진율 ${marginPct}% 기준
+                </span>
+              </div>
+              <div class="adj-meta-row">
+                <span class="adj-meta-label">달성 시 추정 월 영업이익</span>
+                <span class="adj-meta-value">${expectedProfitLabel}</span>
+              </div>
+            </div>
+
+            <p class="adj-desc">
+              이 값은 “매출을 낮추라”는 의미가 아니라, 현재 비용 구조 기준으로
+              <strong>안정권에 진입하기 위해 최소한 확보되어야 하는 월매출 기준선</strong>입니다.
+              현재 목표가 이보다 높다면 유지 가능하지만, 이 최소 기준선을 꾸준히 넘길 수 있는지가 더 중요합니다.
+            </p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="adj-item">
+          <div class="adj-item-top">
+            <span class="adj-priority-num">${item.priority}</span>
+            <span class="adj-icon">${ICONS[item.type] || "📌"}</span>
+            <span class="adj-label">${item.label}${
+              item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
+            }</span>
+          </div>
+          <div class="adj-values">
+            <span class="adj-current">${Math.round(item.current / 10_000).toLocaleString()}만원</span>
+            <span class="adj-arrow">→</span>
+            <span class="adj-target">${Math.round(item.target / 10_000).toLocaleString()}만원</span>
+            <span class="${deltaClass(item)}">${deltaLabel(item)}</span>
+          </div>
+          <p class="adj-desc">${item.description}</p>
         </div>
+      `;
+    })
+    .join("")}
+</div>
         <p class="adj-footer">※ 3가지 중 1~2가지를 동시에 개선할 수 있다면 안정 구간 진입 가능성이 높아집니다.</p>
       `;
     } else {
