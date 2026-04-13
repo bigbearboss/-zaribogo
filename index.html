@@ -566,7 +566,7 @@
                     <div class="source-summary" id="sourceSummary">
                         <!-- Populated by main.ts -->
                     </div>
-                    <p class="field-hint" style="margin-top: 10px; border-top: 1px solid var(--glass-border); padding-top: 10px;">
+                    <p class="field-hint industry-default-hint">
                         * <strong>Industry Default</strong>: 실제 데이터 부족 시 활용되는 업종별 표준 통계 비중입니다.
                     </p>
                 </div>
@@ -586,9 +586,16 @@
             <div class="llm-card" id="llmCard" style="display: none;">
                 <div class="ai-header">
                     <h4>✨ AI 종합 인사이트</h4>
-                    <span class="ai-badge">🤖 AI 참고 요약 (데이터 기반 해석)</span>
+                    <span class="ai-badge">✨ AI 분석 요약</span>
+
                 </div>
-                <div class="llm-content" id="llmContent">✨ 자리보고 AI가 다각도 상권 데이터를 통합하여 분석 중입니다...</div>
+                <div class="llm-content" id="llmContent">
+                    <div class="loading">
+                        <p style="font-size: 1.1rem; margin-bottom: 8px;">AI가 수집된 데이터를 종합해 아래 결과를 정리했습니다.</p>
+                        <p style="font-size: 0.85rem; opacity: 0.8; font-weight: 400;">입지 조건, 경쟁 환경, 수요 지표를 바탕으로 실제 창업 판단에 필요한 정보를 아래에서 확인할 수 있습니다.</p>
+                    </div>
+                </div>
+
 
             </div>
 
