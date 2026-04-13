@@ -1,68 +1,59 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-type WithdrawBody = {
-  reasonType?: string;
-  reasonDetail?: string;
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ success: false, message: "Method not allowed" }),
-      {
-        status: 405,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      throw new Error("Missing Supabase environment variables");
-    }
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       return new Response(
-        JSON.stringify({ success: false, message: "Missing Authorization header" }),
+        JSON.stringify({
+          success: false,
+          message: 'Missing Supabase environment variables',
+        }),
         {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "").trim();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Authorization header missing',
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
+    const accessToken = authHeader.replace('Bearer ', '').trim();
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       },
     });
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const {
       data: { user },
@@ -71,123 +62,141 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ success: false, message: "Invalid user session" }),
+        JSON.stringify({
+          success: false,
+          message: 'Invalid user token',
+          detail: userError?.message ?? null,
+        }),
         {
           status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const body = (await req.json().catch(() => ({}))) as WithdrawBody;
-    const reasonType = (body.reasonType || "").trim();
-    const reasonDetail = (body.reasonDetail || "").trim();
+    const body = await req.json().catch(() => ({}));
+    const reasonType = String(body?.reasonType ?? '').trim();
+    const reasonDetail = String(body?.reasonDetail ?? '').trim();
 
     if (!reasonType) {
       return new Response(
-        JSON.stringify({ success: false, message: "reasonType is required" }),
+        JSON.stringify({
+          success: false,
+          message: 'reasonType is required',
+        }),
         {
           status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const [{ data: profile, error: profileError }, { data: credit, error: creditError }] =
-      await Promise.all([
-        adminClient
-          .from("profiles")
-          .select("id, email, plan_type, is_active")
-          .eq("id", user.id)
-          .maybeSingle(),
-        adminClient
-          .from("usage_credits")
-          .select("total_credits, used_credits")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ]);
+    const { data: profileRow } = await adminClient
+      .from('profiles')
+      .select('email, plan_type')
+      .eq('id', user.id)
+      .maybeSingle();
 
-    if (profileError) {
-      throw profileError;
-    }
+    const { data: creditRow } = await adminClient
+      .from('usage_credits')
+      .select('total_credits, used_credits')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (creditError) {
-      throw creditError;
-    }
+    const creditSnapshot = creditRow
+      ? {
+          total_credits: creditRow.total_credits ?? 0,
+          used_credits: creditRow.used_credits ?? 0,
+          remaining_credits:
+            Math.max(
+              0,
+              Number(creditRow.total_credits ?? 0) - Number(creditRow.used_credits ?? 0)
+            ),
+        }
+      : null;
 
-    const emailSnapshot = user.email ?? profile?.email ?? null;
-    const planTypeSnapshot = profile?.plan_type ?? null;
-    const creditSnapshot = Math.max(
-      0,
-      Number(credit?.total_credits ?? 0) - Number(credit?.used_credits ?? 0)
-    );
+    const { error: insertError } = await adminClient.from('user_withdrawals').insert({
+      user_id: user.id,
+      email_snapshot: profileRow?.email ?? user.email ?? null,
+      reason_type: reasonType,
+      reason_detail: reasonDetail || null,
+      plan_type_snapshot: profileRow?.plan_type ?? null,
+      credit_snapshot: creditSnapshot,
+      status: 'completed',
+    });
 
-    const { error: withdrawalInsertError } = await adminClient
-      .from("user_withdrawals")
-      .insert({
-        user_id: user.id,
-        email_snapshot: emailSnapshot,
-        reason_type: reasonType,
-        reason_detail: reasonDetail || null,
-        plan_type_snapshot: planTypeSnapshot,
-        credit_snapshot: creditSnapshot,
-        status: "completed",
-      });
-
-    if (withdrawalInsertError) {
-      throw withdrawalInsertError;
+    if (insertError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Failed to insert withdrawal record',
+          detail: insertError.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const { error: profileUpdateError } = await adminClient
-      .from("profiles")
+      .from('profiles')
       .update({
         is_active: false,
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", user.id);
+      .eq('id', user.id);
 
     if (profileUpdateError) {
-      throw profileUpdateError;
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Failed to deactivate profile',
+          detail: profileUpdateError.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(user.id);
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
-    if (deleteUserError) {
-      throw deleteUserError;
+    if (deleteError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Failed to delete auth user',
+          detail: deleteError.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Account withdrawal completed",
+        message: 'Account withdrawn successfully',
       }),
       {
         status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error) {
-    console.error("[withdraw-account] failed:", error);
-
+  } catch (err) {
     return new Response(
       JSON.stringify({
         success: false,
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: 'Unexpected server error',
+        detail: err instanceof Error ? err.message : String(err),
       }),
       {
         status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
