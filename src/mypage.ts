@@ -836,12 +836,24 @@ async function submitWithdrawRequest() {
     DOM.btnWithdrawSubmit.textContent = '탈퇴 처리 중...';
 
     try {
-        const { data, error } = await supabase.functions.invoke('withdraw-account', {
-            body: {
-                reasonType,
-                reasonDetail,
-            },
-        });
+        const {
+    data: { session },
+    error: sessionError,
+} = await supabase.auth.getSession();
+
+if (sessionError || !session?.access_token) {
+    throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
+}
+
+const { data, error } = await supabase.functions.invoke('withdraw-account', {
+    body: {
+        reasonType,
+        reasonDetail,
+    },
+    headers: {
+        Authorization: `Bearer ${session.access_token}`,
+    },
+});
 
         if (error || !data?.success) {
             throw new Error(data?.message || error?.message || '탈퇴 처리 중 오류가 발생했습니다.');
