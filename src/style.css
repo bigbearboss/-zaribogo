@@ -4210,3 +4210,60 @@ body[data-theme="light"] .analysis-complete-toast {
   padding: 0 4px;
   border-radius: 4px;
 }
+
+.analysis-progress-card {
+  border-radius: 24px;
+  padding: 28px 24px;
+  text-align: center;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: linear-gradient(180deg, #1d2740 0%, #111a2e 100%);
+  color: #f8fafc;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+}
+
+.analysis-progress-card h3 {
+  margin: 14px 0 10px;
+  font-size: 1.9rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.analysis-progress-card p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.analysis-progress-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #eef2ff;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(129, 140, 248, 0.45);
+}
+
+body[data-theme="light"] .analysis-progress-card,
+body.light-mode .analysis-progress-card {
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme="light"] .analysis-progress-card p,
+body.light-mode .analysis-progress-card p {
+  color: #6b7280;
+}
+
+body[data-theme="light"] .analysis-progress-badge,
+body.light-mode .analysis-progress-badge {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
