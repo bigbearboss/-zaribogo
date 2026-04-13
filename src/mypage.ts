@@ -839,45 +839,47 @@ async function submitWithdrawRequest() {
 
     try {
         const {
-    data: { session },
-    error: sessionError,
-} = await supabase.auth.getSession();
+            data: { session },
+            error: sessionError,
+        } = await supabase.auth.getSession();
 
-if (sessionError || !session?.access_token) {
-    throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
-}
+        if (sessionError || !session?.access_token) {
+            throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
+        }
 
-const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Supabase 환경 변수가 누락되었습니다.');
+        }
 
-const response = await fetch(functionUrl, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({
-        reasonType,
-        reasonDetail,
-    }),
-});
+        const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
 
-const data = await response.json().catch(() => null);
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+                reasonType,
+                reasonDetail,
+            }),
+        });
 
-if (!response.ok || !data?.success) {
-    console.error('[withdraw fetch error]', {
-        status: response.status,
-        statusText: response.statusText,
-        data,
-    });
+        const data = await response.json().catch(() => null);
 
-    throw new Error(
-        data?.message ||
-        `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
-    );
-}
+        if (!response.ok || !data?.success) {
+            console.error('[withdraw fetch error]', {
+                status: response.status,
+                statusText: response.statusText,
+                data,
+            });
 
-    
+            throw new Error(
+                data?.message ||
+                `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
+            );
+        }
 
         showWithdrawResult('success');
 
@@ -887,7 +889,10 @@ if (!response.ok || !data?.success) {
         }, 1400);
     } catch (err) {
         console.error('[submitWithdrawRequest]', err);
-        showWithdrawResult('error', err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+        showWithdrawResult(
+            'error',
+            err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+        );
         setWithdrawLocked(false);
         DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
     }
@@ -917,9 +922,8 @@ function setupWithdrawModalListeners() {
 document.addEventListener('DOMContentLoaded', initMypage);
 
 // ==========================================
-// 11. 결제 내역 및 환불 요청
+// 12. 결제 내역 및 환불 요청
 // ==========================================
-
 interface PaymentRecord {
     id: string;
     order_id: string;
@@ -936,10 +940,8 @@ interface PaymentRecord {
 
 let activeRefundPayment: PaymentRecord | null = null;
 let isLoadingPaymentHistory = false;
-/** 환불 요청 성공 후 모달 닫힐 때 갱신 필요 여부 */
 let needsPaymentHistoryRefresh = false;
 
-/** skeleton 카드 3개를 DOM에 삽입해 로딩 중 체감을 개선 */
 function showBillingSkeletons() {
     if (!DOM.paymentHistoryList) return;
     DOM.paymentHistoryList.innerHTML = Array.from({ length: 3 })
@@ -948,7 +950,6 @@ function showBillingSkeletons() {
 }
 
 async function loadPaymentHistory() {
-    // 중복 호출 방어
     if (!state.user || !DOM.paymentHistoryList || isLoadingPaymentHistory) return;
     isLoadingPaymentHistory = true;
 
@@ -1004,7 +1005,7 @@ async function loadPaymentHistory() {
                 productMap = new Map(
                     (productRows ?? []).map((row: any) => [
                         row.id,
-                        { name: row.name, total_credits: row.total_credits }
+                        { name: row.name, total_credits: row.total_credits },
                     ])
                 );
             }
@@ -1060,10 +1061,11 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
                     : '';
 
         const statusHintMap: Partial<Record<PaymentRecord['status'], string>> = {
-            paid:             '미사용 결제 건은 자동 환불 대상이 될 수 있습니다.',
+            paid: '미사용 결제 건은 자동 환불 대상이 될 수 있습니다.',
             refund_requested: '운영팀 검토 후 이메일로 안내드립니다.',
-            refunded:         '카드사 반영까지 영업일 1~5일 소요될 수 있습니다.',
+            refunded: '카드사 반영까지 영업일 1~5일 소요될 수 있습니다.',
         };
+
         const statusHint = statusHintMap[payment.status]
             ? `<p class="payment-card-status-hint">${statusHintMap[payment.status]}</p>`
             : '';
@@ -1101,9 +1103,8 @@ function renderPaymentHistory(payments: PaymentRecord[]) {
 }
 
 // ==========================================
-// 12. 환불 모달
+// 13. 환불 모달
 // ==========================================
-
 function openRefundModal(payment: PaymentRecord) {
     activeRefundPayment = payment;
 
@@ -1137,111 +1138,32 @@ function closeRefundModal() {
     document.body.style.overflow = '';
     activeRefundPayment = null;
 
-    // 환불 요청이 성공했으면 목록을 최신 상태로 다시 조회
     if (needsPaymentHistoryRefresh) {
         needsPaymentHistoryRefresh = false;
         loadPaymentHistory();
     }
 }
 
-/** 제출 중 UI 전체를 잠금/해제 */
 function setRefundSubmitLocked(locked: boolean) {
     DOM.btnRefundSubmit.disabled = locked;
     DOM.btnRefundModalClose.disabled = locked;
     DOM.btnRefundCancel.disabled = locked;
     DOM.refundReason.readOnly = locked;
-    // 오버레이 클릭으로 닫히지 않도록 pointer-events 제어
+
     const inner = DOM.refundModal?.querySelector('.refund-modal') as HTMLElement | null;
     if (inner) inner.style.pointerEvents = locked ? 'none' : '';
 }
 
-async function submitWithdrawRequest() {
-    const reasonType = DOM.withdrawReasonType.value.trim();
-    const reasonDetail = DOM.withdrawReasonDetail.value.trim();
-    const confirmed = DOM.withdrawConfirmCheck.checked;
-
-    if (!reasonType) {
-        DOM.withdrawReasonType.focus();
-        return;
-    }
-
-    if (!confirmed) {
-        DOM.withdrawConfirmCheck.focus();
-        return;
-    }
-
-    setWithdrawLocked(true);
-    DOM.btnWithdrawSubmit.textContent = '탈퇴 처리 중...';
-
-    try {
-        const {
-            data: { session },
-            error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError || !session?.access_token) {
-            throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
-        }
-
-        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-            throw new Error('Supabase 환경 변수가 누락되었습니다.');
-        }
-
-        const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
-
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-                reasonType,
-                reasonDetail,
-            }),
-        });
-
-        const data = await response.json().catch(() => null);
-
-        if (!response.ok || !data?.success) {
-            console.error('[withdraw fetch error]', {
-                status: response.status,
-                statusText: response.statusText,
-                data,
-            });
-
-            throw new Error(
-                data?.message ||
-                `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
-            );
-        }
-
-        showWithdrawResult('success');
-
-        setTimeout(async () => {
-            await authService.logout();
-            window.location.href = '/index.html';
-        }, 1400);
-    } catch (err) {
-        console.error('[submitWithdrawRequest]', err);
-        showWithdrawResult(
-            'error',
-            err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-        );
-        setWithdrawLocked(false);
-        DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
-    }
-}
-
-    async function submitRefundRequest() {
+async function submitRefundRequest() {
     if (!activeRefundPayment) return;
 
     const reason = DOM.refundReason.value.trim();
     if (!reason) {
         DOM.refundReason.focus();
         DOM.refundReason.style.borderColor = 'rgb(248, 113, 113)';
-        setTimeout(() => { DOM.refundReason.style.borderColor = ''; }, 2000);
+        setTimeout(() => {
+            DOM.refundReason.style.borderColor = '';
+        }, 2000);
         return;
     }
 
@@ -1266,7 +1188,7 @@ async function submitWithdrawRequest() {
             body: {
                 orderId: activeRefundPayment.order_id,
                 cancelReason: reason,
-            }
+            },
         });
 
         let parsedError = responseData?.error;
@@ -1274,7 +1196,7 @@ async function submitWithdrawRequest() {
             try {
                 const errJson = await error.context.json();
                 parsedError = parsedError || errJson?.error;
-            } catch (e) {
+            } catch {
                 // ignore
             }
         }
@@ -1319,7 +1241,6 @@ async function submitWithdrawRequest() {
         showRefundResult('review_needed');
         updatePaymentCardStatus(activeRefundPayment.id, 'refund_requested');
         needsPaymentHistoryRefresh = true;
-
     } catch (err) {
         console.error('[submitRefundRequest]', err);
         showRefundResult(
@@ -1380,15 +1301,13 @@ function showRefundResult(type: RefundResultType, errMsg?: string) {
     DOM.refundResultBox.className = `refund-result-box ${cfg.cls}`;
 
     if (type === 'error') {
-        // 에러는 폼을 유지해서 사유 수정 후 재시도 허용
-        // 버튼 텍스트는 finally에서 복원되므로 여기서는 별도 처리 없음
-    } else {
-        // 성공(auto_refund, review_needed, duplicate) → 폼 숨기고 닫기만 허용
-        DOM.refundForm.style.display = 'none';
-        DOM.btnRefundSubmit.style.display = 'none';
-        DOM.btnRefundCancel.disabled = false;
-        DOM.btnRefundCancel.textContent = '닫기';
+        return;
     }
+
+    DOM.refundForm.style.display = 'none';
+    DOM.btnRefundSubmit.style.display = 'none';
+    DOM.btnRefundCancel.disabled = false;
+    DOM.btnRefundCancel.textContent = '닫기';
 }
 
 function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['status']) {
@@ -1419,6 +1338,7 @@ function updatePaymentCardStatus(paymentId: string, newStatus: PaymentRecord['st
 }
 
 let refundListenersAttached = false;
+
 function setupRefundModalListeners() {
     if (refundListenersAttached) return;
     refundListenersAttached = true;
@@ -1432,7 +1352,9 @@ function setupRefundModalListeners() {
     });
 
     DOM.refundModal?.addEventListener('click', (e) => {
-        if (e.target === DOM.refundModal) closeRefundModal();
+        if (e.target === DOM.refundModal) {
+            closeRefundModal();
+        }
     });
 
     document.addEventListener('keydown', (e) => {
