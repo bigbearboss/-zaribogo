@@ -1052,15 +1052,15 @@ function resetAnalysisView() {
   }
 }
 
-function showAnalysisProgress(message: string) {
+function showAnalysisProgress(message?: string) {
   if (!elements.judgmentReport) return;
 
   elements.judgmentReport.classList.remove("hidden");
   elements.judgmentReport.innerHTML = `
     <div class="analysis-progress-card">
-      <div class="analysis-progress-badge">AI 분석 진행 중</div>
-      <h3>${message}</h3>
-      <p>입지 조건, 경쟁 환경, 수요 지표를 순차적으로 검토하고 있습니다.</p>
+      <div class="analysis-progress-badge">AI 분석 요약</div>
+      <h3>AI가 수집된 데이터를 종합해 아래 결과를 정리했습니다.</h3>
+      <p>입지 조건, 경쟁 환경, 수요 지표를 바탕으로 실제 창업 판단에 필요한 정보를 아래에서 확인할 수 있습니다.</p>
     </div>
   `;
 }
@@ -1796,14 +1796,8 @@ async function handleStartAnalysisClick() {
 
     resetSaveButton();
 
-    showAnalysisProgress("선택하신 위치의 기본 입지 정보를 확인하고 있습니다.");
-    await wait(800);
-
-    showAnalysisProgress("선택하신 위치 인근 상권과 경쟁 환경을 분석하고 있습니다.");
-    await wait(900);
-
-    showAnalysisProgress("수익성, 배후 수요, 진입 리스크를 종합 판단하고 있습니다.");
-    await wait(900);
+    showAnalysisProgress();
+await wait(700);
 
     if (btn) {
       btn.textContent = "최종 분석 결과 정리 중...";
