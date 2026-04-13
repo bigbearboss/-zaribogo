@@ -196,8 +196,10 @@
                         <span id="profilePlan" class="badge-plan">Free</span>
                     </div>
                     <div class="profile-actions">
-                        <button id="btnLogout" class="btn-auth-logout">로그아웃</button>
-                    </div>
+    <button id="btnLogout" class="btn-auth-logout">로그아웃</button>
+    <button id="btnWithdrawOpen" class="btn-auth-withdraw">회원탈퇴</button>
+</div>
+<p class="profile-danger-hint">탈퇴 시 계정 접근이 종료되며, 남은 크레딧은 복구되지 않습니다.</p>
                 </div>
             </section>
 
@@ -281,7 +283,62 @@
             </div>
         </div>
     </div>
+<!-- ================================================
+     회원탈퇴 모달
+     ================================================ -->
+<div id="withdrawModal" class="withdraw-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="withdrawModalTitle">
+    <div class="withdraw-modal">
+        <div class="withdraw-modal-header">
+            <h3 id="withdrawModalTitle">회원탈퇴</h3>
+            <button class="withdraw-modal-close" id="btnWithdrawClose" aria-label="닫기">✕</button>
+        </div>
 
+        <div class="withdraw-warning-box">
+            <p>탈퇴를 진행하면 <strong>계정 접근이 종료</strong>되며, 남은 크레딧은 복구되지 않습니다.</p>
+            <p>결제/환불 이력 등 운영상 필요한 최소 정보는 내부 기록으로 유지될 수 있습니다.</p>
+        </div>
+
+        <div class="withdraw-form" id="withdrawForm">
+            <label for="withdrawReasonType" class="withdraw-label">탈퇴 사유 <span class="withdraw-required">*</span></label>
+            <select id="withdrawReasonType" class="withdraw-select">
+                <option value="">사유를 선택해주세요</option>
+                <option value="expectation_mismatch">서비스가 기대와 달랐어요</option>
+                <option value="insufficient_data">원하는 데이터가 부족했어요</option>
+                <option value="price_burden">가격이 부담돼요</option>
+                <option value="one_time_use">일회성 사용이었어요</option>
+                <option value="other">기타</option>
+            </select>
+
+            <label for="withdrawReasonDetail" class="withdraw-label mt-3">추가 의견 (선택)</label>
+            <textarea
+                id="withdrawReasonDetail"
+                class="withdraw-textarea"
+                placeholder="불편했던 점이나 개선이 필요한 점이 있다면 적어주세요."
+                rows="4"
+                maxlength="500"
+            ></textarea>
+            <p class="withdraw-char-count"><span id="withdrawReasonDetailLength">0</span> / 500</p>
+
+            <label class="withdraw-check">
+                <input type="checkbox" id="withdrawConfirmCheck">
+                <span>탈퇴 시 계정 이용이 종료되고 남은 크레딧이 복구되지 않는 점을 확인했습니다.</span>
+            </label>
+        </div>
+
+        <div id="withdrawResultBox" class="withdraw-result-box hidden">
+            <span class="withdraw-result-icon" id="withdrawResultIcon"></span>
+            <div class="withdraw-result-text">
+                <strong id="withdrawResultTitle"></strong>
+                <p id="withdrawResultDesc"></p>
+            </div>
+        </div>
+
+        <div class="withdraw-modal-actions" id="withdrawModalActions">
+            <button class="withdraw-btn-cancel" id="btnWithdrawCancel">취소</button>
+            <button class="withdraw-btn-submit" id="btnWithdrawSubmit">탈퇴 진행</button>
+        </div>
+    </div>
+</div>
     <script type="module" src="./src/mypage.ts"></script>
 </body>
 </html>
