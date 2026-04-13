@@ -1,4 +1,4 @@
-import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from './services/supabase';
+import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 
@@ -849,37 +849,19 @@ async function submitWithdrawRequest() {
             throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
         }
 
-        if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
-            throw new Error('Supabase 환경 변수가 누락되었습니다.');
-        }
-
-        const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
-
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                apikey: SUPABASE_PUBLIC_KEY,
-                Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
+        const { data, error } = await supabase.functions.invoke('withdraw-account', {
+            body: {
                 reasonType,
                 reasonDetail,
-            }),
+            },
         });
 
-        const data = await response.json().catch(() => null);
-
-        if (!response.ok || !data?.success) {
-            console.error('[withdraw fetch error]', {
-                status: response.status,
-                statusText: response.statusText,
-                data,
-            });
-
+        if (error || !data?.success) {
+            console.error('[withdraw invoke error]', { error, data });
             throw new Error(
                 data?.message ||
-                `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
+                error?.message ||
+                '탈퇴 처리 중 오류가 발생했습니다.'
             );
         }
 
