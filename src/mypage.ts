@@ -849,17 +849,17 @@ async function submitWithdrawRequest() {
             throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
         }
 
-        if (!supabaseUrl || !supabaseKey) {
+        if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
             throw new Error('Supabase 환경 변수가 누락되었습니다.');
         }
 
-        const functionUrl = `${supabaseUrl}/functions/v1/withdraw-account`;
+        const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
 
         const response = await fetch(functionUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                apikey: supabaseKey,
+                apikey: SUPABASE_PUBLIC_KEY,
                 Authorization: `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
