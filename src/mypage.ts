@@ -38,6 +38,7 @@ const DOM = {
 
     // Actions
     btnLogout: document.getElementById('btnLogout') as HTMLButtonElement,
+        btnWithdrawOpen: document.getElementById('btnWithdrawOpen') as HTMLButtonElement,
     btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
     btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
     logoToMain: document.getElementById('logoToMain') as HTMLElement,
@@ -83,6 +84,22 @@ const DOM = {
     refundForm: document.getElementById('refundForm') as HTMLElement,
     refundModalActions: document.getElementById('refundModalActions') as HTMLElement,
 
+    // Withdraw
+    withdrawModal: document.getElementById('withdrawModal') as HTMLElement,
+    btnWithdrawClose: document.getElementById('btnWithdrawClose') as HTMLButtonElement,
+    btnWithdrawCancel: document.getElementById('btnWithdrawCancel') as HTMLButtonElement,
+    btnWithdrawSubmit: document.getElementById('btnWithdrawSubmit') as HTMLButtonElement,
+    withdrawReasonType: document.getElementById('withdrawReasonType') as HTMLSelectElement,
+    withdrawReasonDetail: document.getElementById('withdrawReasonDetail') as HTMLTextAreaElement,
+    withdrawReasonDetailLength: document.getElementById('withdrawReasonDetailLength') as HTMLElement,
+    withdrawConfirmCheck: document.getElementById('withdrawConfirmCheck') as HTMLInputElement,
+    withdrawForm: document.getElementById('withdrawForm') as HTMLElement,
+    withdrawModalActions: document.getElementById('withdrawModalActions') as HTMLElement,
+    withdrawResultBox: document.getElementById('withdrawResultBox') as HTMLElement,
+    withdrawResultIcon: document.getElementById('withdrawResultIcon') as HTMLElement,
+    withdrawResultTitle: document.getElementById('withdrawResultTitle') as HTMLElement,
+    withdrawResultDesc: document.getElementById('withdrawResultDesc') as HTMLElement,
+    
     // All Reports list
     allReportsList: document.getElementById('allReportsList') as HTMLElement,
     emptyAllState: document.getElementById('emptyAllState') as HTMLElement,
@@ -687,6 +704,7 @@ function setupEventListeners() {
         goMain();
     });
 
+        setupWithdrawModalListeners();
     DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
     DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
 
@@ -739,6 +757,128 @@ function showError(msg: string) {
     DOM.views.forEach(v => v.classList.remove('active'));
     DOM.errorMessage.textContent = msg;
     DOM.errorState.classList.remove('hidden');
+}
+
+// ==========================================
+// 11. 회원탈퇴
+// ==========================================
+let withdrawListenersAttached = false;
+
+function openWithdrawModal() {
+    DOM.withdrawReasonType.value = '';
+    DOM.withdrawReasonDetail.value = '';
+    DOM.withdrawReasonDetailLength.textContent = '0';
+    DOM.withdrawConfirmCheck.checked = false;
+    DOM.withdrawResultBox.className = 'withdraw-result-box hidden';
+    DOM.withdrawForm.style.display = 'block';
+    DOM.withdrawModalActions.style.display = 'flex';
+    DOM.btnWithdrawSubmit.style.display = '';
+    DOM.btnWithdrawSubmit.disabled = false;
+    DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
+    DOM.btnWithdrawCancel.textContent = '취소';
+
+    DOM.withdrawModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+        DOM.withdrawReasonType.focus();
+    }, 100);
+}
+
+function closeWithdrawModal() {
+    DOM.withdrawModal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function setWithdrawLocked(locked: boolean) {
+    DOM.btnWithdrawSubmit.disabled = locked;
+    DOM.btnWithdrawCancel.disabled = locked;
+    DOM.btnWithdrawClose.disabled = locked;
+    DOM.withdrawReasonType.disabled = locked;
+    DOM.withdrawReasonDetail.readOnly = locked;
+    DOM.withdrawConfirmCheck.disabled = locked;
+}
+
+function showWithdrawResult(type: 'success' | 'error', message?: string) {
+    if (type === 'success') {
+        DOM.withdrawResultIcon.textContent = '✅';
+        DOM.withdrawResultTitle.textContent = '회원탈퇴가 완료되었습니다';
+        DOM.withdrawResultDesc.textContent = '잠시 후 자동으로 로그아웃됩니다.';
+        DOM.withdrawResultBox.className = 'withdraw-result-box result-success';
+        DOM.withdrawForm.style.display = 'none';
+        DOM.btnWithdrawSubmit.style.display = 'none';
+        DOM.btnWithdrawCancel.textContent = '닫기';
+        return;
+    }
+
+    DOM.withdrawResultIcon.textContent = '❌';
+    DOM.withdrawResultTitle.textContent = '회원탈퇴 처리에 실패했습니다';
+    DOM.withdrawResultDesc.textContent = message || '잠시 후 다시 시도해주세요.';
+    DOM.withdrawResultBox.className = 'withdraw-result-box result-error';
+}
+
+async function submitWithdrawRequest() {
+    const reasonType = DOM.withdrawReasonType.value.trim();
+    const reasonDetail = DOM.withdrawReasonDetail.value.trim();
+    const confirmed = DOM.withdrawConfirmCheck.checked;
+
+    if (!reasonType) {
+        DOM.withdrawReasonType.focus();
+        return;
+    }
+
+    if (!confirmed) {
+        DOM.withdrawConfirmCheck.focus();
+        return;
+    }
+
+    setWithdrawLocked(true);
+    DOM.btnWithdrawSubmit.textContent = '탈퇴 처리 중...';
+
+    try {
+        const { data, error } = await supabase.functions.invoke('withdraw-account', {
+            body: {
+                reasonType,
+                reasonDetail,
+            },
+        });
+
+        if (error || !data?.success) {
+            throw new Error(data?.message || error?.message || '탈퇴 처리 중 오류가 발생했습니다.');
+        }
+
+        showWithdrawResult('success');
+
+        setTimeout(async () => {
+            await authService.logout();
+            window.location.href = '/index.html';
+        }, 1400);
+    } catch (err) {
+        console.error('[submitWithdrawRequest]', err);
+        showWithdrawResult('error', err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+        setWithdrawLocked(false);
+        DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
+    }
+}
+
+function setupWithdrawModalListeners() {
+    if (withdrawListenersAttached) return;
+    withdrawListenersAttached = true;
+
+    DOM.btnWithdrawOpen?.addEventListener('click', openWithdrawModal);
+    DOM.btnWithdrawClose?.addEventListener('click', closeWithdrawModal);
+    DOM.btnWithdrawCancel?.addEventListener('click', closeWithdrawModal);
+    DOM.btnWithdrawSubmit?.addEventListener('click', submitWithdrawRequest);
+
+    DOM.withdrawReasonDetail?.addEventListener('input', () => {
+        DOM.withdrawReasonDetailLength.textContent = String(DOM.withdrawReasonDetail.value.length);
+    });
+
+    DOM.withdrawModal?.addEventListener('click', (e) => {
+        if (e.target === DOM.withdrawModal) {
+            closeWithdrawModal();
+        }
+    });
 }
 
 // Start
