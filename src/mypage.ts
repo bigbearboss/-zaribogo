@@ -2,6 +2,8 @@ import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 // ==========================================
 // 1. State Management
 // ==========================================
@@ -875,9 +877,7 @@ if (!response.ok || !data?.success) {
     );
 }
 
-        if (error || !data?.success) {
-            throw new Error(data?.message || error?.message || '탈퇴 처리 중 오류가 발생했습니다.');
-        }
+    
 
         showWithdrawResult('success');
 
@@ -1155,16 +1155,84 @@ function setRefundSubmitLocked(locked: boolean) {
     if (inner) inner.style.pointerEvents = locked ? 'none' : '';
 }
 
-async function submitRefundRequest() {
-    if (!activeRefundPayment) return;
+async function submitWithdrawRequest() {
+    const reasonType = DOM.withdrawReasonType.value.trim();
+    const reasonDetail = DOM.withdrawReasonDetail.value.trim();
+    const confirmed = DOM.withdrawConfirmCheck.checked;
 
-    const reason = DOM.refundReason.value.trim();
-    if (!reason) {
-        DOM.refundReason.focus();
-        DOM.refundReason.style.borderColor = 'rgb(248, 113, 113)';
-        setTimeout(() => { DOM.refundReason.style.borderColor = ''; }, 2000);
+    if (!reasonType) {
+        DOM.withdrawReasonType.focus();
         return;
     }
+
+    if (!confirmed) {
+        DOM.withdrawConfirmCheck.focus();
+        return;
+    }
+
+    setWithdrawLocked(true);
+    DOM.btnWithdrawSubmit.textContent = '탈퇴 처리 중...';
+
+    try {
+        const {
+            data: { session },
+            error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.access_token) {
+            throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
+        }
+
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Supabase 환경 변수가 누락되었습니다.');
+        }
+
+        const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
+
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+                reasonType,
+                reasonDetail,
+            }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || !data?.success) {
+            console.error('[withdraw fetch error]', {
+                status: response.status,
+                statusText: response.statusText,
+                data,
+            });
+
+            throw new Error(
+                data?.message ||
+                `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
+            );
+        }
+
+        showWithdrawResult('success');
+
+        setTimeout(async () => {
+            await authService.logout();
+            window.location.href = '/index.html';
+        }, 1400);
+    } catch (err) {
+        console.error('[submitWithdrawRequest]', err);
+        showWithdrawResult(
+            'error',
+            err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+        );
+        setWithdrawLocked(false);
+        DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
+    }
+}
 
     setRefundSubmitLocked(true);
     DOM.btnRefundSubmit.textContent = '요청 제출 중...';
