@@ -1234,6 +1234,17 @@ async function submitWithdrawRequest() {
     }
 }
 
+    async function submitRefundRequest() {
+    if (!activeRefundPayment) return;
+
+    const reason = DOM.refundReason.value.trim();
+    if (!reason) {
+        DOM.refundReason.focus();
+        DOM.refundReason.style.borderColor = 'rgb(248, 113, 113)';
+        setTimeout(() => { DOM.refundReason.style.borderColor = ''; }, 2000);
+        return;
+    }
+
     setRefundSubmitLocked(true);
     DOM.btnRefundSubmit.textContent = '요청 제출 중...';
 
