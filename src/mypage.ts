@@ -845,15 +845,35 @@ if (sessionError || !session?.access_token) {
     throw new Error('로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해주세요.');
 }
 
-const { data, error } = await supabase.functions.invoke('withdraw-account', {
-    body: {
+const functionUrl = `${SUPABASE_URL}/functions/v1/withdraw-account`;
+
+const response = await fetch(functionUrl, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
         reasonType,
         reasonDetail,
-    },
-    headers: {
-        Authorization: `Bearer ${session.access_token}`,
-    },
+    }),
 });
+
+const data = await response.json().catch(() => null);
+
+if (!response.ok || !data?.success) {
+    console.error('[withdraw fetch error]', {
+        status: response.status,
+        statusText: response.statusText,
+        data,
+    });
+
+    throw new Error(
+        data?.message ||
+        `탈퇴 처리 중 오류가 발생했습니다. (${response.status})`
+    );
+}
 
         if (error || !data?.success) {
             throw new Error(data?.message || error?.message || '탈퇴 처리 중 오류가 발생했습니다.');
