@@ -856,11 +856,26 @@ async function submitWithdrawRequest() {
             },
         });
 
-        if (error || !data?.success) {
-            console.error('[withdraw invoke error]', { error, data });
+        let parsedMessage = (data as any)?.message;
+        let parsedDetail = (data as any)?.detail;
+
+        if (error && (error as any).context && typeof (error as any).context.json === 'function') {
+            try {
+                const errJson = await (error as any).context.json();
+                parsedMessage = parsedMessage || errJson?.message;
+                parsedDetail = parsedDetail || errJson?.detail;
+                console.error('[withdraw invoke error json]', errJson);
+            } catch (parseErr) {
+                console.error('[withdraw invoke error parse failed]', parseErr);
+            }
+        }
+
+        if (error || !(data as any)?.success) {
+            console.error('[withdraw invoke error]', { error, data, parsedMessage, parsedDetail });
             throw new Error(
-                data?.message ||
-                error?.message ||
+                parsedDetail ||
+                parsedMessage ||
+                (error as any)?.message ||
                 '탈퇴 처리 중 오류가 발생했습니다.'
             );
         }
