@@ -17,6 +17,8 @@ function jsonResponse(status: number, body: Record<string, unknown>) {
 }
 
 Deno.serve(async (req) => {
+  console.log('[withdraw-account] function entered');
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
