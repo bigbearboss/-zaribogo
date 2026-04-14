@@ -172,18 +172,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log('[withdraw-account] deleting auth user');
-
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
-
-    if (deleteError) {
-      console.error('[withdraw-account] delete auth user failed', deleteError);
-      return jsonResponse(500, {
-        success: false,
-        message: 'Failed to delete auth user',
-        detail: deleteError.message,
-      });
-    }
+console.log('[withdraw-account] skip deleting auth user; account marked as withdrawn');
 
     console.log('[withdraw-account] success', { userId: user.id });
 
