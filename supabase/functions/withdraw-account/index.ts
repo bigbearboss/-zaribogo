@@ -157,12 +157,11 @@ Deno.serve(async (req) => {
     console.log('[withdraw-account] updating profile inactive');
 
     const { error: profileUpdateError } = await adminClient
-      .from('profiles')
-      .update({
-        is_active: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+  .from('profiles')
+  .update({
+    is_active: false,
+  })
+  .eq('id', user.id);
 
     if (profileUpdateError) {
       console.error('[withdraw-account] profile update failed', profileUpdateError);
