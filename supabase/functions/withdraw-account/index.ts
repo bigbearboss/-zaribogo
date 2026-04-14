@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+function jsonResponse(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -16,31 +26,28 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+    console.log('[withdraw-account] started');
+
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Missing Supabase environment variables',
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] missing env', {
+        hasUrl: Boolean(supabaseUrl),
+        hasAnon: Boolean(supabaseAnonKey),
+        hasServiceRole: Boolean(supabaseServiceRoleKey),
+      });
+
+      return jsonResponse(500, {
+        success: false,
+        message: 'Missing Supabase environment variables',
+      });
     }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Authorization header missing',
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] missing auth header');
+      return jsonResponse(401, {
+        success: false,
+        message: 'Authorization header missing',
+      });
     }
 
     const accessToken = authHeader.replace('Bearer ', '').trim();
@@ -61,59 +68,70 @@ Deno.serve(async (req) => {
     } = await userClient.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Invalid user token',
-          detail: userError?.message ?? null,
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] invalid user token', userError);
+      return jsonResponse(401, {
+        success: false,
+        message: 'Invalid user token',
+        detail: userError?.message ?? null,
+      });
     }
+
+    console.log('[withdraw-account] user verified', { userId: user.id });
 
     const body = await req.json().catch(() => ({}));
     const reasonType = String(body?.reasonType ?? '').trim();
     const reasonDetail = String(body?.reasonDetail ?? '').trim();
 
     if (!reasonType) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'reasonType is required',
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] missing reasonType');
+      return jsonResponse(400, {
+        success: false,
+        message: 'reasonType is required',
+      });
     }
 
-    const { data: profileRow } = await adminClient
+    const { data: profileRow, error: profileReadError } = await adminClient
       .from('profiles')
       .select('email, plan_type')
       .eq('id', user.id)
       .maybeSingle();
 
-    const { data: creditRow } = await adminClient
+    if (profileReadError) {
+      console.error('[withdraw-account] profiles read failed', profileReadError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to read profile',
+        detail: profileReadError.message,
+      });
+    }
+
+    const { data: creditRow, error: creditReadError } = await adminClient
       .from('usage_credits')
       .select('total_credits, used_credits')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (creditReadError) {
+      console.error('[withdraw-account] usage_credits read failed', creditReadError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to read usage credits',
+        detail: creditReadError.message,
+      });
+    }
+
     const creditSnapshot = creditRow
       ? {
-          total_credits: creditRow.total_credits ?? 0,
-          used_credits: creditRow.used_credits ?? 0,
-          remaining_credits:
-            Math.max(
-              0,
-              Number(creditRow.total_credits ?? 0) - Number(creditRow.used_credits ?? 0)
-            ),
+          total_credits: Number(creditRow.total_credits ?? 0),
+          used_credits: Number(creditRow.used_credits ?? 0),
+          remaining_credits: Math.max(
+            0,
+            Number(creditRow.total_credits ?? 0) - Number(creditRow.used_credits ?? 0)
+          ),
         }
       : null;
+
+    console.log('[withdraw-account] inserting withdrawal record');
 
     const { error: insertError } = await adminClient.from('user_withdrawals').insert({
       user_id: user.id,
@@ -126,18 +144,15 @@ Deno.serve(async (req) => {
     });
 
     if (insertError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Failed to insert withdrawal record',
-          detail: insertError.message,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] insert user_withdrawals failed', insertError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to insert withdrawal record',
+        detail: insertError.message,
+      });
     }
+
+    console.log('[withdraw-account] updating profile inactive');
 
     const { error: profileUpdateError } = await adminClient
       .from('profiles')
@@ -148,56 +163,40 @@ Deno.serve(async (req) => {
       .eq('id', user.id);
 
     if (profileUpdateError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Failed to deactivate profile',
-          detail: profileUpdateError.message,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] profile update failed', profileUpdateError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to deactivate profile',
+        detail: profileUpdateError.message,
+      });
     }
+
+    console.log('[withdraw-account] deleting auth user');
 
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
     if (deleteError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Failed to delete auth user',
-          detail: deleteError.message,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[withdraw-account] delete auth user failed', deleteError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to delete auth user',
+        detail: deleteError.message,
+      });
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Account withdrawn successfully',
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.log('[withdraw-account] success', { userId: user.id });
+
+    return jsonResponse(200, {
+      success: true,
+      message: 'Account withdrawn successfully',
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: 'Unexpected server error',
-        detail: err instanceof Error ? err.message : String(err),
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error('[withdraw-account] unexpected error', err);
+
+    return jsonResponse(500, {
+      success: false,
+      message: 'Unexpected server error',
+      detail: err instanceof Error ? err.message : String(err),
+    });
   }
 });
