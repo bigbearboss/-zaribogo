@@ -272,6 +272,8 @@ async function initMypage() {
             fetchRecentReports()
         ]);
 
+        await handleInactiveProfileRejoin();
+        
         updateDashboardUI();
         updateProfileUI();
         hideLoading();
@@ -293,13 +295,15 @@ async function initMypage() {
 
             try {
                 await Promise.all([
-                    fetchProfile(),
-                    fetchCredits(),
-                    fetchRecentReports()
-                ]);
+    fetchProfile(),
+    fetchCredits(),
+    fetchRecentReports()
+]);
 
-                updateDashboardUI();
-                updateProfileUI();
+await handleInactiveProfileRejoin();
+
+updateDashboardUI();
+updateProfileUI();
                 hideLoading();
                 switchView('dashboard');
             } catch (innerError) {
@@ -334,6 +338,43 @@ async function fetchProfile() {
     };
 }
 
+async function handleInactiveProfileRejoin() {
+    if (!state.profile || state.profile.is_active !== false) return;
+
+    const shouldRejoin = confirm(
+        '탈퇴 처리된 계정입니다.\n\n' +
+        '재가입을 진행하면:\n' +
+        '- 기존 무료 크레딧 2회는 다시 제공되지 않으며\n' +
+        '- 남아 있던 크레딧은 복구되지 않고\n' +
+        '- 과거 분석 기록은 회원 화면에서 보이지 않습니다.\n\n' +
+        '재가입을 진행할까요?'
+    );
+
+    if (!shouldRejoin) {
+        await authService.logout();
+        window.location.href = '/index.html';
+        throw new Error('withdrawn_account_cancelled');
+    }
+
+    const { data, error } = await supabase.rpc('reactivate_withdrawn_account');
+
+    if (error || !(data as any)?.success) {
+        throw new Error(
+            (data as any)?.message ||
+            error?.message ||
+            '재가입 처리 중 오류가 발생했습니다.'
+        );
+    }
+
+    await Promise.all([
+        fetchProfile(),
+        fetchCredits(),
+        fetchRecentReports()
+    ]);
+
+    alert('재가입이 완료되었습니다. 무료 크레딧은 재지급되지 않으며, 과거 분석 기록은 보이지 않습니다.');
+}
+
 async function fetchCredits() {
     if (!state.user) return;
 
@@ -345,18 +386,19 @@ async function fetchCredits() {
 
     if (error && error.code !== 'PGRST116') throw error;
 
-    state.credits = data || { total_credits: 2, used_credits: 0 };
+    state.credits = data || { total_credits: 0, used_credits: 0 };
 }
 
 async function fetchRecentReports() {
     if (!state.user) return;
 
-    const { data, error } = await supabase
-        .from('analysis_results')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
+   const { data, error } = await supabase
+    .from('analysis_results')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .eq('user_visible', true)
+    .order('created_at', { ascending: false })
+    .limit(3);
 
     if (error) throw error;
 
@@ -367,10 +409,11 @@ async function fetchAllReports() {
     if (!state.user) return;
 
     const { data, error } = await supabase
-        .from('analysis_results')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .order('created_at', { ascending: false });
+    .from('analysis_results')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .eq('user_visible', true)
+    .order('created_at', { ascending: false });
 
     if (error) throw error;
 
