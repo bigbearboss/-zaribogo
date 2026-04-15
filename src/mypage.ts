@@ -114,7 +114,19 @@ const DOM = {
     // Detail
     detailTitle: document.getElementById('detailTitle') as HTMLElement,
     detailDate: document.getElementById('detailDate') as HTMLElement,
-    rawJsonContainer: document.getElementById('rawJsonContainer') as HTMLElement,
+    detailGradeBadge: document.getElementById('detailGradeBadge') as HTMLElement,
+    detailAddress: document.getElementById('detailAddress') as HTMLElement,
+    detailOneLine: document.getElementById('detailOneLine') as HTMLElement,
+    detailCriValue: document.getElementById('detailCriValue') as HTMLElement,
+    detailRiskLevel: document.getElementById('detailRiskLevel') as HTMLElement,
+    detailScoreBreakdown: document.getElementById('detailScoreBreakdown') as HTMLElement,
+    detailStrengths: document.getElementById('detailStrengths') as HTMLElement,
+    detailRisks: document.getElementById('detailRisks') as HTMLElement,
+    detailPrecautions: document.getElementById('detailPrecautions') as HTMLElement,
+    detailActions: document.getElementById('detailActions') as HTMLElement,
+    detailFieldChecklist: document.getElementById('detailFieldChecklist') as HTMLElement,
+    detailRealtorChecklist: document.getElementById('detailRealtorChecklist') as HTMLElement,
+    detailFinalNote: document.getElementById('detailFinalNote') as HTMLElement,
 
     // Theme
     themeToggle: document.getElementById('themeToggle') as HTMLElement,
@@ -515,12 +527,114 @@ function renderAllReports(reports: any[]) {
     }
 }
 
+function getDisplayRiskLevelLabel(level: string): string {
+    if (level === "low") return "낮은 리스크";
+    if (level === "medium") return "중간 리스크";
+    if (level === "high") return "높은 리스크";
+    return level || "-";
+}
+
+function renderListItems(container: HTMLElement | null, items: string[]) {
+    if (!container) return;
+    container.innerHTML = "";
+    if (!items || items.length === 0) {
+        container.innerHTML = '<li>데이터가 없습니다.</li>';
+        return;
+    }
+    items.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        container.appendChild(li);
+    });
+}
+
 function openReportDetail(report: any) {
-    DOM.detailTitle.textContent = report.title;
+    const data = report.result_data || {};
+    
+    // Header Info
+    DOM.detailTitle.textContent = report.title || "상권 분석 결과";
     DOM.detailDate.textContent = new Date(report.created_at).toLocaleDateString();
-    DOM.rawJsonContainer.textContent = JSON.stringify(report.result_data, null, 2);
+    
+    if (DOM.detailAddress) {
+        const addr = data.location?.address || data.location?.placeName || report.location || "-";
+        DOM.detailAddress.textContent = `📍 ${addr}`;
+    }
+
+    if (DOM.detailGradeBadge) {
+        const grade = data.score?.grade || "-";
+        DOM.detailGradeBadge.textContent = grade;
+        DOM.detailGradeBadge.className = `grade-badge grade-${grade}`;
+    }
+
+    // Conclusion and CRI
+    if (DOM.detailOneLine) DOM.detailOneLine.textContent = data.oneLineSummary || data.summary?.one_line || "-";
+    
+    if (DOM.detailCriValue) {
+        const cri = data.cri || data.score?.total || 0;
+        DOM.detailCriValue.textContent = typeof cri === 'number' ? Math.round(cri).toString() : String(cri);
+    }
+
+    if (DOM.detailRiskLevel) {
+        const riskLevelStr = data.score?.risk_level || "-";
+        DOM.detailRiskLevel.textContent = getDisplayRiskLevelLabel(riskLevelStr);
+        DOM.detailRiskLevel.className = `risk-level-tag risk-${riskLevelStr}`;
+    }
+
+    // Breakdown Bars (optional data)
+    if (DOM.detailScoreBreakdown) {
+        DOM.detailScoreBreakdown.innerHTML = "";
+        const bd = data.breakdown || {};
+        const metrics = [
+            { label: "시장 수요 (크면 위험 증가)", value: bd.market_demand || 0 },
+            { label: "경쟁 강도", value: bd.competition || 0 },
+            { label: "재무적 압박", value: bd.financial_pressure || 0 },
+            { label: "구조적 안정성", value: bd.structural_stability || 0 }
+        ];
+
+        metrics.forEach(m => {
+            const wrap = document.createElement("div");
+            wrap.className = "cri-bar-item";
+            wrap.innerHTML = `
+                <div class="cri-bar-label">
+                    <span>${m.label}</span>
+                    <span>${Math.round(m.value)}</span>
+                </div>
+                <div class="cri-bar-bg">
+                    <div class="cri-bar-fill" style="width: ${m.value}%"></div>
+                </div>
+            `;
+            DOM.detailScoreBreakdown.appendChild(wrap);
+        });
+    }
+
+    // Content Lists
+    const strengths = data.summary?.strengths || [];
+    renderListItems(DOM.detailStrengths, strengths);
+
+    const risks = data.keyRisks || data.summary?.risk || [];
+    renderListItems(DOM.detailRisks, risks);
+
+    if (DOM.detailPrecautions) {
+        DOM.detailPrecautions.textContent = data.precautions || data.summary?.precautions || "-";
+    }
+
+    const actions = data.recommendedActions || data.summary?.recommendations || [];
+    renderListItems(DOM.detailActions, actions);
+
+    const fieldCheck = data.field_checklist || data.summary?.field_checklist || [];
+    renderListItems(DOM.detailFieldChecklist, fieldCheck);
+
+    const realtorCheck = data.realtor_checklist || data.summary?.realtor_checklist || [];
+    renderListItems(DOM.detailRealtorChecklist, realtorCheck);
+
+    if (DOM.detailFinalNote) {
+        DOM.detailFinalNote.textContent = data.summary?.local_verification_note || 
+            "현장 중심의 확인이 언제나 예측 데이터보다 우선되어야 합니다.";
+    }
+
     switchView('report-detail');
 }
+
 
 // ==========================================
 // 8. Payment — 상품 카드 렌더링

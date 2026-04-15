@@ -204,14 +204,104 @@
             </section>
 
             <section id="view-report-detail" class="mypage-view hidden">
-                <div class="mypage-header detail-header">
-                    <button id="btnBackToList" class="btn-text">⬅ 목록으로 돌아가기</button>
-                    <h2 id="detailTitle">-</h2>
-                    <p class="text-muted" id="detailDate">-</p>
+                <div class="report-detail-header">
+                    <button id="btnBackToList" class="btn-text">⬅ 내 분석 리스트로 돌아가기</button>
+                    <div class="report-title-row">
+                        <h2 id="detailTitle">-</h2>
+                        <div id="detailGradeBadge" class="grade-badge">-</div>
+                    </div>
+                    <div class="report-meta-row">
+                        <span id="detailAddress" class="report-meta-item">📍 -</span>
+                        <span id="detailDate" class="report-meta-item">📅 -</span>
+                    </div>
                 </div>
 
                 <div id="reportDetailContent" class="report-detail-wrapper">
-                    <pre id="rawJsonContainer" class="json-viewer"></pre>
+                    <div class="report-grid">
+                        <!-- 1. 핵심 결론 카드 (Full Width) -->
+                        <div class="report-card conclusion-card">
+                            <div class="card-header">
+                                <span class="card-icon">🎯</span>
+                                <h3>한줄 분석 결론</h3>
+                            </div>
+                            <p id="detailOneLine" class="conclusion-text">-</p>
+                        </div>
+
+                        <!-- 2. 지수 & 점수 상세 -->
+                        <div class="report-row">
+                            <div class="report-card cri-card">
+                                <div class="card-header">
+                                    <span class="card-icon">📊</span>
+                                    <h3>창업 위험 지수 (CRI)</h3>
+                                </div>
+                                <div class="cri-content">
+                                    <div id="detailCriValue" class="cri-value">-</div>
+                                    <div id="detailRiskLevel" class="risk-level-tag">-</div>
+                                </div>
+                                <div class="cri-breakdown" id="detailScoreBreakdown">
+                                    <!-- Breakdown bars inside -->
+                                </div>
+                            </div>
+
+                            <div class="report-card strengths-card">
+                                <div class="card-header">
+                                    <span class="card-icon">✅</span>
+                                    <h3>입지 강점</h3>
+                                </div>
+                                <ul id="detailStrengths" class="report-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- 3. 핵심 리스크 & 유의사항 -->
+                        <div class="report-row">
+                            <div class="report-card risks-card">
+                                <div class="card-header">
+                                    <span class="card-icon">⚠️</span>
+                                    <h3>핵심 리스크</h3>
+                                </div>
+                                <ul id="detailRisks" class="report-list"></ul>
+                            </div>
+                            <div class="report-card precautions-card">
+                                <div class="card-header">
+                                    <span class="card-icon">📑</span>
+                                    <h3>유의사항</h3>
+                                </div>
+                                <p id="detailPrecautions" class="precautions-text"></p>
+                            </div>
+                        </div>
+
+                        <!-- 4. 추천 실행 전략 -->
+                        <div class="report-card actions-card">
+                            <div class="card-header">
+                                <span class="card-icon">🚀</span>
+                                <h3>추천 실행 전략</h3>
+                            </div>
+                            <ul id="detailActions" class="report-list"></ul>
+                        </div>
+
+                        <!-- 5. 현장 가이드 -->
+                        <div class="report-row">
+                            <div class="report-card checklist-card">
+                                <div class="card-header">
+                                    <span class="card-icon">📍</span>
+                                    <h3>현장 확인 체크리스트</h3>
+                                </div>
+                                <ul id="detailFieldChecklist" class="report-list"></ul>
+                            </div>
+                            <div class="report-card realtor-card">
+                                <div class="card-header">
+                                    <span class="card-icon">🏢</span>
+                                    <h3>부동산/임대인 확인사항</h3>
+                                </div>
+                                <ul id="detailRealtorChecklist" class="report-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- 6. 하단 안내 -->
+                        <div class="report-footer-note">
+                            <p id="detailFinalNote"></p>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
