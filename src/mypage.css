@@ -1666,6 +1666,7 @@
 
 [data-theme="light"] .product-btn.btn-primary-card:hover {
     background: var(--accent-secondary);
+    color: #0f172a;
     box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
 }
 
@@ -1678,6 +1679,7 @@
 
 [data-theme="light"] .product-btn.btn-outline-card:hover {
     background: rgba(99, 102, 241, 0.08);
+    color: #0f172a;
 }
 
 [data-theme="light"] .card-name {
