@@ -175,6 +175,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('[withdraw-account] hiding previous analysis results from user');
+
+    const { error: hideReportsError } = await adminClient
+      .from('analysis_results')
+      .update({
+        user_visible: false,
+      })
+      .eq('user_id', user.id);
+
+    if (hideReportsError) {
+      console.error('[withdraw-account] hide analysis results failed', hideReportsError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to hide previous analysis results',
+        detail: hideReportsError.message,
+      });
+    }
+
+    console.log('[withdraw-account] resetting credits');
+
+    const { error: resetCreditsError } = await adminClient
+      .from('usage_credits')
+      .update({
+        total_credits: 0,
+        used_credits: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', user.id);
+
+    if (resetCreditsError) {
+      console.error('[withdraw-account] reset credits failed', resetCreditsError);
+      return jsonResponse(500, {
+        success: false,
+        message: 'Failed to reset credits',
+        detail: resetCreditsError.message,
+      });
+    }
+    
     console.log('[withdraw-account] skip deleting auth user; account marked as withdrawn');
 
     return jsonResponse(200, {
