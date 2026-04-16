@@ -3902,7 +3902,7 @@ footer {
 }
 
 .land-section {
-  padding: 140px 20px;
+  padding: 150px 20px;
 }
 
 .land-container {
@@ -4153,6 +4153,8 @@ footer {
   .section-title { font-size: 1.8rem; }
   .landing-cta-final h2 { font-size: 2rem; }
   .btn-large { padding: 16px 32px; width: 100%; max-width: 300px; }
+  .land-section { padding-left: 25px; padding-right: 25px; padding-top: 100px; padding-bottom: 100px; }
+  .landing-hero, .landing-cta-final, .landing-footer { padding-left: 25px; padding-right: 25px; }
 }
 .ai-precautions p {
   font-size: 0.9rem;
