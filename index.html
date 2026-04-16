@@ -15,9 +15,9 @@
 </head>
 
 <body data-theme="dark">
-    <!-- ── Landing Page Section ──────────────────────────── -->
+    <!-- ── Landing Page Section (Premium SaaS) ──────────────────────────── -->
     <section id="landingPage" class="landing-page">
-        <div class="landing-hero">
+        <div class="landing-hero text-center">
             <div class="landing-nav">
                 <div class="logo">
                     <span class="logo-icon">🔍</span>
@@ -25,77 +25,184 @@
                 </div>
             </div>
             <div class="hero-main">
-                <h1>이 자리, 해도 될까?</h1>
-                <p>창업 전에, 자리부터 보고 결정하세요</p>
-                <button class="btn-start-app btn-primary-glam">무료로 판단해보기</button>
+                <span class="hero-chip">✨ 회원가입 시 2회 무료 크레딧 제공</span>
+                <h1>감이 아니라 데이터로,<br>이 자리를 판단하세요</h1>
+                <p>창업 전 후보지의 상권 리스크를 데이터와 AI로 미리 검토할 수 있는 상권 분석 서비스</p>
+                <div class="hero-actions">
+                    <button class="btn-start-app btn-primary-glam btn-large">무료로 2회 분석해보기</button>
+                </div>
             </div>
         </div>
 
-        <div class="landing-section problem-section">
-            <div class="container">
-                <h2>데이터는 많지만, 결정은 어렵습니다</h2>
-                <p>초보 창업자는 방대한 정보 속에서 어디서부터 시작해야 할지 모릅니다.</p>
-                <div class="problem-visual">
-                    <div class="problem-card">복잡한 상권 데이터</div>
-                    <div class="problem-card">예상 매출 불확실성</div>
-                    <div class="problem-card">높은 초기 리스크</div>
+        <div class="landing-section problem-section bg-gray">
+            <div class="land-container">
+                <h2 class="section-title">이런 고민, 해본 적 있지 않으신가요?</h2>
+                <div class="grid-card grid-4">
+                    <div class="land-card symptom-card">
+                        <span class="card-icon">🤔</span>
+                        <p>이 자리가 괜찮은지 감으로 판단해야 하는 상황</p>
+                    </div>
+                    <div class="land-card symptom-card">
+                        <span class="card-icon">📊</span>
+                        <p>상권 분석 데이터를 봐도 결론을 내리기 어려움</p>
+                    </div>
+                    <div class="land-card symptom-card">
+                        <span class="card-icon">🏢</span>
+                        <p>임장 전에 어디를 봐야 할지 모르는 상태</p>
+                    </div>
+                    <div class="land-card symptom-card">
+                        <span class="card-icon">⚖️</span>
+                        <p>여러 후보지를 비교하기 어려운 상황</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="landing-section solution-section">
-            <div class="container">
-                <h2>자리보고는 복잡한 데이터를<br>하나의 결론으로 정리합니다</h2>
-                <div class="solution-grid">
-                    <div class="solution-item">
-                        <div class="sol-icon">🎯</div>
-                        <h3>결론</h3>
-                        <p>진입 여부를 명확하게 판단해 드립니다.</p>
-                    </div>
-                    <div class="solution-item">
-                        <div class="sol-icon">💡</div>
-                        <h3>이유</h3>
-                        <p>왜 그런 판단인지 데이터로 증명합니다.</p>
-                    </div>
-                    <div class="solution-item">
-                        <div class="sol-icon">🚀</div>
-                        <h3>행동</h3>
-                        <p>지금 바로 실행할 수 있는 전략을 제안합니다.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="landing-section features-section">
-            <div class="container">
-                <h2>주요 기능</h2>
-                <div class="feature-rows">
-                    <div class="feature-row">
+            <div class="land-container">
+                <h2 class="section-title">자리보고는 '결정'을 돕습니다</h2>
+                <p class="section-subtitle">단순한 데이터 제공이 아니라, 이 자리가 적합한지 판단할 수 있도록 핵심 정보를 정리합니다.</p>
+                <div class="solution-feature-list">
+                    <div class="land-card feat-card flex-row">
+                        <span class="feat-icon">🎯</span>
                         <div class="feat-text">
-                            <h3>🗺️ 지도 기반 정밀 판단</h3>
-                            <p>실제 지도 위에서 반경 내 상권을 실시간으로 판단합니다.</p>
+                            <h4>상권 리스크 한눈에 파악</h4>
+                            <p>CRI (창업 위험 지수) 기반 직관적 평가로 안전성을 바로 확인하세요.</p>
                         </div>
                     </div>
-                    <div class="feature-row reverse">
+                    <div class="land-card feat-card flex-row">
+                        <span class="feat-icon">📉</span>
                         <div class="feat-text">
-                            <h3>⚖️ 후보지 비교 기능</h3>
-                            <p>두 자리를 놓고 고민 중이라면? 한눈에 비교하고 결정하세요.</p>
+                            <h4>경쟁/수요/재무 부담 종합 분석</h4>
+                            <p>유동인구, 경쟁사 분포, 임대료 부담까지 핵심 진입 장벽과 리스크 요인 도출</p>
                         </div>
                     </div>
-                    <div class="feature-row">
+                    <div class="land-card feat-card flex-row">
+                        <span class="feat-icon">🤖</span>
                         <div class="feat-text">
-                            <h3>✨ AI 판단 요약</h3>
-                            <p>복잡한 지표를 AI가 알기 쉽게 설명해 드립니다.</p>
+                            <h4>AI 기반 핵심 요약 제공</h4>
+                            <p>난해하고 두꺼운 상권 수치를 경영자의 시선으로 1분 만에 해석해 드립니다.</p>
+                        </div>
+                    </div>
+                    <div class="land-card feat-card flex-row">
+                        <span class="feat-icon">🚀</span>
+                        <div class="feat-text">
+                            <h4>리스크 및 대응 전략 제안</h4>
+                            <p>단순한 결과가 아닌, 지금 바로 실행할 수 있는 맞춤형 전략 가이드</p>
+                        </div>
+                    </div>
+                    <div class="land-card feat-card flex-row">
+                        <span class="feat-icon">📁</span>
+                        <div class="feat-text">
+                            <h4>분석 결과 저장 및 재확인 가능</h4>
+                            <p>언제든 내 계정에 저장하고 비교하여 최종 의사결정을 내릴 수 있습니다.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="landing-cta-bottom">
-            <h2>지금 궁금한 자리가 있나요?</h2>
-            <button class="btn-start-app btn-primary-glam">지금 자리 판단하기</button>
+        <div class="landing-section how-it-works bg-gray text-center">
+            <div class="land-container">
+                <h2 class="section-title">사용 방법은 단 3단계</h2>
+                <p class="section-subtitle">복잡한 분석 없이, 몇 초 안에 핵심 결과를 확인할 수 있습니다.</p>
+                <div class="grid-card grid-3 steps-grid">
+                    <div class="land-card step-card">
+                        <div class="step-num">1</div>
+                        <h4>주소와 업종 입력</h4>
+                        <p>분석할 위치의 간단한 주소와 희망 업종을 선택합니다.</p>
+                    </div>
+                    <div class="land-card step-card">
+                        <div class="step-num">2</div>
+                        <h4>조건 설정 후 분석 실행</h4>
+                        <p>임대료 등 조건을 입력 후 원클릭으로 분석을 시작합니다.</p>
+                    </div>
+                    <div class="land-card step-card">
+                        <div class="step-num">3</div>
+                        <h4>결과 리포트 및 요약 확인</h4>
+                        <p>AI가 정리한 직관적인 맞춤형 통계 리포트를 확인합니다.</p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <div class="landing-section why-use-section">
+            <div class="land-container">
+                <h2 class="section-title">계약 전에 반드시 확인해야 할 것들</h2>
+                <ul class="check-list-large">
+                    <li><span class="chk">✔</span> 임장 전에 후보지를 빠르게 선별</li>
+                    <li><span class="chk">✔</span> 고정비 대비 수요 가능성 미리 점검</li>
+                    <li><span class="chk">✔</span> 경쟁 상황을 정량적으로 파악</li>
+                    <li><span class="chk">✔</span> 감이 아닌 데이터 기반 의사결정</li>
+                    <li><span class="chk">✔</span> 여러 후보지 비교를 통한 최적 선택</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="landing-section benefits-section bg-gray">
+            <div class="land-container">
+                <h2 class="section-title text-center">자리보고를 통해 얻는 것</h2>
+                <div class="grid-card grid-2">
+                    <div class="land-card benefit-card">
+                        <h4>⏱️ 시간 절약</h4>
+                        <p>임장 전 사전 검토로 불필요한 현장 방문 시간을 대폭 감소시킵니다.</p>
+                    </div>
+                    <div class="land-card benefit-card">
+                        <h4>🛡️ 리스크 감소</h4>
+                        <p>사업 실패 가능성을 객관적으로 사전 파악하여 위험을 최소화합니다.</p>
+                    </div>
+                    <div class="land-card benefit-card">
+                        <h4>⚡ 의사결정 속도 향상</h4>
+                        <p>빠른 판단 지표를 통해 미루지 않고 확실한 결정을 내릴 수 있습니다.</p>
+                    </div>
+                    <div class="land-card benefit-card">
+                        <h4>📁 리포트 기반 관리</h4>
+                        <p>분석 결과를 계정에 안전하게 저장하고 나중에 쉽게 재확인할 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-section free-credit-section text-center">
+            <div class="land-container flex-cta-box">
+                <h2>지금 바로 무료로 시작해보세요</h2>
+                <p>회원가입 시 2회 무료 분석 크레딧 제공<br>결제 없이 먼저 직접 경험해볼 수 있습니다</p>
+                <button class="btn-start-app btn-primary-glam">무료로 분석 시작하기</button>
+            </div>
+        </div>
+
+        <div class="landing-section target-users-section bg-gray">
+            <div class="land-container">
+                <h2 class="section-title">이런 분들께 추천합니다</h2>
+                <div class="grid-card grid-4">
+                    <div class="target-card box-outline">
+                        <span class="icon">🧑‍🍳</span>
+                        <p>예비 창업자</p>
+                    </div>
+                    <div class="target-card box-outline">
+                        <span class="icon">🚚</span>
+                        <p>점포 이전/확장 고민 중인 사업자</p>
+                    </div>
+                    <div class="target-card box-outline">
+                        <span class="icon">⚖️</span>
+                        <p>여러 후보지를 비교 중인 사용자</p>
+                    </div>
+                    <div class="target-card box-outline">
+                        <span class="icon">💼</span>
+                        <p>빠른 의사결정이 필요한 실무자</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-cta-final">
+            <h2>계약 전에, 자리부터 확인하세요</h2>
+            <button class="btn-start-app btn-primary-glam btn-large">지금 분석 시작하기</button>
+        </div>
+
+        <footer class="landing-footer text-center">
+            <p>&copy; 2026 자리보고. 데이터 기반 상권 분석 솔루션.</p>
+        </footer>
     </section>
 
     <div id="app" class="hidden">
