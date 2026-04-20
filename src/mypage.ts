@@ -1,6 +1,6 @@
 import { supabase } from './services/supabase';
 import { authService } from './services/AuthService';
-import { fetchActiveCreditProducts, initiatePaymentFlow } from './services/paymentService';
+import { fetchActiveCreditProducts } from './services/paymentService';
 
 
 // ==========================================
@@ -759,23 +759,22 @@ async function handleProductPurchase(
         btn.disabled = true;
         btn.textContent = '결제창 준비 중...';
 
-        const paymentInit = await initiatePaymentFlow(product.id);
-
-        localStorage.setItem('pending_order_id', paymentInit.order_id);
-        localStorage.setItem('pending_product_name', paymentInit.product_name);
-        localStorage.setItem('pending_amount', String(paymentInit.amount));
-
-        const tossPayments = getTossPaymentsInstance();
-        await tossPayments.requestPayment('카드', {
-            amount: paymentInit.amount,
-            orderId: paymentInit.order_id,
-            orderName: `${paymentInit.product_name} · ${paymentInit.total_credits}회 분석 크레딧`,
-            customerEmail: paymentInit.user_email || undefined,
-            successUrl: `${window.location.origin}/mypage.html?payment_success=1`,
-            failUrl: `${window.location.origin}/mypage.html?payment_fail=1`,
+        const { data, error } = await supabase.functions.invoke('create-lemon-checkout', {
+            body: { productId: product.id },
         });
+
+        if (error) {
+            console.error('[handleProductPurchase] create-lemon-checkout invoke error', error);
+            throw new Error(error.message || '결제 링크 생성에 실패했습니다.');
+        }
+
+        if (!data?.checkoutUrl) {
+            console.error('[handleProductPurchase] checkoutUrl missing', data);
+            throw new Error(data?.error || '결제 링크가 생성되지 않았습니다.');
+        }
+
+        window.location.href = data.checkoutUrl;
     } catch (err) {
-        clearPendingPaymentState();
         console.error('[handleProductPurchase]', err);
         alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
     } finally {
