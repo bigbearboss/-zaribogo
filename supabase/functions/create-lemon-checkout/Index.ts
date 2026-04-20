@@ -31,8 +31,20 @@ serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
+  console.log("[create-lemon-checkout] function entered");
+
   try {
+    console.log("[create-lemon-checkout] env check", {
+      hasSupabaseUrl: !!SUPABASE_URL,
+      hasSupabaseAnonKey: !!SUPABASE_ANON_KEY,
+      hasLemonApiKey: !!LEMON_API_KEY,
+      hasLemonStoreId: !!LEMON_STORE_ID,
+      lemonStoreId: LEMON_STORE_ID,
+    });
+
     const authHeader = req.headers.get("Authorization");
+    console.log("[create-lemon-checkout] has auth header", !!authHeader);
+
     if (!authHeader) {
       return jsonResponse({ error: "Missing Authorization header" }, 401);
     }
@@ -50,11 +62,20 @@ serve(async (req) => {
       error: userError,
     } = await supabase.auth.getUser();
 
+    console.log("[create-lemon-checkout] auth result", {
+      hasUser: !!user,
+      userId: user?.id ?? null,
+      email: user?.email ?? null,
+      userError: userError?.message ?? null,
+    });
+
     if (userError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const body = await req.json();
+    console.log("[create-lemon-checkout] request body", body);
+
     const productId = String(body.productId ?? "").trim();
 
     if (!productId) {
@@ -66,6 +87,11 @@ serve(async (req) => {
       .select("id, name, total_credits, provider, provider_variant_id, is_active, price")
       .eq("id", productId)
       .single();
+
+    console.log("[create-lemon-checkout] product query result", {
+      product,
+      productError: productError?.message ?? null,
+    });
 
     if (productError || !product) {
       return jsonResponse({ error: "Product not found" }, 404);
@@ -79,9 +105,7 @@ serve(async (req) => {
       return jsonResponse({ error: "Lemon variant is not configured for this product" }, 400);
     }
 
-    const siteUrl =
-      req.headers.get("origin") ||
-      "https://zaribogo.com";
+    const siteUrl = req.headers.get("origin") || "https://zaribogo.com";
 
     const lemonPayload = {
       data: {
@@ -102,7 +126,6 @@ serve(async (req) => {
             discount: false,
             button_color: "#6D4CFF",
             button_text_color: "#FFFFFF",
-            locale: "ko",
           },
           checkout_data: {
             email: user.email ?? "",
@@ -132,6 +155,15 @@ serve(async (req) => {
       },
     };
 
+    console.log("[create-lemon-checkout] lemon payload summary", {
+      storeId: LEMON_STORE_ID,
+      variantId: product.provider_variant_id,
+      email: user.email ?? "",
+      productId: product.id,
+      credits: product.total_credits,
+      testMode: true,
+    });
+
     const lemonRes = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
       method: "POST",
       headers: {
@@ -144,8 +176,10 @@ serve(async (req) => {
 
     const lemonData = await lemonRes.json();
 
+    console.log("[create-lemon-checkout] lemon response status", lemonRes.status);
+    console.log("[create-lemon-checkout] lemon response body", lemonData);
+
     if (!lemonRes.ok) {
-      console.error("[create-lemon-checkout] lemon error", lemonData);
       return jsonResponse(
         {
           error: "Failed to create Lemon checkout",
@@ -156,8 +190,10 @@ serve(async (req) => {
     }
 
     const checkoutUrl = lemonData?.data?.attributes?.url;
+    console.log("[create-lemon-checkout] checkoutUrl", checkoutUrl);
+
     if (!checkoutUrl) {
-      return jsonResponse({ error: "Checkout URL missing" }, 500);
+      return jsonResponse({ error: "Checkout URL missing", details: lemonData }, 500);
     }
 
     return jsonResponse({
