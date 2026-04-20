@@ -6,31 +6,43 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const LEMON_API_KEY = Deno.env.get("LEMON_SQUEEZY_API_KEY")!;
 const LEMON_STORE_ID = Deno.env.get("LEMON_SQUEEZY_STORE_ID")!;
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  };
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-    },
+    headers: corsHeaders(),
   });
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return json({ ok: true });
+    return new Response("ok", { headers: corsHeaders() });
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return json({ error: "Missing Authorization header" }, 401);
+      return jsonResponse({ error: "Missing Authorization header" }, 401);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
     });
 
     const {
@@ -39,53 +51,58 @@ serve(async (req) => {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return json({ error: "Unauthorized" }, 401);
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const body = await req.json();
     const productId = String(body.productId ?? "").trim();
 
     if (!productId) {
-      return json({ error: "productId is required" }, 400);
+      return jsonResponse({ error: "productId is required" }, 400);
     }
 
     const { data: product, error: productError } = await supabase
       .from("credit_products")
-      .select("id, name, total_credits, provider, provider_variant_id, is_active")
+      .select("id, name, total_credits, provider, provider_variant_id, is_active, price")
       .eq("id", productId)
       .single();
 
     if (productError || !product) {
-      return json({ error: "Product not found" }, 404);
+      return jsonResponse({ error: "Product not found" }, 404);
     }
 
     if (!product.is_active) {
-      return json({ error: "Inactive product" }, 400);
+      return jsonResponse({ error: "Inactive product" }, 400);
     }
 
     if (product.provider !== "lemonsqueezy" || !product.provider_variant_id) {
-      return json({ error: "Lemon variant is not configured for this product" }, 400);
+      return jsonResponse({ error: "Lemon variant is not configured for this product" }, 400);
     }
 
-    const payload = {
+    const siteUrl =
+      req.headers.get("origin") ||
+      "https://zaribogo.com";
+
+    const lemonPayload = {
       data: {
         type: "checkouts",
         attributes: {
+          product_options: {
+            enabled_variants: [Number(product.provider_variant_id)],
+            redirect_url: `${siteUrl}/mypage?section=payments&lemon=success`,
+            receipt_button_text: "자리보고 열기",
+            receipt_link_url: `${siteUrl}/mypage?section=payments`,
+            receipt_thank_you_note: "결제 후 크레딧이 자동으로 지급됩니다.",
+          },
           checkout_options: {
             embed: false,
             media: true,
             logo: true,
             desc: true,
             discount: false,
-            button_color: "#7047EB",
+            button_color: "#6D4CFF",
             button_text_color: "#FFFFFF",
-          },
-          product_options: {
-            enabled_variants: [Number(product.provider_variant_id)],
-            redirect_url: `${new URL(req.url).origin}/mypage?section=payments&lemon=success`,
-            receipt_button_text: "자리보고 열기",
-            receipt_link_url: `${new URL(req.url).origin}/mypage?section=payments`,
-            receipt_thank_you_note: "결제 완료 후 분석 크레딧이 자동 지급됩니다.",
+            locale: "ko",
           },
           checkout_data: {
             email: user.email ?? "",
@@ -122,29 +139,38 @@ serve(async (req) => {
         "Content-Type": "application/vnd.api+json",
         Authorization: `Bearer ${LEMON_API_KEY}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(lemonPayload),
     });
 
     const lemonData = await lemonRes.json();
 
     if (!lemonRes.ok) {
       console.error("[create-lemon-checkout] lemon error", lemonData);
-      return json({ error: "Failed to create Lemon checkout", details: lemonData }, 500);
+      return jsonResponse(
+        {
+          error: "Failed to create Lemon checkout",
+          details: lemonData,
+        },
+        500,
+      );
     }
 
     const checkoutUrl = lemonData?.data?.attributes?.url;
     if (!checkoutUrl) {
-      return json({ error: "Checkout URL missing" }, 500);
+      return jsonResponse({ error: "Checkout URL missing" }, 500);
     }
 
-    return json({
+    return jsonResponse({
       success: true,
       checkoutUrl,
-      variantId: product.provider_variant_id,
       productName: product.name,
+      variantId: product.provider_variant_id,
     });
   } catch (error) {
     console.error("[create-lemon-checkout] unexpected error", error);
-    return json({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
+    return jsonResponse(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      500,
+    );
   }
 });
