@@ -759,9 +759,17 @@ async function handleProductPurchase(
         btn.disabled = true;
         btn.textContent = '결제창 준비 중...';
 
-        const { data, error } = await supabase.functions.invoke('create-lemon-checkout', {
-            body: { productId: product.id },
-        });
+        const session = await supabase.auth.getSession();
+
+const { data, error } = await supabase.functions.invoke(
+  "create-lemon-checkout",
+  {
+    body: { productId: product.id },
+    headers: {
+      Authorization: `Bearer ${session.data.session?.access_token}`,
+    },
+  }
+);
 
         if (error) {
             console.error('[handleProductPurchase] create-lemon-checkout invoke error', error);
