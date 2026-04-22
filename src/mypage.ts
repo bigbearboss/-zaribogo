@@ -759,10 +759,27 @@ async function handleProductPurchase(
         btn.disabled = true;
         btn.textContent = '결제창 준비 중...';
 
-        const {
-    data: { session },
-    error: sessionError,
-} = await supabase.auth.getSession();
+        const refreshResult = await supabase.auth.refreshSession();
+
+const sessionError = refreshResult.error;
+const session = refreshResult.data.session;
+
+console.log('[handleProductPurchase] refreshSession result', {
+    hasSession: !!session,
+    hasAccessToken: !!session?.access_token,
+    userId: session?.user?.id ?? null,
+    email: session?.user?.email ?? null,
+    sessionError: sessionError?.message ?? null,
+});
+
+if (sessionError) {
+    console.error('[handleProductPurchase] refreshSession error', sessionError);
+    throw new Error('로그인 세션을 새로 고치지 못했습니다. 다시 로그인 후 시도해주세요.');
+}
+
+if (!session?.access_token) {
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인 후 시도해주세요.');
+}
 
 if (sessionError) {
     console.error('[handleProductPurchase] getSession error', sessionError);
