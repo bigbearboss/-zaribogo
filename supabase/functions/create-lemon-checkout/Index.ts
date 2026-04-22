@@ -9,7 +9,7 @@ const LEMON_STORE_ID = Deno.env.get("LEMON_SQUEEZY_STORE_ID")!;
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-access-token",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
@@ -42,21 +42,20 @@ serve(async (req) => {
       lemonStoreId: LEMON_STORE_ID,
     });
 
-    const authHeader = req.headers.get("Authorization");
-    console.log("[create-lemon-checkout] has auth header", !!authHeader);
+    const userAccessToken = req.headers.get("x-user-access-token");
+console.log("[create-lemon-checkout] has user access token", !!userAccessToken);
 
-    if (!authHeader) {
-      return jsonResponse({ error: "Missing Authorization header" }, 401);
-    }
+if (!userAccessToken) {
+  return jsonResponse({ error: "Missing user access token" }, 401);
+}
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    });
-
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  global: {
+    headers: {
+      Authorization: `Bearer ${userAccessToken}`,
+    },
+  },
+});
     const {
       data: { user },
       error: userError,
