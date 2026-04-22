@@ -799,10 +799,11 @@ const response = await fetch(
     {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': SUPABASE_PUBLIC_KEY,
-        },
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${SUPABASE_PUBLIC_KEY}`,
+    'apikey': SUPABASE_PUBLIC_KEY,
+    'x-user-access-token': session.access_token,
+},
         body: JSON.stringify({ productId: product.id }),
     }
 );
