@@ -128,14 +128,14 @@ serve(async (req) => {
             button_text_color: "#FFFFFF",
           },
           checkout_data: {
-            email: user.email ?? "",
-            custom: {
-              user_id: user.id,
-              product_id: product.id,
-              credits: product.total_credits,
-              provider: "lemonsqueezy",
-            },
-          },
+  email: user.email ?? "",
+  custom: {
+    user_id: String(user.id),
+    product_id: String(product.id),
+    credits: String(product.total_credits ?? 0),
+    provider: "lemonsqueezy",
+  },
+},
           test_mode: true,
         },
         relationships: {
