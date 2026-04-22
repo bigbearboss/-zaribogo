@@ -1,4 +1,4 @@
-import { supabase } from './services/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts } from './services/paymentService';
 
@@ -759,29 +759,47 @@ async function handleProductPurchase(
         btn.disabled = true;
         btn.textContent = '결제창 준비 중...';
 
-        const session = await supabase.auth.getSession();
+        const {
+    data: { session },
+    error: sessionError,
+} = await supabase.auth.getSession();
 
-const { data, error } = await supabase.functions.invoke(
-  "create-lemon-checkout",
-  {
-    body: { productId: product.id },
-    headers: {
-      Authorization: `Bearer ${session.data.session?.access_token}`,
-    },
-  }
+if (sessionError) {
+    console.error('[handleProductPurchase] getSession error', sessionError);
+    throw new Error('로그인 세션을 확인하지 못했습니다. 다시 로그인 후 시도해주세요.');
+}
+
+if (!session?.access_token) {
+    throw new Error('로그인이 필요합니다. 다시 로그인 후 시도해주세요.');
+}
+
+if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
+    throw new Error('Supabase 환경 변수가 누락되었습니다. 배포 환경을 확인해주세요.');
+}
+
+const response = await fetch(
+    `${SUPABASE_URL}/functions/v1/create-lemon-checkout`,
+    {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': SUPABASE_PUBLIC_KEY,
+        },
+        body: JSON.stringify({ productId: product.id }),
+    }
 );
 
-        if (error) {
-            console.error('[handleProductPurchase] create-lemon-checkout invoke error', error);
-            throw new Error(error.message || '결제 링크 생성에 실패했습니다.');
-        }
+const result = await response.json();
 
-        if (!data?.checkoutUrl) {
-            console.error('[handleProductPurchase] checkoutUrl missing', data);
-            throw new Error(data?.error || '결제 링크가 생성되지 않았습니다.');
-        }
+console.log('[handleProductPurchase] raw fetch status', response.status);
+console.log('[handleProductPurchase] raw fetch result', result);
 
-        window.location.href = data.checkoutUrl;
+if (!response.ok || !result?.checkoutUrl) {
+    throw new Error(result?.error || '결제 링크 생성에 실패했습니다.');
+}
+
+window.location.href = result.checkoutUrl;
     } catch (err) {
         console.error('[handleProductPurchase]', err);
         alert(err instanceof Error ? err.message : '결제 시작 중 오류가 발생했습니다.');
