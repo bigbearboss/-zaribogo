@@ -42,17 +42,17 @@ serve(async (req) => {
       lemonStoreId: LEMON_STORE_ID,
     });
 
-    const userAccessToken = req.headers.get("x-user-access-token");
-console.log("[create-lemon-checkout] has user access token", !!userAccessToken);
+    const authHeader = req.headers.get("Authorization");
+console.log("[create-lemon-checkout] has auth header", !!authHeader);
 
-if (!userAccessToken) {
-  return jsonResponse({ error: "Missing user access token" }, 401);
+if (!authHeader) {
+  return jsonResponse({ error: "Missing Authorization header" }, 401);
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   global: {
     headers: {
-      Authorization: `Bearer ${userAccessToken}`,
+      Authorization: authHeader,
     },
   },
 });
