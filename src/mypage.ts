@@ -802,7 +802,7 @@ const response = await fetch(
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${SUPABASE_PUBLIC_KEY}`,
     'apikey': SUPABASE_PUBLIC_KEY,
-    'x-user-access-token': session.access_token,
+    
 },
         body: JSON.stringify({ productId: product.id }),
     }
