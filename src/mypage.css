@@ -1709,3 +1709,158 @@
     background: #e2e8f0;
     color: #475569;
 }
+
+/* ==========================================
+   Mobile Responsive Rules (Added by Plan)
+   ========================================== */
+@media (max-width: 768px) {
+    /* Global fixes for Mypage */
+    html, body {
+        overflow-x: hidden;
+    }
+    
+    body, main, section, .credit-widget, .product-card, .profile-card, button, input {
+        box-sizing: border-box;
+        max-width: 100%;
+    }
+
+    /* Mypage Main wrapper */
+    .mypage-main {
+        padding: 20px 16px; /* Reduced padding on mobile */
+    }
+
+    /* Mypage Sidebar styling in style.css or here */
+    #app {
+        flex-direction: column !important;
+    }
+    
+    /* Convert Sidebar into Top Nav */
+    .sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: auto !important;
+        padding: 16px !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+        position: relative !important;
+        z-index: 50 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .app-header {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* Make Navigation horizontal */
+    .mypage-nav {
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        padding-bottom: 8px !important;
+        margin-top: 16px !important;
+        gap: 12px !important;
+        /* Hide scrollbar for cleaner look */
+        scrollbar-width: none; 
+    }
+    .mypage-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-link {
+        white-space: nowrap;
+        padding: 8px 16px !important;
+    }
+
+    .mypage-theme-toggle {
+        display: none !important; /* Optionally hide theme toggle on mobile or move it */
+    }
+
+    /* Credit Widget */
+    .credit-widget {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .credit-action {
+        width: 100%;
+    }
+
+    .credit-action button {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    /* Reports Grid */
+    .reports-grid, .product-cards {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Profile / Billing Cards */
+    .profile-card {
+        padding: 20px;
+    }
+
+    .profile-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .payment-history-card {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .payment-card-amount {
+        text-align: left;
+    }
+
+    /* Modals (Refund, Withdraw) */
+    .refund-modal, .withdraw-modal {
+        width: 90% !important;
+        max-width: 400px !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        padding: 20px !important;
+    }
+
+    .refund-modal-actions, .withdraw-modal-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .refund-btn-submit, .refund-btn-cancel,
+    .withdraw-btn-submit, .withdraw-btn-cancel {
+        width: 100% !important;
+        min-height: 48px;
+    }
+    
+    /* Report Details Grid override for Mypage */
+    .report-grid, .report-row {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .report-card {
+        width: 100% !important;
+    }
+    
+    .report-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    #btnBackToMain {
+        margin-top: 16px;
+        width: 100%;
+    }
+}

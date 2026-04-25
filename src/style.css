@@ -4750,3 +4750,122 @@ html[data-theme="light"] .analysis-progress-badge {
      font-size: 0.95rem;
   }
 }
+
+/* ==========================================
+   Mobile Responsive Rules (Added by Plan)
+   ========================================== */
+@media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+    }
+
+    body, main, section, .land-card, .result-preview-card, form, button, input, select {
+        box-sizing: border-box;
+        max-width: 100%;
+        word-break: keep-all; 
+        overflow-wrap: break-word;
+    }
+
+    /* Landing Page Adjustments */
+    .landing-hero {
+        padding: 40px 0;
+    }
+
+    .hero-split {
+        flex-direction: column;
+        text-align: center;
+        gap: 40px;
+    }
+
+    .hero-text h1 {
+        font-size: clamp(2rem, 8vw, 3rem);
+        line-height: 1.2;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+    .hero-actions button {
+        width: 100% !important;
+        min-height: 56px;
+    }
+
+    .landing-section {
+        padding: 60px 20px !important;
+    }
+
+    .grid-card {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+
+    .before-after-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px;
+    }
+    
+    .ba-divider {
+        transform: rotate(90deg);
+        padding: 20px 0;
+    }
+
+    .feat-card.flex-row, .solution-feature-list .flex-row {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    /* App Analysis Section Layouts */
+    #app {
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: auto !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+    }
+
+    .input-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #startAnalysis {
+        position: sticky;
+        bottom: 20px;
+        z-index: 999;
+        margin-top: 20px;
+        min-height: 56px;
+        width: 100%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .dashboard {
+        padding: 20px 16px;
+        overflow-y: visible !important;
+    }
+
+    /* Report breakdown and analysis results 1-col */
+    .report-grid, .diagnosis-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .comparison-grid, .radius-comparison-grid {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .report-product-actions {
+        flex-direction: column;
+    }
+    .report-product-actions button {
+        width: 100%;
+        min-height: 48px;
+    }
+}
