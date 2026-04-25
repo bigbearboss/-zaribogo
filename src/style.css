@@ -4756,7 +4756,10 @@ html[data-theme="light"] .analysis-progress-badge {
    ========================================== */
 @media (max-width: 768px) {
     html, body {
-        overflow-x: hidden;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
 
     body, main, section, .land-card, .result-preview-card, form, button, input, select {
