@@ -795,19 +795,17 @@ if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
 }
 
 const response = await fetch(
-    `${SUPABASE_URL}/functions/v1/create-lemon-checkout`,
-    {
-        method: 'POST',
-        headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${SUPABASE_PUBLIC_KEY}`,
-    'apikey': SUPABASE_PUBLIC_KEY,
-    
-},
-        body: JSON.stringify({ productId: product.id }),
-    }
+  `${SUPABASE_URL}/functions/v1/create-lemon-checkout`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_PUBLIC_KEY,
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ productId: product.id }),
+  }
 );
-
 const result = await response.json();
 
 console.log('[handleProductPurchase] raw fetch status', response.status);
