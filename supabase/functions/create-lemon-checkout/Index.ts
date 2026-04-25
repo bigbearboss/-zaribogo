@@ -9,7 +9,7 @@ const LEMON_STORE_ID = Deno.env.get("LEMON_SQUEEZY_STORE_ID")!;
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-access-token",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
   };
@@ -42,11 +42,30 @@ serve(async (req) => {
       lemonStoreId: LEMON_STORE_ID,
     });
 
-    const authHeader = req.headers.get("Authorization");
-console.log("[create-lemon-checkout] has auth header", !!authHeader);
+   const authHeader = req.headers.get("Authorization");
+
+console.log("[create-lemon-checkout] auth header check", {
+  hasAuthHeader: !!authHeader,
+  prefix: authHeader?.slice(0, 24) ?? null,
+});
 
 if (!authHeader) {
   return jsonResponse({ error: "Missing Authorization header" }, 401);
+}
+
+if (!authHeader.startsWith("Bearer eyJ")) {
+  console.error("[create-lemon-checkout] invalid auth header format", {
+    prefix: authHeader.slice(0, 32),
+  });
+
+  return jsonResponse(
+    {
+      error: "Invalid JWT format",
+      detail: "Authorization must be Bearer user access_token, not Supabase public key.",
+      prefix: authHeader.slice(0, 24),
+    },
+    401
+  );
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
