@@ -47,6 +47,10 @@ const DOM = {
     btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
     btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
     btnBackToList: document.getElementById('btnBackToList') as HTMLButtonElement,
+    financialPressureCard: document.getElementById('financialPressureCard') as HTMLElement,
+    aiStrategySection: document.getElementById('aiStrategySection') as HTMLElement,
+    detailRationale: document.getElementById('detailRationale') as HTMLElement,
+    detailStrategy: document.getElementById('detailStrategy') as HTMLElement,
 
     // Dashboard widgets
     greetingMsg: document.getElementById('greetingMsg') as HTMLElement,
@@ -548,13 +552,142 @@ function renderListItems(container: HTMLElement | null, items: string[]) {
     });
 }
 
+function renderFinancialPressureCard(fp: any | null) {
+    const card = DOM.financialPressureCard;
+    if (!card) return;
+
+    if (!fp) {
+        card.style.display = 'none';
+        card.classList.add('hidden');
+        return;
+    }
+
+    const fmtMan = (n: number | null) => {
+        if (n == null) return '입력 필요';
+        return `${Math.round(n / 10_000).toLocaleString()}만원`;
+    };
+    const fmtPct = (r: number | null) => {
+        if (r == null) return '입력 필요';
+        return `${Math.round(r * 100)}%`;
+    };
+    const fmtMonths = (m: number | null) => {
+        if (m == null) return '입력 필요';
+        return `약 ${Math.round(m)}개월`;
+    };
+
+    const levelBadge = (level: string, labels: Record<string, string>) => {
+        const text = labels[level] ?? '확인 필요';
+        return `<span class="fp-level-badge fp-level-${level}">${text}</span>`;
+    };
+
+    const estTag = (isEst: boolean) =>
+        isEst ? '<span class="fp-est-tag">추정</span>' : '';
+
+    const rentLevelLabels = { stable: '안정', adequate: '적정', caution: '주의', risk: '위험' };
+    const depositLevelLabels = { stable: '안정', adequate: '적정', caution: '주의', risk: '위험' };
+    const premiumLevelLabels = { stable: '양호', adequate: '검토 필요', caution: '주의', risk: '위험' };
+    const revLevelLabels = { stable: '충족', adequate: '근접', caution: '부족', risk: '크게 부족' };
+
+    const premiumRow = fp.premium > 0
+        ? `<div class="fp-row">
+        <span class="fp-row-label">⬣ 권리금 회수 예상 기간 ${estTag(fp.premiumPaybackIsEstimated)}</span>
+        <span class="fp-row-value">
+          ${fp.premiumPaybackMonths != null ? fmtMonths(fp.premiumPaybackMonths) : '현장 확인 필요'}
+          ${levelBadge(fp.premiumPaybackLevel, premiumLevelLabels)}
+        </span>
+      </div>`
+        : `<div class="fp-row">
+        <span class="fp-row-label">⬣ 권리금 회수 부담</span>
+        <span class="fp-row-value"><span class="fp-na-text">권리금 없음</span></span>
+      </div>`;
+
+    card.innerHTML = `
+    <div class="fp-card-inner">
+      <div class="fp-card-header">
+        <span class="fp-card-icon">💰</span>
+        <div>
+          <h4 class="fp-card-title">비용 부담 진단</h4>
+          <p class="fp-card-subtitle">분석 시점 입력값 기반 비용 구조 진단</p>
+        </div>
+        <div class="fp-score-badge fp-score-${fp.financialPressureScore >= 65 ? 'high' : fp.financialPressureScore >= 35 ? 'mid' : 'low'}">
+          부담 지수 ${fp.financialPressureScore}
+        </div>
+      </div>
+
+      <div class="fp-section-label">📌 분석 기준 데이터</div>
+      <div class="fp-input-summary">
+        <div class="fp-input-item">
+          <span class="fp-input-label">월세 ${estTag(fp.confidenceFlags?.rentIsEstimated)}</span>
+          <span class="fp-input-val">${fp.monthlyRent > 0 ? fmtMan(fp.monthlyRent) : '미입력'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">보증금 ${estTag(fp.confidenceFlags?.depositIsEstimated)}</span>
+          <span class="fp-input-val">${fp.deposit > 0 ? fmtMan(fp.deposit) : '미입력'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">권리금 ${estTag(fp.confidenceFlags?.premiumIsEstimated)}</span>
+          <span class="fp-input-val">${fp.premium > 0 ? fmtMan(fp.premium) : '없음'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">월 고정비 ${estTag(fp.confidenceFlags?.fixedCostIsEstimated)}</span>
+          <span class="fp-input-val">${fmtMan(fp.estimatedMonthlyFixedCost)}</span>
+        </div>
+      </div>
+
+      <div class="fp-section-label">📊 진단 결과</div>
+      <div class="fp-indicators">
+        <div class="fp-row">
+          <span class="fp-row-label">A. 월세 부담률 ${estTag(fp.rentBurdenIsEstimated)}</span>
+          <span class="fp-row-value">
+            ${fp.rentBurdenRatio != null ? fmtPct(fp.rentBurdenRatio) : '-'}
+            ${levelBadge(fp.rentBurdenLevel, rentLevelLabels)}
+          </span>
+        </div>
+        <div class="fp-row">
+          <span class="fp-row-label">B. 보증금 유동성 부담 ${estTag(fp.depositLiquidityIsEstimated)}</span>
+          <span class="fp-row-value">
+            ${fp.depositLiquidityMonths != null ? fmtMonths(fp.depositLiquidityMonths) : '-'}
+            ${levelBadge(fp.depositLiquidityLevel, depositLevelLabels)}
+          </span>
+        </div>
+        ${premiumRow}
+        <div class="fp-row fp-row-highlight">
+          <span class="fp-row-label">D. 안정권 진입 필요 월매출</span>
+          <span class="fp-row-value">
+            ${fp.targetMonthlyRevenue > 0 ? fmtMan(fp.targetMonthlyRevenue) + ' 이상' : '-'}
+            ${levelBadge(fp.requiredRevenueLevel, revLevelLabels)}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+
+    card.classList.remove('hidden');
+    card.style.display = 'block';
+}
+
 function openReportDetail(report: any) {
     const data = report.result_data || {};
     
+    // Financial Pressure Card Rendering
+    renderFinancialPressureCard(data.financial_pressure_detail || null);
+
     // Header Info
     DOM.detailTitle.textContent = report.title || "상권 분석 결과";
     DOM.detailDate.textContent = new Date(report.created_at).toLocaleDateString();
     
+    // AI Strategy Section
+    const rationale = data.summary?.decision_rationale || [];
+    const strategy = data.summary?.strategic_advice || [];
+
+    if (rationale.length > 0 || strategy.length > 0) {
+        DOM.aiStrategySection.classList.remove('hidden');
+        renderListItems(DOM.detailRationale, rationale);
+        renderListItems(DOM.detailStrategy, strategy);
+    } else {
+        DOM.aiStrategySection.classList.add('hidden');
+    }
+
     if (DOM.detailAddress) {
         const addr = data.location?.address || data.location?.placeName || report.location || "-";
         DOM.detailAddress.textContent = `📍 ${addr}`;

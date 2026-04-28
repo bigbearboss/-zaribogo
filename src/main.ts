@@ -599,6 +599,7 @@ function buildStructuredResultData(params: {
     keyRisks: calibratedSummary.risk,
     recommendedActions: calibratedSummary.recommendations,
     precautions: calibratedSummary.precautions,
+    financial_pressure_detail: analysis.financialPressureDetail ?? null,
   };
 }
 
