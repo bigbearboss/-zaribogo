@@ -518,277 +518,234 @@
         </aside>
 
 
-        <main class="dashboard">
-            <!-- ── Radius Analysis Results ────────────────────────────── -->
-            <div id="estimationBanner" class="estimation-banner hidden">
-                ⚠️ 일부 데이터는 추정값이 포함되어 있습니다. 결정은 참고용으로 활용하세요.
-            </div>
-
-            <!-- ── Decision Helper Area (Phase 25) ──────────────────────── -->
-            <section id="decisionHelperArea" class="decision-helper-section hidden">
-                <div class="decision-header-row">
-                    <div class="decision-main-badge" id="mainDecisionBadge">판단 대기 중</div>
-                    <div class="cta-message">이 위치를 저장하고 나중에 다시 확인해보세요</div>
-                    <button id="btnSaveSpot" class="btn-save-spot highlight" title="내 자리로 저장">
-                        <span class="icon">⭐</span>
-                        <span class="label">결정 저장하기</span>
-                    </button>
-                </div>
-
-                <div class="decision-content-grid">
-                    <div class="decision-reasons-card">
-                        <h5>💡 왜 이런 판단인가요?</h5>
-                        <ul id="decisionReasonList" class="decision-list">
-                            <li>자리를 선택하면 이곳에 주요 근거가 표시됩니다.</li>
-                        </ul>
-                    </div>
-                    <div class="decision-actions-card">
-                        <h5>🚀 지금 어떤 행동이 필요한가요? <span class="badge-advisory">💡 전문가 제안</span></h5>
-
-                        <ul id="decisionActionList" class="decision-list highlight">
-                            <li>자리를 선택하면 구체적인 제안이 이곳에 표시됩니다.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-            <div class="supporting-data-separator">
-                <span>자리보고의 상세 판단 데이터</span>
-            </div>
-
-            <section class="main-score" id="scoreBox">
-                <label>자리보고 판단 지수 (CRI)</label>
-                <div class="gauge-container">
-                    <svg class="gauge-svg" viewBox="0 0 200 110">
-                        <defs>
-                            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="var(--accent-primary)" />
-                                <stop offset="100%" stop-color="var(--accent-secondary)" />
-                            </linearGradient>
-                        </defs>
-                        <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12"
-                            stroke-linecap="round" />
-                        <path class="gauge-fill" id="gaugePath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
-                            stroke-width="12" stroke-linecap="round" stroke="url(#gaugeGradient)" />
-                    </svg>
-                    <div class="gauge-content">
-                        <div class="score-display" id="compositeScore">--</div>
-                        <div class="score-label">점</div>
-                    </div>
-                    <div class="stability-distance" id="stabilityDistance">
-                        <!-- Dynamic stability distance info -->
-                    </div>
-                    <div class="tier-label" id="riskTier">판단 대기 중</div>
-                    <div id="finalJudgmentBadge" class="final-judgment-badge hidden">--</div>
-                    <p class="cri-disclaimer">
-                        * CRI는 절대 수치가 아닌 상대적 위험 지표입니다. 가장 중요한 기준은 <strong>안정권(35점)</strong> 대비 변화 추이입니다.
-                    </p>
-                    <div id="criEstimationBadge" class="estimation-badge-mini hidden">⚠️ 추정 데이터 포함</div>
-
-                    <!-- ── 자리보고 메타 정보 ─────────────────────────────────── -->
-                    <div class="analysis-meta" id="analysisMeta">
-                        <span class="meta-item"><span class="meta-label">판단 반경:</span> <span
-                                id="metaRadius">--</span></span>
-                        <span class="meta-item"><span class="meta-label">데이터 출처:</span> <span
-                                id="metaSource">--</span></span>
-                        <span class="meta-item"><span class="meta-label">최종 판단 시각:</span> <span
-                                id="metaTime">--</span></span>
-                    </div>
-            </section>
-
-            <!-- ── 자리보고 판단 리포트 ────────────────────────── -->
-            <section id="judgmentReport" class="dashboard-card interpretation-report hidden">
-                <div class="report-location-context" id="reportLocationHeader">
-                    <span id="proResultLabel" class="pro-result-label hidden">💎 프리미엄 판단 결과</span>
-                    <span class="context-icon">📍</span>
+        <main class="dashboard briefing-dashboard">
+            <!-- 1. Verdict Banner -->
+            <div class="verdict-banner">
+                <div class="verdict-header">
+                    <div id="reportStatusBadge" class="status-badge">판단 대기 중</div>
                     <span id="reportLocationText">위치를 선택해주세요</span>
                     <span class="context-coords" id="reportCoordsText"></span>
                 </div>
-
-                <div class="report-header">
-                    <div id="reportStatusBadge" class="status-badge">판단 중...</div>
-                    <h3 id="reportSummary">자리를 선택하여 판단을 시작하세요.</h3>
+                <h3 id="reportSummary" class="verdict-title">자리를 선택하여 판단을 시작하세요.</h3>
+                <!-- hidden badges needed for main.ts -->
+                <div id="finalJudgmentBadge" class="final-judgment-badge hidden">--</div>
+                <div id="mainDecisionBadge" class="decision-main-badge hidden">--</div>
+                
+                <div id="estimationBanner" class="estimation-banner hidden" style="margin-top: 10px;">
+                    ⚠️ 일부 지표는 주변 평균값으로 추정되었습니다. 참고용으로 활용하세요.
                 </div>
-
-                <div class="report-breakdown" id="reportBreakdown">
-                    <div class="breakdown-item">
-                        <label>경쟁 강도</label>
-                        <div class="breakdown-bar-bg">
-                            <div id="barCompetition" class="breakdown-bar-fill"></div>
-                        </div>
-                        <span id="valCompetition" class="breakdown-val">--</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <label>수요 지표</label>
-                        <div class="breakdown-bar-bg">
-                            <div id="barDemand" class="breakdown-bar-fill"></div>
-                        </div>
-                        <span id="valDemand" class="breakdown-val">--</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <label>업종 다양성</label>
-                        <div class="breakdown-bar-bg">
-                            <div id="barDiversity" class="breakdown-bar-fill"></div>
-                        </div>
-                        <span id="valDiversity" class="breakdown-val">--</span>
-                    </div>
-                </div>
-
-                <div class="report-grid">
-                    <div class="report-column">
-                        <label>🚩 핵심 판단 결정</label>
-                        <ul id="reportReasons" class="report-list">
-                            <!-- Populated by main.ts -->
-                        </ul>
-                    </div>
-                    <div class="report-column">
-                        <label>🚀 전략 및 실행 제안</label>
-                        <ul id="reportActions" class="report-list highlight">
-                            <!-- Populated by main.ts -->
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- ── 리포트 액션 (Phase 16) ────────────────────────── -->
-                <div class="report-product-actions">
-                    <button id="btnShare" class="btn-action btn-outline">
-                        <span>🔗</span> 판단 링크 복사
-                    </button>
-                    <button id="btnDownload" class="btn-action btn-primary">
-                        <span>📥</span> 리포트 이미지 저장
-                    </button>
-                </div>
-            </section>
-
-            <!-- Legacy comparisonOverlay removed -->
-
-            <section class="diagnosis-grid">
-                <div class="diagnosis-card">
-                    <h4>재무적 압박</h4>
-                    <span class="diagnosis-hint">임대료, 보증금 대비 예상 매출의 부담 정도</span>
-                    <div class="layer-score" id="fScore">--</div>
-                    <p id="fExp">--</p>
-                </div>
-                <div class="diagnosis-card">
-                    <h4>시장 및 주변</h4>
-                    <span class="diagnosis-hint">반경 내 경쟁 강도와 업종 다양성 건전도</span>
-                    <div class="layer-score" id="mScore">--</div>
-                    <p id="mExp">--</p>
-                </div>
-            </section>
-
-
-            <section class="radius-comparison-section">
-                <h4>📊 반경별 리스크 비교</h4>
-                <div class="comparison-grid" id="radiusComparison">
-                    <!-- Populated by main.ts -->
-                </div>
-            </section>
-
-            <section class="map-visualization-section">
-                <h4>📍 상권 반경 밀도 시각화</h4>
-                <div class="map-container-mock" id="radiusMap">
-                    <!-- RadiusMap.ts will render SVG here -->
-                </div>
-            </section>
-
-            <section class="evidence-section">
-                <div class="section-header-row">
-                    <h4>🔍 판단 근거 카드</h4>
-                    <div id="evidenceEstimationBadge" class="estimation-badge-mini hidden">⚠️ 일부 지표 추정됨</div>
-                </div>
-                <div class="evidence-grid" id="evidenceContainer">
-                    <!-- Populated by main.ts -->
-                </div>
-            </section>
-
-            <section class="confidence-section">
-                <div class="confidence-card">
-                    <div class="conf-header">
-                        <h4>데이터 신뢰도 <span id="confidenceLabel" class="conf-label">-</span></h4>
-                        <div class="conf-score" id="confidenceScore">0.00</div>
-                    </div>
-                    <div class="conf-bar-bg">
-                        <div class="conf-bar-fill" id="confidenceBar"></div>
-                    </div>
-                    <div class="source-summary" id="sourceSummary">
-                        <!-- Populated by main.ts -->
-                    </div>
-                    <p class="field-hint industry-default-hint">
-                        * <strong>Industry Default</strong>: 실제 데이터 부족 시 활용되는 업종별 표준 통계 비중입니다.
-                    </p>
-                </div>
-
-            </section>
-            <section class="radius-comparison-section">
-                <div class="section-header-row">
-                    <h4>⚖️ 반경별 유리한 지점 비교</h4>
-                </div>
-                <span class="comparison-guide-text">상가 기준 300m~1km 범위 중 어느 범위가 더 사업하기 유리한지 분석한 결과입니다.</span>
-                <span class="comp-description">어느 범위가 가장 영업하기 좋을까요?</span>
-
-                <div id="radiusComparison" class="radius-comparison-grid"></div>
-                <div id="comparisonSummary" class="comparison-summary-box hidden"></div>
-            </section>
-
-            <div class="llm-card" id="llmCard" style="display: none;">
-                <div class="ai-header">
-                    <h4>✨ AI 종합 인사이트</h4>
-                    <span class="ai-badge">✨ AI 분석 요약</span>
-
-                </div>
-                <div class="llm-content" id="llmContent">
-                    <div class="loading">
-                        <p style="font-size: 1.1rem; margin-bottom: 8px;">AI가 수집된 데이터를 종합해 아래 결과를 정리했습니다.</p>
-                        <p style="font-size: 0.85rem; opacity: 0.8; font-weight: 400;">입지 조건, 경쟁 환경, 수요 지표를 바탕으로 실제 창업 판단에 필요한 정보를 아래에서 확인할 수 있습니다.</p>
-                    </div>
-                </div>
-
-
             </div>
 
-            <section id="adjustmentContainer" class="diagnosis-card guidance-panel"
-                style="display: none; border: 1px dashed var(--accent-yellow); background: rgba(251, 191, 36, 0.05);">
-                <h4>💡 <span style="color: var(--accent-yellow);">안정권 진입을 위한 1차 조정 가이드라인</span></h4>
-                <div id="adjustmentContent" style="padding-top: 10px;">
-                    <!-- Adjustments will be inserted here -->
+            <!-- 2. CRI Summary Card -->
+            <section class="cri-summary-card dashboard-card" id="scoreBox">
+                <div class="cri-header">
+                    <h4>창업 위험 지수 (CRI)</h4>
+                    <div class="cri-disclaimer">* 안정권 (35점 미만) / 주의 (40~69) / 위험 (70 이상)</div>
+                </div>
+                
+                <div class="cri-main-row">
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 200 110">
+                            <defs>
+                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="var(--accent-primary)" />
+                                    <stop offset="100%" stop-color="var(--accent-secondary)" />
+                                </linearGradient>
+                            </defs>
+                            <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12" stroke-linecap="round" />
+                            <path class="gauge-fill" id="gaugePath" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="12" stroke-linecap="round" stroke="url(#gaugeGradient)" />
+                        </svg>
+                        <div class="gauge-content">
+                            <div class="score-display" id="compositeScore">--</div>
+                            <div class="score-label">점</div>
+                        </div>
+                    </div>
+                    <div class="cri-score-info">
+                        <div class="tier-label" id="riskTier">판단 대기 중</div>
+                        <div class="stability-distance" id="stabilityDistance"></div>
+                        <div id="criEstimationBadge" class="estimation-badge-mini hidden">⚠️ 추정 데이터 포함</div>
+                    </div>
+                </div>
+
+                <div class="cri-breakdown-row" id="reportBreakdown">
+                    <div class="cri-layer">
+                        <span class="layer-title">💸 재무적 압박</span>
+                        <div class="layer-value" id="fScore">--</div>
+                        <div class="layer-hint" id="fExp">--</div>
+                    </div>
+                    <div class="cri-layer">
+                        <span class="layer-title">🏢 시장 및 수요</span>
+                        <div class="layer-value" id="mScore">--</div>
+                        <div class="layer-hint" id="mExp">--</div>
+                    </div>
+                    <div class="cri-layer">
+                        <span class="layer-title">⚔️ 경쟁 강도</span>
+                        <div class="breakdown-bar-bg"><div id="barCompetition" class="breakdown-bar-fill"></div></div>
+                        <span id="valCompetition" class="breakdown-val">--</span>
+                    </div>
+                    <div class="cri-layer">
+                        <span class="layer-title">🎯 업종 다양성</span>
+                        <div class="breakdown-bar-bg"><div id="barDiversity" class="breakdown-bar-fill"></div></div>
+                        <span id="valDiversity" class="breakdown-val">--</span>
+                    </div>
+                    <div class="hidden" style="display:none;">
+                        <div id="barDemand"></div><span id="valDemand"></span>
+                    </div>
                 </div>
             </section>
 
-            <!-- ── 인페이지 비교 섹션 (Phase 24) ────────────────────────── -->
-            <section id="comparisonSection" class="dashboard-card comparison-section hidden">
-                <div class="comp-header">
-                    <h3>⚖️ 어디가 더 나은 선택일까?</h3>
-                    <p class="comp-hint">선택한 최근 판단 지표 2개를 상세 비교합니다.</p>
-                </div>
-                <div id="comparisonContent" class="comp-content">
-                    <div class="comp-invite">여러 후보 중 어디가 더 유리한지 확인해보세요</div>
-                    <!-- Dynamic comparison table & conclusion -->
-                </div>
-            </section>
-
-            <section class="diagnosis-card guidance-panel">
-                <h4>지금 바로 할 수 있는 것</h4>
-                <ul id="actionGuidance" class="guidance-list">
-                    <li style="color: var(--text-muted); font-size: 0.85rem;">판단이 완료되면 여기에 실천 가능한 조치들이 표시됩니다.</li>
+            <!-- 3. Top Risk Factors -->
+            <section class="top-risk-factors dashboard-card" id="judgmentReport">
+                <h3 class="section-heading">🚨 핵심 리스크 브리핑</h3>
+                <ul id="reportReasons" class="top-risk-list">
+                    <li class="risk-placeholder">자리를 선택하면 위험 요인이 정리됩니다.</li>
                 </ul>
-
-                <!-- ── CTA Actions ────────────────────────────────────────── -->
-                <div class="cta-group" id="ctaGroup">
-                    <button id="btnSaveLocation" class="cta-btn primary">
-                        <span class="icon">💾</span> 이 위치 저장
-                    </button>
-                    <button id="btnCompareHistory" class="cta-btn secondary">
-                        <span class="icon">⚖️</span> 다른 후보와 비교
-                    </button>
-                    <button id="btnReanalyze" class="cta-btn secondary">
-                        <span class="icon">🔄</span> 조건 변경 후 재판단
-                    </button>
+                
+                <h4 class="sub-heading mt-4" style="margin-top: 24px; font-size: 0.95rem; color: var(--text-secondary);">🔍 주요 판단 근거 수치</h4>
+                <div id="evidenceEstimationBadge" class="estimation-badge-mini hidden">⚠️ 일부 지표 추정됨</div>
+                <div class="evidence-grid risk-evidence" id="evidenceContainer">
+                    <!-- Populated by main.ts -->
+                </div>
+                
+                <div class="hidden" style="display:none;">
+                    <span id="proResultLabel"></span>
+                    <button id="btnShare"></button>
+                    <button id="btnDownload"></button>
+                    <ul id="reportActions"></ul>
                 </div>
             </section>
 
-            <footer>
-                <div class="disclaimer">💡 CRI는 확률이 아닌 상대적 위험 지표입니다. 참고용으로 활용하세요.</div>
-                &copy; 2026 자리보고. 소상공인 성공을 위한 지능형 판단 시스템.
+            <!-- 4. AI Strategy Summary -->
+            <section class="ai-strategy-section dashboard-card" style="padding: 24px;">
+                <div class="llm-card" id="llmCard" style="display: none; border: none; padding: 0; box-shadow: none;">
+                    <div class="ai-header" style="background: none; padding: 0 0 16px 0;">
+                        <h3 class="section-heading" style="margin: 0;">✨ AI 실행 전략 요약</h3>
+                        <span class="ai-badge">✨ AI 분석</span>
+                    </div>
+                    <div class="llm-content" id="llmContent">
+                        <div class="loading ai-skeleton">
+                            <div class="skeleton-line title"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-pulse-text">AI가 데이터를 분석하여 요약 중입니다...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="decisionHelperArea" class="decision-helper-section hidden" style="border: none; padding: 0; box-shadow: none; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                    <h3 class="section-heading mb-3">💡 행동 가이드</h3>
+                    <ul id="decisionReasonList" class="decision-list" style="margin-bottom: 16px;"></ul>
+                    <ul id="decisionActionList" class="decision-list highlight"></ul>
+                </div>
+                
+                <div id="adjustmentContainer" class="diagnosis-card guidance-panel hidden" style="display:none;">
+                    <h4>💡 안정권 진입 1차 가이드</h4>
+                    <div id="adjustmentContent"></div>
+                </div>
+            </section>
+
+            <!-- 5. Field Verification Checklist -->
+            <section class="field-checklist-section dashboard-card">
+                <h3 class="section-heading">📋 현장 확인 체크리스트</h3>
+                <div class="checklist-tabs">
+                    <button class="tab-btn active" onclick="activateTab('tab-visit', event)">📍 현장 방문</button>
+                    <button class="tab-btn" onclick="activateTab('tab-realtor', event)">🏢 부동산 문의</button>
+                    <button class="tab-btn" onclick="activateTab('tab-contract', event)">📝 계약 전</button>
+                </div>
+                <div class="tab-content active" id="tab-visit">
+                    <label class="check-item"><input type="checkbox"> <span>평일/주말 주요 시간대 유동인구 30분 관찰</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>주변 동종 업계 매장 피크 고객 수 확인</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>매장 앞 시야 확보 및 간판 가시성 점검</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>진입로(계단, 턱) 고객 접근 편의성 확인</span></label>
+                </div>
+                <div class="tab-content" id="tab-realtor" style="display: none;">
+                    <label class="check-item"><input type="checkbox"> <span>이전 매장 폐업(이전) 사유 등 과거 이력 확인</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>관리비 세부 내역(수도, 전기) 증빙 요청</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>동일 상가 내 동종 업계 입점 금지 특약 확인</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>누수/외벽 보수 시 임대인 부담 범위 확인</span></label>
+                </div>
+                <div class="tab-content" id="tab-contract" style="display: none;">
+                    <label class="check-item"><input type="checkbox"> <span>등기부등본 확인 (근저당, 가압류 등)</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>건축물대장 확인 (불법 건축, 용도 제한)</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>권리금 양도양수 계약서 상세 조항 확인</span></label>
+                    <label class="check-item"><input type="checkbox"> <span>임대료 인상 기한 및 상한 특약 명시</span></label>
+                </div>
+                <script>
+                    function activateTab(tabId, event) {
+                        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+                        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+                        document.getElementById(tabId).style.display = 'flex';
+                        if(event && event.currentTarget) {
+                            event.currentTarget.classList.add('active');
+                        }
+                    }
+                </script>
+            </section>
+
+            <!-- 6. Detail Accordion -->
+            <section class="detail-accordion-section dashboard-card" style="padding: 0; overflow: hidden;">
+                <details class="detail-accordion">
+                    <summary class="accordion-summary">📊 상세 데이터 및 분석 지도 펼쳐보기</summary>
+                    <div class="accordion-content" style="padding: 24px; border-top: 1px solid var(--border-color);">
+                        <section class="map-visualization-section">
+                            <h4 style="margin-bottom: 12px;">📍 상권 반경 시각화</h4>
+                            <div class="map-container-mock" id="radiusMap"></div>
+                        </section>
+                        
+                        <section class="radius-comparison-section" style="margin-top: 32px;">
+                            <h4 style="margin-bottom: 12px;">⚖️ 반경별 환경 비교</h4>
+                            <div id="radiusComparison" class="radius-comparison-grid"></div>
+                            <div id="comparisonSummary" class="comparison-summary-box hidden"></div>
+                        </section>
+                        
+                        <section id="comparisonSection" class="dashboard-card comparison-section hidden" style="margin-top: 32px; box-shadow: none;">
+                            <div class="comp-header">
+                                <h3>⚖️ 어디가 더 나은 선택일까?</h3>
+                            </div>
+                            <div id="comparisonContent" class="comp-content"></div>
+                        </section>
+
+                        <section class="confidence-section" style="margin-top: 32px;">
+                            <div class="confidence-card" style="box-shadow: none; border: 1px solid var(--border-color);">
+                                <div class="conf-header">
+                                    <h4>데이터 신뢰도 <span id="confidenceLabel" class="conf-label">-</span></h4>
+                                    <div class="conf-score" id="confidenceScore">0.00</div>
+                                </div>
+                                <div class="conf-bar-bg"><div class="conf-bar-fill" id="confidenceBar"></div></div>
+                                <div class="source-summary" id="sourceSummary"></div>
+                            </div>
+                        </section>
+                        
+                        <div class="analysis-meta mt-3" id="analysisMeta" style="margin-top: 24px; color: var(--text-muted); font-size: 0.8rem; text-align: center;">
+                            <span class="meta-item">반경: <span id="metaRadius">--</span></span>
+                            <span class="meta-item ml-2">출처: <span id="metaSource">--</span></span>
+                            <span class="meta-item ml-2">판단: <span id="metaTime">--</span></span>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <!-- 7. CTA Area -->
+            <section class="cta-area-section" style="margin-top: 32px;">
+                <div class="cta-group briefing-cta" id="ctaGroup" style="flex-direction: column;">
+                    <button id="btnSaveLocation" class="cta-btn primary" style="width: 100%; min-height: 56px; font-size: 1.1rem;">
+                        <span class="icon">💾</span> <span class="lbl">이 진단 리포트 내 자리로 저장하기</span>
+                    </button>
+                    <div style="display: flex; gap: 12px; margin-top: 12px; width: 100%;">
+                        <button id="btnCompareHistory" class="cta-btn secondary" style="flex: 1; min-height: 48px;">
+                            <span class="icon">⚖️</span> 다른 후보 비교
+                        </button>
+                        <button id="btnReanalyze" class="cta-btn secondary" style="flex: 1; min-height: 48px;">
+                            <span class="icon">🔄</span> 분석 조건 변경
+                        </button>
+                    </div>
+                </div>
+                <ul id="actionGuidance" class="hidden" style="display:none;"></ul>
+            </section>
+
+            <footer style="margin-top: 60px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                <div class="disclaimer" style="margin-bottom: 8px;">💡 CRI는 창업 성공을 보장하지 않으며 참조 지표로만 활용해야 합니다.</div>
+                &copy; 2026 자리보고.
             </footer>
         </main>
 
