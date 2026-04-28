@@ -1,5 +1,6 @@
 import { DataSource } from "./dataMergeRules";
 export { DataSource };
+export type { FinancialPressureResult, FinancialPressureInput, FPLevel, FinancialPressureConfidenceFlags } from "./financialPressureAnalysis";
 
 export enum RiskTier {
     STABLE = "안정",
@@ -206,6 +207,9 @@ export interface RiskAnalysis {
     breakEvenRevenue: number;
     revenueStressGap: number;
     sourceSummary: Record<ValueSource, number>;
+
+    // Financial Pressure 세부 지표 (고도화 레이어)
+    financialPressureDetail?: import('./financialPressureAnalysis').FinancialPressureResult;
 }
 
 // ── Minimum Adjustment Block (Step 3) ────────────────────────────────────────

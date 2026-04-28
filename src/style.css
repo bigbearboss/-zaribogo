@@ -5328,3 +5328,276 @@ html[data-theme="light"] .analysis-progress-badge {
         z-index: 1000;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   비용 부담 진단 카드 (Financial Pressure 고도화)
+   ══════════════════════════════════════════════════════════════════ */
+
+.fp-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(168,85,247,0.06) 100%);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 20px;
+  margin-top: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  animation: fp-slide-in 0.4s ease-out;
+}
+
+@keyframes fp-slide-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-theme="light"] .fp-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, rgba(168,85,247,0.04) 100%);
+  border-color: rgba(99,102,241,0.15);
+}
+
+.fp-card-inner {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Header ────────────────────────────────────────────────────── */
+.fp-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fp-card-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.fp-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0 0 3px;
+  line-height: 1.2;
+}
+
+.fp-card-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Pressure Score Badge ──────────────────────────────────────── */
+.fp-score-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.fp-score-low  { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.fp-score-mid  { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.fp-score-high { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ── Section Labels ────────────────────────────────────────────── */
+.fp-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 6px;
+}
+
+/* ── Input Summary (2×2 grid) ─────────────────────────────────── */
+.fp-input-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fp-input-item {
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fp-input-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fp-input-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* ── Indicators ────────────────────────────────────────────────── */
+.fp-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  gap: 12px;
+  transition: background 0.2s ease;
+}
+
+.fp-row:hover {
+  background: var(--panel-highlight);
+}
+
+.fp-row-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.fp-row-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: right;
+}
+
+.fp-row-highlight {
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 10px;
+}
+
+.fp-row-note, .fp-required-desc {
+  background: rgba(251,191,36,0.05);
+  border: 1px solid rgba(251,191,36,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  justify-content: flex-start;
+}
+
+/* ── Level Badges ──────────────────────────────────────────────── */
+.fp-level-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.fp-level-stable   { background: rgba(16,185,129,0.15);  color: #10b981; }
+.fp-level-adequate { background: rgba(59,130,246,0.15);  color: #3b82f6; }
+.fp-level-caution  { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+.fp-level-risk     { background: rgba(239,68,68,0.15);   color: #ef4444; }
+
+/* ── Estimated Tag ─────────────────────────────────────────────── */
+.fp-est-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* ── Missing / N/A ─────────────────────────────────────────────── */
+.fp-missing {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 0.8rem;
+}
+.fp-na-text {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.fp-note-text {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Summary List (AI Comments) ───────────────────────────────── */
+.fp-summary-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.fp-summary-list li {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  padding: 8px 12px;
+  background: var(--panel-bg);
+  border-left: 3px solid #6366f1;
+  border-radius: 0 8px 8px 0;
+  line-height: 1.5;
+}
+
+/* ── Disclaimer ────────────────────────────────────────────────── */
+.fp-disclaimer {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  background: var(--panel-bg);
+  border: 1px dashed var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .fp-input-summary {
+    grid-template-columns: 1fr;
+  }
+  .fp-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .fp-row-value {
+    text-align: left;
+    flex-wrap: wrap;
+  }
+  .fp-score-badge {
+    margin-left: 0;
+    margin-top: 4px;
+  }
+  .fp-card-header {
+    flex-wrap: wrap;
+  }
+}
+

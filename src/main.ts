@@ -11,6 +11,7 @@ import type {
   EvidenceCard,
 } from "./engine/types";
 import { RiskTier } from "./engine/types";
+import type { FinancialPressureResult } from "./engine/types";
 import { RadiusMap } from "./engine/RadiusMap";
 import { DataSource } from "./engine/dataMergeRules";
 import {
@@ -159,6 +160,7 @@ const elements = {
   mainDecisionBadge: getEl("mainDecisionBadge") as HTMLElement,
   decisionReasonList: getEl("decisionReasonList") as HTMLElement,
   decisionActionList: getEl("decisionActionList") as HTMLElement,
+  financialPressureCard: getEl("financialPressureCard") as HTMLElement,
 };
 
 let currentCRI = 0;
@@ -1391,6 +1393,21 @@ async function renderAIInsights(
       diversityIndex: pData.diversityIndex,
       volatilityProxy: pData.volatilityProxy,
     },
+    financialPressure: {
+      monthlyRent: analysis.financialPressureDetail?.monthlyRent ?? 0,
+      deposit: analysis.financialPressureDetail?.deposit ?? 0,
+      premium: analysis.financialPressureDetail?.premium ?? 0,
+      estimatedMonthlyRevenue: analysis.financialPressureDetail?.estimatedMonthlyRevenue ?? 0,
+      targetMonthlyRevenue: analysis.financialPressureDetail?.targetMonthlyRevenue ?? 0,
+      rentBurdenRatio: analysis.financialPressureDetail?.rentBurdenRatio ?? null,
+      depositLiquidityMonths: analysis.financialPressureDetail?.depositLiquidityMonths ?? null,
+      premiumPaybackMonths: analysis.financialPressureDetail?.premiumPaybackMonths ?? null,
+      estimatedMonthlyFixedCost: analysis.financialPressureDetail?.estimatedMonthlyFixedCost ?? 0,
+      estimatedMonthlyNetProfit: analysis.financialPressureDetail?.estimatedMonthlyNetProfit ?? 0,
+      financialPressureScore: analysis.financialPressureDetail?.financialPressureScore ?? 0,
+      confidence: analysis.financialPressureDetail?.confidenceFlags ?? {},
+      summaryTexts: analysis.financialPressureDetail?.summaryTexts ?? [],
+    },
     structuredSummary: {
       oneLine: fallbackStructured.summary.one_line,
       decisionRationale: fallbackStructured.summary.decision_rationale,
@@ -1970,6 +1987,23 @@ async function runAnalysis(options: RunAnalysisOptions = {}) {
   const [tMeasure] = performance.getEntriesByName("analysis:total_time").slice(-1);
   conditionalLog(`[Perf] analysis: total_time = ${tMeasure?.duration.toFixed(0)} ms(click → engine done)`);
 
+  // [FP DEBUG] Financial Pressure 세부 지표 로그
+  conditionalLog("[FP DEBUG]", {
+    monthlyRent: analysis.financialPressureDetail?.monthlyRent,
+    deposit: analysis.financialPressureDetail?.deposit,
+    premium: analysis.financialPressureDetail?.premium,
+    estimatedMonthlyRevenue: analysis.financialPressureDetail?.estimatedMonthlyRevenue,
+    targetMonthlyRevenue: analysis.financialPressureDetail?.targetMonthlyRevenue,
+    rentBurdenRatio: analysis.financialPressureDetail?.rentBurdenRatio,
+    rentBurdenLevel: analysis.financialPressureDetail?.rentBurdenLevel,
+    depositLiquidityMonths: analysis.financialPressureDetail?.depositLiquidityMonths,
+    depositLiquidityLevel: analysis.financialPressureDetail?.depositLiquidityLevel,
+    premiumPaybackMonths: analysis.financialPressureDetail?.premiumPaybackMonths,
+    premiumPaybackLevel: analysis.financialPressureDetail?.premiumPaybackLevel,
+    financialPressureScore: analysis.financialPressureDetail?.financialPressureScore,
+    confidenceFlags: analysis.financialPressureDetail?.confidenceFlags,
+  });
+
   if (elements.estimationBanner) {
     if (analysis.hasEstimatedMetric) {
       elements.estimationBanner.classList.remove("hidden");
@@ -2336,7 +2370,8 @@ if (persist) {
 
    renderStructuredResultUI(structuredResultData);
   updateJudgmentUI(analysis, structuredResultData);
-  showAnalysisCompleteToast("분석 결과가 준비되었습니다. 저장을 이어서 진행하고 있어요.");
+  renderFinancialPressureCard(analysis.financialPressureDetail ?? null);
+  showAnalysisCompleteToast("분석 결과가 준비되었습니다. 저장을 이어서 진행하고 있어요.");;
 
   await saveAnalysisAndConsumeCredit({
     userId,
@@ -2749,7 +2784,146 @@ if (originalRadiusToggle) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 비용 부담 진단 카드 렌더러
+// ─────────────────────────────────────────────────────────────────────────────
+function renderFinancialPressureCard(fp: FinancialPressureResult | null) {
+  const card = elements.financialPressureCard;
+  if (!card) return;
+
+  if (!fp) {
+    card.style.display = 'none';
+    card.classList.add('hidden');
+    return;
+  }
+
+  const fmtMan = (n: number | null) => {
+    if (n == null) return '입력 필요';
+    return `${Math.round(n / 10_000).toLocaleString()}만원`;
+  };
+  const fmtPct = (r: number | null) => {
+    if (r == null) return '입력 필요';
+    return `${Math.round(r * 100)}%`;
+  };
+  const fmtMonths = (m: number | null) => {
+    if (m == null) return '입력 필요';
+    return `약 ${Math.round(m)}개월`;
+  };
+
+  const levelBadge = (level: string, labels: Record<string, string>) => {
+    const text = labels[level] ?? '확인 필요';
+    return `<span class="fp-level-badge fp-level-${level}">${text}</span>`;
+  };
+
+  const estTag = (isEst: boolean) =>
+    isEst ? '<span class="fp-est-tag">추정</span>' : '';
+
+  const rentLevelLabels  = { stable: '안정', adequate: '적정', caution: '주의', risk: '위험' };
+  const depositLevelLabels = { stable: '안정', adequate: '적정', caution: '주의', risk: '위험' };
+  const premiumLevelLabels = { stable: '양호', adequate: '검토 필요', caution: '주의', risk: '위험' };
+  const revLevelLabels   = { stable: '충족', adequate: '근접', caution: '부족', risk: '크게 부족' };
+
+  // 권리금 0원 처리
+  const premiumRow = fp.premium > 0
+    ? `<div class="fp-row">
+        <span class="fp-row-label">⬣ 권리금 회수 예상 기간 ${estTag(fp.premiumPaybackIsEstimated)}</span>
+        <span class="fp-row-value">
+          ${fp.premiumPaybackMonths != null ? fmtMonths(fp.premiumPaybackMonths) : '현장 확인 필요'}
+          ${levelBadge(fp.premiumPaybackLevel, premiumLevelLabels)}
+        </span>
+      </div>
+      <div class="fp-row fp-row-note">
+        <span class="fp-note-text">⚠️ 권리금 회수 기간은 실제 매출에 따라 크게 달라집니다. 기존 매출 자료를 반드시 확인하세요.</span>
+      </div>`
+    : `<div class="fp-row">
+        <span class="fp-row-label">⬣ 권리금 회수 부담</span>
+        <span class="fp-row-value"><span class="fp-na-text">권리금 없음 (해당 없음)</span></span>
+      </div>`;
+
+  card.innerHTML = `
+    <div class="fp-card-inner">
+      <div class="fp-card-header">
+        <span class="fp-card-icon">💰</span>
+        <div>
+          <h4 class="fp-card-title">비용 부담 진단</h4>
+          <p class="fp-card-subtitle">입력값 기반 창업 비용 구조 분석 (단정 판단이 아닌 참고용 지표입니다)</p>
+        </div>
+        <div class="fp-score-badge fp-score-${fp.financialPressureScore >= 65 ? 'high' : fp.financialPressureScore >= 35 ? 'mid' : 'low'}">
+          부담 지수 ${fp.financialPressureScore}
+        </div>
+      </div>
+
+      <div class="fp-section-label">📌 입력값 요약</div>
+      <div class="fp-input-summary">
+        <div class="fp-input-item">
+          <span class="fp-input-label">월세 ${estTag(fp.confidenceFlags.rentIsEstimated)}</span>
+          <span class="fp-input-val">${fp.monthlyRent > 0 ? fmtMan(fp.monthlyRent) : '<span class="fp-missing">입력 필요</span>'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">보증금 ${estTag(fp.confidenceFlags.depositIsEstimated)}</span>
+          <span class="fp-input-val">${fp.deposit > 0 ? fmtMan(fp.deposit) : '<span class="fp-missing">입력 필요</span>'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">권리금 ${estTag(fp.confidenceFlags.premiumIsEstimated)}</span>
+          <span class="fp-input-val">${fp.premium > 0 ? fmtMan(fp.premium) : '없음'}</span>
+        </div>
+        <div class="fp-input-item">
+          <span class="fp-input-label">월 고정비 ${estTag(fp.confidenceFlags.fixedCostIsEstimated)}</span>
+          <span class="fp-input-val">${fmtMan(fp.estimatedMonthlyFixedCost)}</span>
+        </div>
+      </div>
+
+      <div class="fp-section-label">📊 4개 지표 분석</div>
+      <div class="fp-indicators">
+        <div class="fp-row">
+          <span class="fp-row-label">A. 월세 부담률 ${estTag(fp.rentBurdenIsEstimated)}</span>
+          <span class="fp-row-value">
+            ${fp.rentBurdenRatio != null ? fmtPct(fp.rentBurdenRatio) : '현장 확인 필요'}
+            ${levelBadge(fp.rentBurdenLevel, rentLevelLabels)}
+          </span>
+        </div>
+        <div class="fp-row">
+          <span class="fp-row-label">B. 보증금 유동성 부담 ${estTag(fp.depositLiquidityIsEstimated)}</span>
+          <span class="fp-row-value">
+            ${fp.depositLiquidityMonths != null ? `고정비의 ${fmtMonths(fp.depositLiquidityMonths)}분` : '현장 확인 필요'}
+            ${levelBadge(fp.depositLiquidityLevel, depositLevelLabels)}
+          </span>
+        </div>
+        ${premiumRow}
+        <div class="fp-row fp-row-highlight">
+          <span class="fp-row-label">D. 안정권 진입 필요 월매출 ${estTag(fp.confidenceFlags.rentIsEstimated)}</span>
+          <span class="fp-row-value">
+            ${fp.targetMonthlyRevenue > 0 ? fmtMan(fp.targetMonthlyRevenue) + ' 이상' : '입력 필요'}
+            ${levelBadge(fp.requiredRevenueLevel, revLevelLabels)}
+          </span>
+        </div>
+        <div class="fp-row fp-required-desc">
+          <span class="fp-note-text">
+            현재 월세를 안정적으로 감당하려면 월매출 약 <strong>${fmtMan(fp.targetMonthlyRevenue)}</strong> 이상이 필요합니다.
+            (임대료 비중 기준: ${Math.round(fp.targetRentRatio * 100)}%)
+          </span>
+        </div>
+      </div>
+
+      ${fp.summaryTexts.length > 0 ? `
+      <div class="fp-section-label">💬 AI 코멘트</div>
+      <ul class="fp-summary-list">
+        ${fp.summaryTexts.map(t => `<li>${t}</li>`).join('')}
+      </ul>` : ''}
+
+      <div class="fp-disclaimer">
+        ※ 이 카드는 입력값과 업종 추정치 기반의 참고 지표입니다. 실제 계약 판단은 현장 확인과 전문가 검토를 병행하세요.
+        ${fp.confidenceFlags.revenueIsEstimated || fp.confidenceFlags.fixedCostIsEstimated ? '<br>⚠️ 일부 값이 추정치로 계산되었습니다.' : ''}
+      </div>
+    </div>
+  `;
+
+  card.classList.remove('hidden');
+  card.style.display = 'block';
+}
+
 function updateJudgmentUI(
+
   analysis: RiskAnalysis,
   structuredResult?: ReturnType<typeof buildStructuredResultData>
 ) {

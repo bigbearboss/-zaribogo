@@ -3,6 +3,7 @@ import type { FinancialData, MarketData, CompetitionData, StabilityData, RiskAna
 import { RiskTier } from "./types";
 import { RuleBasedInsightGenerator } from "./formatters/DiagnosticFormatter";
 import { calcCardConfidence, computeFallbackState, DataSource } from "./dataMergeRules";
+import { analyzeFinancialPressure } from "./financialPressureAnalysis";
 // @ts-ignore - json import
 import industryProfiles from "./data/industryProfiles.json";
 
@@ -129,6 +130,29 @@ export class RiskEngine {
             ];
         }
 
+        // ── Financial Pressure 세부 지표 계산 (고도화 레이어) ─────────────────
+        const industryProfile = this.getProfile(financial.industryCode || 'cafe_indie_small');
+        const industryNetMargin = industryProfile?.profiles?.base?.margin ?? 0.15;
+
+        // 월 고정비: 사용자 입력 기반으로 산출 (laborCost + rent + maintenanceFee + debtService + insuranceFee)
+        const monthlyInterestForFP = (financial.loanAmount || 0) * ((financial.interestRate || 0) / 100) / 12;
+        const computedFixedCost =
+            financial.rent +
+            (financial.maintenanceFee || 0) +
+            (financial.laborCost || 0) +
+            (financial.debtService || 0) +
+            (financial.insuranceFee || 0) +
+            Math.round(monthlyInterestForFP);
+
+        const fpDetail = analyzeFinancialPressure({
+            monthlyRent: financial.rent || 0,
+            deposit: financial.deposit || 0,
+            premium: financial.premium || 0,
+            estimatedMonthlyRevenue: financial.monthlyRevenue || 0,
+            estimatedMonthlyFixedCost: computedFixedCost > 0 ? computedFixedCost : undefined,
+            industryNetMargin,
+        });
+
         return {
             cri: compositeScore,
             riskTier: tier,
@@ -154,7 +178,8 @@ export class RiskEngine {
             breakEvenRevenue: Math.round(breakEven),
             revenueStressGap: Number(stressGap.toFixed(1)),
             sourceSummary: confidenceData.summary,
-            minimumAdjustments
+            minimumAdjustments,
+            financialPressureDetail: fpDetail,
         };
     }
 
