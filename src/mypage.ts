@@ -779,7 +779,7 @@ async function loadProductCards() {
     } catch (err) {
         console.error('[loadProductCards]', err);
         if (DOM.productCards) {
-            DOM.productCards.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem">상품 정보를 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>`;
+            DOM.productCards.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">상품 정보를 불러오지 못했습니다. 페이지를 새로고침 해주세요.</p>';
         }
     }
 }
@@ -825,13 +825,28 @@ function renderProductCards(products: import('./services/paymentService').Credit
             ? `기본 ${product.base_credits}회 + 보너스 <span class="credits-bold">+${product.bonus_credits}회</span>`
             : `<span class="credits-bold">${product.base_credits}회</span> 분석 크레딧`;
 
+        const isPromo = product.promo_active && product.original_price;
+        const promoHtml = isPromo 
+            ? `
+                <div class="price-promo-container">
+                    <span class="promo-badge">${product.promo_label || '특별 할인'}</span>
+                    <span class="price-original">${product.original_price?.toLocaleString('ko-KR')}원</span>
+                </div>
+            ` 
+            : '';
+
+        const promoNoticeHtml = isPromo
+            ? `<p class="promo-notice">✨ 초기 유저 대상 할인가가 적용된 가격입니다. 별도 할인 코드 없이 결제됩니다.</p>`
+            : '';
+
         const card = document.createElement('div');
         card.className = `product-card${meta.recommended ? ' recommended' : ''}`;
         card.innerHTML = `
             ${meta.recommended ? '<span class="badge-recommended">⭐ 가장 인기</span>' : ''}
             <span class="card-badge-text">${meta.tagline}</span>
             <p class="card-name">${product.name}</p>
-            <div class="card-price">
+            <div class="card-price ${isPromo ? 'is-promo' : ''}">
+                ${promoHtml}
                 ${product.price.toLocaleString('ko-KR')}<span class="price-unit">원</span>
             </div>
             <p class="card-credits">${bonusText} = <span class="credits-bold">총 ${product.total_credits}회</span></p>
@@ -840,6 +855,7 @@ function renderProductCards(products: import('./services/paymentService').Credit
             <ul class="card-features">
                 ${meta.features.map(f => `<li>${f}</li>`).join('')}
             </ul>
+            ${promoNoticeHtml}
             <button class="product-btn btn-primary-card" data-product-id="${product.id}">${meta.btnLabel}</button>
         `;
 
@@ -883,7 +899,6 @@ function renderProductCards(products: import('./services/paymentService').Credit
         DOM.productCards.appendChild(card);
     });
 }
-
 async function handleProductPurchase(
     product: import('./services/paymentService').CreditProduct,
     btn: HTMLButtonElement

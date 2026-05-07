@@ -10,6 +10,9 @@ export type CreditProduct = {
   is_b2b_only: boolean;
   badge_text: string | null;
   is_active: boolean;
+  original_price?: number;
+  promo_label?: string;
+  promo_active?: boolean;
 };
 
 export type PaymentInitResult = {
