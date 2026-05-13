@@ -2745,9 +2745,23 @@ loadKakaoMap()
 
   console.log("[Search Result Raw]", r);
 
-  const meta = await mapManager.resolveAddressMeta(r.lat, r.lng);
+  // 검색 결과에 이미 지역 정보가 있으면 API 재호출 없이 바로 사용
+  // → coord2Address 추가 호출 없애 UI freeze 방지
+  let meta: { address?: string; sidoName?: string; sigunguName?: string; dongName?: string };
 
-  console.log("[Search Result Resolved Meta]", meta);
+  if (r.sidoName || r.sigunguName || r.dongName) {
+    meta = {
+      address: r.roadAddressName || r.addressName || r.placeName,
+      sidoName: r.sidoName,
+      sigunguName: r.sigunguName,
+      dongName: r.dongName,
+    };
+    console.log("[Search] Reusing region meta from search result (no extra API call)");
+  } else {
+    // 지역 정보가 없을 때만 역지오코딩 호출
+    meta = await mapManager.resolveAddressMeta(r.lat, r.lng);
+    console.log("[Search Result Resolved Meta]", meta);
+  }
 
   console.log(`[Search] Result selected: ${r.placeName}`);
   handleLocationSelect({

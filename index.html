@@ -1068,16 +1068,16 @@
     /* ── Issue 2: 돋보기 아이콘 클릭 시 검색 실행 ── */
     document.addEventListener('DOMContentLoaded', () => {
         const searchIcon = document.getElementById('searchIconBtn');
-        const searchInput = document.getElementById('kakaoSearchInput');
         const searchBtn = document.getElementById('kakaoSearchBtn');
 
-        if (searchIcon && searchInput && searchBtn) {
+        if (searchIcon && searchBtn) {
             searchIcon.addEventListener('click', () => {
-                // Trigger the same search that Enter key would
-                const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-                searchInput.dispatchEvent(event);
-                // Also try clicking the hidden btn (main.ts may wire this)
+                // main.ts의 searchBtn click 이벤트로 doSearch()가 연결되어 있음
+                // Enter 키이벤트와 searchBtn.click() 동시 발생 시 doSearch() 2번 실행됨
+                // → searchBtn.click() 하나만 호출
+                searchBtn.style.display = 'inline'; // 잠깐 보이게 해서 클릭 가능하게
                 searchBtn.click();
+                searchBtn.style.display = 'none';
             });
         }
 
