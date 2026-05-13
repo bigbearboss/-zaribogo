@@ -3448,20 +3448,43 @@ function updateJudgmentUI(
   }
 
   // Checklists Mapping
-  const fieldListEl = document.querySelector(".zentropa-card:has(div:contains('현장 진단 체크리스트')) ul");
-  if (fieldListEl && fieldChecks.length > 0) {
-    fieldListEl.innerHTML = fieldChecks.slice(0, 5).map(c => `<li>${c}</li>`).join("");
-  }
+  // Checklists Mapping
+const zentropaCards = Array.from(
+  document.querySelectorAll<HTMLElement>(".zentropa-card")
+);
 
-  const executionListEl = document.querySelector(".zentropa-card:has(div:contains('실행 체크리스트')) ul");
-  if (executionListEl && actions.length > 3) {
-    executionListEl.innerHTML = actions.slice(3, 8).map(a => `<li>${a}</li>`).join("");
-  }
+const findChecklistUl = (title: string): HTMLUListElement | null => {
+  const card = zentropaCards.find((card) => {
+    const titleEl = card.querySelector(".zentropa-card-title");
+    return titleEl?.textContent?.trim() === title;
+  });
 
-  const realtorListEl = document.querySelector(".zentropa-card:has(div:contains('현장 확인 필수 체크리스트')) ul");
-  if (realtorListEl && realtorChecks.length > 0) {
-    realtorListEl.innerHTML = realtorChecks.slice(0, 4).map(c => `<li>${c}</li>`).join("");
-  }
+  return card?.querySelector("ul") as HTMLUListElement | null;
+};
+
+const fieldListEl = findChecklistUl("현장 진단 체크리스트");
+if (fieldListEl && fieldChecks.length > 0) {
+  fieldListEl.innerHTML = fieldChecks
+    .slice(0, 5)
+    .map((c) => `<li>${c}</li>`)
+    .join("");
+}
+
+const executionListEl = findChecklistUl("실행 체크리스트");
+if (executionListEl && actions.length > 3) {
+  executionListEl.innerHTML = actions
+    .slice(3, 8)
+    .map((a) => `<li>${a}</li>`)
+    .join("");
+}
+
+const realtorListEl = findChecklistUl("현장 확인 필수 체크리스트");
+if (realtorListEl && realtorChecks.length > 0) {
+  realtorListEl.innerHTML = realtorChecks
+    .slice(0, 4)
+    .map((c) => `<li>${c}</li>`)
+    .join("");
+}
 
   // CTA 기능 구현
   document.getElementById("zentropaBtnSave")?.addEventListener("click", () => {
