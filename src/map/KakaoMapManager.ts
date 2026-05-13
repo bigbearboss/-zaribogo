@@ -57,11 +57,17 @@ export class KakaoMapManager {
     // ──────────────────────────────────────────────────────────
 
     init(containerId: string, lat: number, lng: number): void {
-        console.log(`[KakaoMap] Initializing on #${containerId} at (${lat}, ${lng})`);
+        console.log("[map] init called");
 
         const kakao = window.kakao;
         if (!kakao || !kakao.maps) {
             console.error('[KakaoMap] window.kakao.maps is not available during init.');
+            return;
+        }
+
+        // 1. 이미 지도가 초기화된 경우 건너뜀 (싱글톤 유지)
+        if (this.map) {
+            console.log("[map] map already exists, skip init");
             return;
         }
 
@@ -74,17 +80,17 @@ export class KakaoMapManager {
         const center = new kakao.maps.LatLng(lat, lng);
         try {
             this.map = new kakao.maps.Map(container, { center, level: 4 });
-            console.log('[KakaoMap] Google-style interactive map instance created successfully.');
+            console.log('[KakaoMap] Map instance created successfully.');
         } catch (err) {
             console.error('[KakaoMap] Failed to create Map instance:', err);
             return;
         }
 
-        // Services
-        this.ps = new kakao.maps.services.Places();
-        this.geocoder = new kakao.maps.services.Geocoder();
+        // 2. 서비스 객체 초기화 (1회만)
+        if (!this.ps) this.ps = new kakao.maps.services.Places();
+        if (!this.geocoder) this.geocoder = new kakao.maps.services.Geocoder();
 
-        // Click-to-select
+        // 3. 이벤트 리스너 등록 (1회만)
         kakao.maps.event.addListener(this.map, 'click', (e: any) => {
             const clickedLat = e.latLng.getLat();
             const clickedLng = e.latLng.getLng();
@@ -98,19 +104,22 @@ export class KakaoMapManager {
     // ──────────────────────────────────────────────────────────
 
     setMarker(lat: number, lng: number, radiusM: number): void {
+        console.log("[map] setMarker called", { lat, lng, radiusM });
         const kakao = window.kakao;
         if (!this.map) return;
 
         const pos = new kakao.maps.LatLng(lat, lng);
 
-        // Marker
+        // 1. Marker 업데이트 또는 생성
         if (this.marker) {
             this.marker.setPosition(pos);
+            console.log("[map] marker updated");
         } else {
             this.marker = new kakao.maps.Marker({ position: pos, map: this.map });
+            console.log("[map] marker created");
         }
 
-        // Circle
+        // 2. Circle 업데이트 또는 생성
         const circleOptions: any = {
             center: pos,
             radius: radiusM,
@@ -124,11 +133,13 @@ export class KakaoMapManager {
         if (this.circle) {
             this.circle.setPosition(pos);
             this.circle.setRadius(radiusM);
+            console.log("[map] circle updated");
         } else {
             this.circle = new kakao.maps.Circle({ ...circleOptions, map: this.map });
+            console.log("[map] circle created");
         }
 
-        // Pan map to marker
+        // 3. 지도 중심 이동
         this.map.setCenter(pos);
     }
 
