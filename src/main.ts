@@ -170,7 +170,8 @@ let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 // [DEBUG FLAGS] 원인 분석을 위한 디버그 스위치
 const DEBUG_DISABLE_META_RESOLVE = true;
 const DEBUG_DISABLE_MAP_UPDATE = true;
-const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = true;
+const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
+const DEBUG_DISABLE_RESET_ANALYSIS_VIEW_ON_LOCATION_SELECT = true;
 
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
@@ -2646,22 +2647,26 @@ function handleLocationSelect(params: {
     }
   }
 
-  console.log("[KakaoMap] Location Selected", {
-    lat,
-    lng,
-    label,
-    source,
-    placeName: currentLocation.placeName,
-    address: currentLocation.address,
-    sidoName: currentLocation.sidoName,
-    sigunguName: currentLocation.sigunguName,
-    dongName: currentLocation.dongName,
-    admCd: currentLocation.admCd,
-  });
+console.log("[KakaoMap] Location Selected", {
+  lat,
+  lng,
+  label,
+  source,
+  placeName: currentLocation.placeName,
+  address: currentLocation.address,
+  sidoName: currentLocation.sidoName,
+  sigunguName: currentLocation.sigunguName,
+  dongName: currentLocation.dongName,
+  admCd: currentLocation.admCd,
+});
 
-  // [Suspect Fix] 무거운 resetAnalysisView 대신 경량 초기화 함수 호출
-  resetLocationSelectionStateOnly(label);
-  console.log("[address] handleLocationSelect done");
+if (DEBUG_DISABLE_RESET_ANALYSIS_VIEW_ON_LOCATION_SELECT) {
+  console.log("[address] resetAnalysisView skipped by debug flag");
+} else {
+  resetAnalysisView();
+}
+
+console.log("[address] handleLocationSelect done");
 }
 
 (window as any)._onHistorySelect = (loc: LocationState) => {
