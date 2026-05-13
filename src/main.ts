@@ -164,6 +164,7 @@ const elements = {
 };
 
 let currentCRI = 0;
+let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
 type AIExtendedResult = AIAnalysisResult & {
@@ -1830,6 +1831,11 @@ await wait(700);
 const debouncedAnalysis = debounce(runAnalysis, 500);
 
 async function runAnalysis(options: RunAnalysisOptions = {}) {
+  console.log("[analysis] runAnalysis called", options);
+  if (isSelectingAddress) {
+    console.log("[analysis] runAnalysis blocked: address selection in progress");
+    return;
+  }
   const { persist = false, userId } = options;
 
   const analysisId = `analysis_${Date.now()}`;
@@ -2566,6 +2572,7 @@ function handleLocationSelect(params: {
   sigunguName?: string;
   dongName?: string;
 }): void {
+  console.log("[address] handleLocationSelect start", params.label);
   const {
     lat,
     lng,
@@ -2616,6 +2623,7 @@ function handleLocationSelect(params: {
   });
 
   resetAnalysisView();
+  console.log("[address] handleLocationSelect done");
 }
 
 (window as any)._onHistorySelect = (loc: LocationState) => {
@@ -2723,49 +2731,64 @@ loadKakaoMap()
     });
 
     resultsListEl?.addEventListener("click", async (e) => {
-  const item = (e.target as HTMLElement).closest(".kakao-result-item") as HTMLElement | null;
-  if (!item) return;
+      // 1. 기본 동작 및 버블링 차단
+      e.preventDefault();
+      e.stopPropagation();
 
-  const idx = Number(item.dataset.idx);
-  const r = searchResults[idx];
-  if (!r) return;
+      // 2. 가드 체크
+      if (isSelectingAddress) return;
+      isSelectingAddress = true;
 
-  console.log("[Search Result Raw]", r);
+      try {
+        const item = (e.target as HTMLElement).closest(".kakao-result-item") as HTMLElement | null;
+        if (!item) return;
 
-  // 검색 결과에 이미 지역 정보가 있으면 API 재호출 없이 바로 사용
-  // → coord2Address 추가 호출 없애 UI freeze 방지
-  let meta: { address?: string; sidoName?: string; sigunguName?: string; dongName?: string };
+        const idx = Number(item.dataset.idx);
+        const r = searchResults[idx];
+        if (!r) return;
 
-  if (r.sidoName || r.sigunguName || r.dongName) {
-    meta = {
-      address: r.roadAddressName || r.addressName || r.placeName,
-      sidoName: r.sidoName,
-      sigunguName: r.sigunguName,
-      dongName: r.dongName,
-    };
-    console.log("[Search] Reusing region meta from search result (no extra API call)");
-  } else {
-    // 지역 정보가 없을 때만 역지오코딩 호출
-    meta = await mapManager.resolveAddressMeta(r.lat, r.lng);
-    console.log("[Search Result Resolved Meta]", meta);
-  }
+        console.log("[address] result clicked", r.placeName);
 
-  console.log(`[Search] Result selected: ${r.placeName}`);
-  handleLocationSelect({
-    lat: r.lat,
-    lng: r.lng,
-    label: r.placeName,
-    source: "keyword_search",
-    address: meta.address || r.roadAddressName || r.addressName || r.placeName,
-    placeName: r.placeName,
-    sidoName: meta.sidoName,
-    sigunguName: meta.sigunguName,
-    dongName: meta.dongName,
-  });
+        // 3. 최적화: 지역 정보가 이미 있으면 API 재호출(역지오코딩) 생략
+        let meta: { address?: string; sidoName?: string; sigunguName?: string; dongName?: string };
+        
+        if (r.sidoName || r.sigunguName || r.dongName) {
+          meta = {
+            address: r.roadAddressName || r.addressName || r.placeName,
+            sidoName: r.sidoName,
+            sigunguName: r.sigunguName,
+            dongName: r.dongName,
+          };
+          console.log("[address] Reusing region meta from search result");
+        } else {
+          // 지역 정보가 없을 때만 최소한으로 호출
+          meta = await mapManager.resolveAddressMeta(r.lat, r.lng);
+          console.log("[address] Resolved Meta via API", meta);
+        }
 
-  resultsListEl.style.display = "none";
-  if (searchInput) searchInput.value = r.placeName;
-});
+        // 4. 위치 선택 처리 (runAnalysis 호출 없음)
+        handleLocationSelect({
+          lat: r.lat,
+          lng: r.lng,
+          label: r.placeName,
+          source: "keyword_search",
+          address: meta.address || r.roadAddressName || r.addressName || r.placeName,
+          placeName: r.placeName,
+          sidoName: meta.sidoName,
+          sigunguName: meta.sigunguName,
+          dongName: meta.dongName,
+        });
+
+        // 5. UI 정리
+        if (resultsListEl) resultsListEl.style.display = "none";
+        if (searchInput) searchInput.value = r.placeName;
+
+      } catch (err) {
+        console.error("[address] selection failed", err);
+      } finally {
+        isSelectingAddress = false;
+      }
+    });
     renderHistory();
 
     document.addEventListener("click", (e) => {
