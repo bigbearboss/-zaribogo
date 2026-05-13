@@ -34,9 +34,6 @@ import { supabase } from './services/supabase';
 import industryProfiles from "./engine/data/industryProfiles.json";
 import admCodeMap from "./engine/data/admCodeMap";
 
-DEBUG_DISABLE_META_RESOLVE = true
-DEBUG_DISABLE_MAP_UPDATE = false
-DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false
 
 
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
