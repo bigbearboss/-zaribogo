@@ -2669,11 +2669,7 @@ console.log("[KakaoMap] Location Selected", {
   admCd: currentLocation.admCd,
 });
 
-if (DEBUG_DISABLE_RESET_ANALYSIS_VIEW_ON_LOCATION_SELECT) {
-  console.log("[address] resetAnalysisView skipped by debug flag");
-} else {
-  resetAnalysisView();
-}
+resetAnalysisView();
 
 console.log("[address] handleLocationSelect done");
 }
@@ -3480,7 +3476,9 @@ function updateJudgmentUI(
      window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  lucide.createIcons();
+  setTimeout(() => {
+  (window as any).lucide?.createIcons?.();
+}, 0);
   syncUrlWithState();
 }
 
