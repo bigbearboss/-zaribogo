@@ -614,7 +614,7 @@
                         </div>
                         <ul id="kakaoSearchResults" class="search-results-modern"></ul>
                         
-                        <div class="selected-addr-card" id="kakaoSelectedAddr" style="display:none;">
+                        <div class="selected-addr-card" id="kakaoSelectedAddr">
                             <div class="map-thumb-placeholder" id="kakaoMapContainer"></div>
                             <div class="addr-info">
                                 <span class="addr-label">선택된 주소</span>
@@ -685,11 +685,11 @@
                             <input type="number" id="deposit" placeholder="예) 50,000,000" value="50000000">
                         </div>
                         <div class="input-modern">
-                            <label>포트폴리오 건물 수 (개)</label>
+                            <label>포트폴리오 직원 수 (명)</label>
                             <input type="number" id="albiCount" placeholder="예) 3" value="3">
                         </div>
                         <div class="input-modern">
-                            <label>평균수명 (년/월)</label>
+                            <label>정규직 수 (명)</label>
                             <input type="number" id="managerCount" placeholder="예) 1" value="1">
                         </div>
                         <div class="input-modern" style="grid-column: span 2;">
@@ -700,8 +700,8 @@
                 </div>
 
                 <!-- Advanced Inputs -->
-                <details class="advanced-settings-modern">
-                    <summary>고급 설정 <span class="badge-mini badge-opt">선택 입력</span> <i data-lucide="chevron-down" style="margin-left:auto;"></i></summary>
+                <details class="advanced-settings-modern" open>
+                    <summary>고급 설정 <span class="badge-mini badge-opt">선택 입력</span> <i data-lucide="chevron-down" style="margin-left:auto; display:none;"></i> <span style="margin-left:auto;font-size:0.75rem;color:var(--accent-primary);">접기 ∧</span></summary>
                     <div class="advanced-content">
                         <div class="input-grid-2x2">
                             <div class="input-modern"><label>매장 면적 (m²)</label><input type="number" id="area" placeholder="예) 66" value="66"></div>
@@ -711,16 +711,26 @@
                                     <option value="B1">지하 1층</option><option value="1" selected>1층</option><option value="2">2층</option><option value="3+">3층 이상</option>
                                 </select>
                             </div>
-                            <div class="input-modern"><label>월 고정비 (원/월)</label><input type="number" id="maintenanceFee" placeholder="예) 300,000" value="300000"></div>
+                            <div class="input-modern"><label>월 관리비 (원/월)</label><input type="number" id="maintenanceFee" placeholder="예) 300,000" value="300000"></div>
                             <div class="input-modern"><label>권리금 (원)</label><input type="number" id="premium" placeholder="예) 20,000,000" value="20000000"></div>
                         </div>
-                        <div class="input-modern-check">
-                            <input type="checkbox" id="hasParking">
-                            <label for="hasParking">전용 주차 가능</label>
+                        <div class="input-grid-2x2" style="margin-top:12px; align-items:center;">
+                            <div class="input-modern-check" style="margin-top:0;">
+                                <input type="checkbox" id="hasParking">
+                                <label for="hasParking">전용 주차 가능</label>
+                            </div>
+                            <div class="input-modern">
+                                <label>접객 좌석</label>
+                                <select><option>선택하세요 v</option></select>
+                            </div>
+                            <div class="input-modern" style="grid-column: span 2;">
+                                <label>매출·수익 지표</label>
+                                <select><option>선택하세요 v</option></select>
+                            </div>
                         </div>
                         <div class="input-grid-2x2" style="margin-top:12px;">
-                            <div class="input-modern"><label>대출 잔액 (원)</label><input type="number" id="loanAmount" placeholder="예) 0"></div>
-                            <div class="input-modern"><label>업 이직률 (%)</label><input type="number" id="interestRate" step="0.1" placeholder="예) 4.5"></div>
+                            <div class="input-modern"><label>사업 대출금 (원)</label><input type="number" id="loanAmount" placeholder="예) 0"></div>
+                            <div class="input-modern"><label>연 이자율 (%)</label><input type="number" id="interestRate" step="0.1" placeholder="예) 4.5"></div>
                             <div class="input-modern"><label>원가 마진 (%)</label><input type="number" id="margin" placeholder="예) 30"></div>
                             <div class="input-modern"><label>객단가 (원)</label><input type="number" id="ticketPrice" placeholder="선택사항"></div>
                         </div>

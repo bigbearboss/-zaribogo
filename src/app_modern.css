@@ -606,3 +606,75 @@
     outline: none !important;
     pointer-events: none;
 }
+
+
+/* AI Chip Icon backgrounds */
+.ai-chip i {
+    padding: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+.ai-chip i[data-lucide="users"] {
+    background: rgba(99, 102, 241, 0.15);
+}
+.ai-chip i[data-lucide="user-check"] {
+    background: rgba(239, 68, 68, 0.15);
+}
+.ai-chip i[data-lucide="coins"] {
+    background: rgba(16, 185, 129, 0.15);
+}
+.ai-chip i[data-lucide="activity"] {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+/* Map Thumbnail Placeholder */
+.map-thumb-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background-image: url('https://t1.daumcdn.net/mapjsapi/images/bg_tile.png');
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--card-border);
+}
+
+.selected-addr-card {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    padding: 12px;
+    border-radius: 12px;
+    margin-top: 12px;
+}
+
+.addr-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.addr-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.addr-value {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.btn-map-detail {
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    margin-top: 4px;
+}
