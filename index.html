@@ -10,6 +10,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css">
+    <link rel="stylesheet" href="./src/landing.css">
     <!-- External Libraries (Phase 16) -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -17,232 +18,444 @@
 <body data-theme="dark">
     <!-- ── Landing Page Section (Premium SaaS Conversion Focus) ──────────────────────────── -->
     <section id="landingPage" class="landing-page">
-        <!-- Hero Section (Split Layout) -->
-        <section class="landing-hero">
-            <div class="container">
-                <div class="landing-nav">
-                    <div class="logo">
-                        <span class="logo-icon">🔍</span>
-                        <span class="logo-text">자리보고</span>
-                    </div>
-                    <div class="land-nav-actions">
-                        <button class="btn-start-app btn-nav-login">로그인 / 시작하기</button>
-                    </div>
-                </div>
-                
-                <div class="hero-split">
-                    <div class="hero-text">
-                        <span class="hero-chip">⚠️ 수천만 원의 보증금, 감으로 걸지 마세요!</span>
-                        <h1>이 자리,<br>계약해도 괜찮을까요?</h1>
-                        <p style="color: #ef4444; font-weight: bold; margin-bottom: 8px; font-size: 1.2rem;">이미 계약한 뒤에는 늦습니다.</p>
-                        <p>계약서에 도장을 찍으면 되돌릴 수 없습니다. 숨겨진 상권 리스크와 망할 확률을 단 3분 만에 숫자로 확인하세요.</p>
-                        <div class="hero-actions">
-                            <button class="btn-start-app btn-primary-glam btn-large">계약 전 리스크 확인하기</button>
-                            <span class="cta-microcopy">✨ 회원가입 시 2회 무료 분석 (결제 없음)</span>
-                        </div>
-                    </div>
+        <!-- 1. Hero Section -->
+        <section class="land-hero-v2">
+            <div class="land-container land-hero-content">
+                <div class="land-hero-text">
+                    <h1 class="land-title-main">이 자리,<br>계약해도 될까요?</h1>
+                    <p class="land-subtitle">감이 아니라 데이터로 판단하세요.<br>수천만 원의 권리금과 보증금이 걸린 창업, 감으로 대충 정할 수는 없습니다.<br>진짜 데이터로 똑똑하게 리스크를 파악하세요.</p>
                     
-                    <div class="hero-visual">
-                        <div class="result-preview-card" style="margin: 0; max-width: 100%;">
-                            <div class="rp-header">
-                                <div>
-                                    <span style="font-size: 0.95rem; color: #64748b; font-weight: 600;">종합 창업 위험 지수 (CRI)</span>
-                                    <div class="rp-score" style="color: #ef4444;">86점</div>
+                    <button class="btn-cta-large btn-nav-login">지금 자리 분석하기 <span>→</span></button>
+
+                    <div class="land-hero-stats">
+                        <div class="lh-stat-item">
+                            <div class="lh-stat-icon">📄</div>
+                            <div class="lh-stat-text">
+                                <span class="lh-stat-val">45만 건</span>
+                                <span class="lh-stat-lbl">누적 분석 리포트</span>
+                            </div>
+                        </div>
+                        <div class="lh-stat-item">
+                            <div class="lh-stat-icon">👥</div>
+                            <div class="lh-stat-text">
+                                <span class="lh-stat-val">1.2만 명</span>
+                                <span class="lh-stat-lbl">활성 유저</span>
+                            </div>
+                        </div>
+                        <div class="lh-stat-item">
+                            <div class="lh-stat-icon">🏢</div>
+                            <div class="lh-stat-text">
+                                <span class="lh-stat-val">82개</span>
+                                <span class="lh-stat-lbl">가입 부동산 파트너</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="land-hero-visual">
+                    <div class="land-hero-search">
+                        <span class="icon">📍</span>
+                        <input type="text" value="서울 용산구 이태원동 / 카페 / 50평" readonly>
+                        <button class="btn-search-mock">🔍</button>
+                    </div>
+
+                    <div class="land-hero-dash-card">
+                        <div class="lhd-header">
+                            <div>
+                                <span style="color:var(--land-text-light-muted);font-size:0.85rem;font-weight:600;">종합 리스크 지수 (CRI)</span>
+                                <div class="lhd-score">45<span style="font-size:1.2rem;color:var(--land-text-light-muted);">/100</span></div>
+                            </div>
+                            <div class="lhd-level">계약 보류 권장</div>
+                        </div>
+                        <div class="lhd-alert">
+                            <h4>⚠️ 계약 전 추가 확인 필요</h4>
+                            <p>유동인구 대비 경쟁 매장 밀집도가 매우 높습니다. 1년 내 폐업률이 상승하는 추세입니다.</p>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:20px; font-size:0.85rem; color:var(--land-text-light-muted); justify-content:space-between;">
+                            <span>경쟁 밀집 🔴</span>
+                            <span>매출 유지 🟡</span>
+                            <span>성장 전망 🔴</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Problem Agitation Section -->
+        <section class="land-problem">
+            <div class="land-container">
+                <h2 class="land-title-sec" style="color:var(--land-text-main);">창업 전에 가장 어려운 질문은 늘 같습니다.<br><span style="color:var(--land-accent-dark);">'이 자리가 정말 괜찮을까?'</span></h2>
+                <p style="color:var(--land-text-muted);">부동산은 좋다고 하지만, 솔직히 확신이 안 섭니다. 정보는 파편화되어 있고 객관적인 데이터 없이 내리는 계약 결정은 수천만 원을 건 도박과도 같습니다.</p>
+                
+                <div class="lp-grid">
+                    <div class="lp-card">
+                        <div class="lp-icon">🏢</div>
+                        <h4>입지가 타당한지 모르겠어요</h4>
+                        <p>단순히 역세권이라고 진짜 사람이 몰릴까? 유동인구의 동선 분석이 필요합니다.</p>
+                    </div>
+                    <div class="lp-card">
+                        <div class="lp-icon">📉</div>
+                        <h4>주변 상권이 축소될까 두려워요</h4>
+                        <p>상권이 점점 죽어가는 곳인지, 성장하는 곳인지 트렌드 파악이 안 됩니다.</p>
+                    </div>
+                    <div class="lp-card">
+                        <div class="lp-icon">💸</div>
+                        <h4>권리금 뺏길까봐 걱정돼요</h4>
+                        <p>이 상가에 요구하는 권리금이 상권 매출 대비 타당한 금액인지 알 수 없습니다.</p>
+                    </div>
+                    <div class="lp-card">
+                        <div class="lp-icon">🚨</div>
+                        <h4>사기 당할까 걱정돼요</h4>
+                        <p>등기부등본 확인이나 주변 불법 건축물 여부 등 챙겨야 할 리스크가 너무 많습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Process Section -->
+        <section class="land-process">
+            <div class="land-container">
+                <h2 class="land-title-sec" style="color:var(--land-accent-dark);">자리보고<span style="color:var(--land-text-main);">는 데이터를 창업 판단 언어로 바꿉니다.</span></h2>
+                <p style="color:var(--land-text-muted);">국세청, 통계청, 지자체 공공데이터 등 10개 이상의 공신력 있는 자료를 통합 분석하여<br>단순한 수치 나열이 아닌, 계약 결정에 직결되는 '판단'을 제공합니다.</p>
+                
+                <div class="lpr-flow">
+                    <div class="lpr-box">
+                        <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">입력 정보</h4>
+                        <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
+                            <li>📍 주소 / 매장 위치</li>
+                            <li>🏢 업종</li>
+                            <li>📏 매장 평수</li>
+                        </ul>
+                    </div>
+                    <div class="lpr-arrow">➡️</div>
+                    <div class="lpr-box lpr-box-center">
+                        <h4 style="margin-bottom:10px; color:var(--land-accent-dark);">자리보고 AI 분석 엔진</h4>
+                        <div class="lpr-grid-inner">
+                            <div class="lpr-item">🏪<br>상권 현황</div>
+                            <div class="lpr-item">💰<br>재무 위험</div>
+                            <div class="lpr-item">⚔️<br>경쟁 매장</div>
+                            <div class="lpr-item">🛡️<br>사기/리스크</div>
+                        </div>
+                    </div>
+                    <div class="lpr-arrow">➡️</div>
+                    <div class="lpr-box">
+                        <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">분석 결과</h4>
+                        <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
+                            <li>📋 종합 CRI 스코어</li>
+                            <li>⚠️ 3대 핵심 리스크</li>
+                            <li>🗺️ 상권 데이터 맵</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="lpr-badge-bottom">
+                    ✅ 계약 전 리스크 진단부터 분석 리포트, 계약 전 체크리스트까지 전 과정 지원
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Feature Details 1 (Dark) -->
+        <section class="land-dark-section">
+            <div class="land-container lf-split">
+                <div class="lf-text">
+                    <span style="color:#93c5fd; font-weight:700; letter-spacing:1px; font-size:0.85rem;">01. SMART INSIGHT</span>
+                    <h2>분석 결과는 숫자가 아니라<br>판단으로 보여줍니다.</h2>
+                    <p>유동인구 5만 명, 경쟁점 10개... 이런 모호한 숫자를 주지 않습니다. 이 자리가 '얼마나 위험한지', '계약해도 되는지' 명확한 가이드라인으로 제시합니다.</p>
+                    <button class="btn-cta-large" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);">샘플 리포트 확인하기</button>
+                </div>
+                <div class="lf-visual">
+                    <div class="land-hero-dash-card" style="box-shadow: none;">
+                        <h4 style="margin-bottom:20px;">논리적 판단 <span style="color:var(--land-text-light-muted);font-weight:400;font-size:0.85rem;float:right;">서울 이태원 카페 - 50평 / 월세 300</span></h4>
+                        <div style="background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; margin-bottom:20px;">
+                            <div style="color:#93c5fd; font-size:0.85rem; margin-bottom:5px;">종합 판단</div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#fca5a5;">현재 상권에서는 리스크 관리가 필요합니다.</div>
+                        </div>
+                        <div style="margin-bottom:10px; color:var(--land-text-light-muted); font-size:0.85rem;">CRI 종합 위험 지수</div>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div style="font-size:3rem; font-weight:800; color:#ef4444; line-height:1;">45<span style="font-size:1rem;font-weight:600;color:var(--land-text-light-muted);">점</span></div>
+                            <div style="flex:1; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; position:relative;">
+                                <div style="position:absolute; left:0; top:0; bottom:0; width:45%; background:linear-gradient(90deg, #f59e0b, #ef4444); border-radius:4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Feature Details 2 (Dark) -->
+        <section class="land-dark-section" style="border-top:1px solid var(--land-border-dark);">
+            <div class="land-container lf-split lf-split-rev">
+                <div class="lf-text">
+                    <span style="color:#93c5fd; font-weight:700; letter-spacing:1px; font-size:0.85rem;">02. DIFFERENT APPROACH</span>
+                    <h2>기존 상권분석은 데이터를 보여주고,<br>자리보고는 계약 판단을 돕습니다.</h2>
+                    <p>자리보고는 수백 개의 불필요한 데이터를 나열하지 않습니다. 생존과 직결된 핵심 재무 압박과 폐업 리스크 지표만을 조합하여, 당장 눈앞의 매물을 계약할지 말지에 대한 실질적인 조언을 건넵니다.</p>
+                </div>
+                <div class="lf-visual">
+                    <table class="lf-table">
+                        <thead>
+                            <tr>
+                                <th>구분</th>
+                                <th>기존 상권분석</th>
+                                <th class="highlight">자리보고</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>주요 제공 정보</td>
+                                <td>단순 인구수, 점포수</td>
+                                <td class="highlight">적정 임대료 타당성</td>
+                            </tr>
+                            <tr>
+                                <td>결론 제시</td>
+                                <td>사용자가 알아서 판단</td>
+                                <td class="highlight">계약 여부 O/X 조언</td>
+                            </tr>
+                            <tr>
+                                <td>리스크 관점</td>
+                                <td>평균 매출액 위주</td>
+                                <td class="highlight">사기 및 재무 파탄 위험</td>
+                            </tr>
+                            <tr>
+                                <td>사용 대상</td>
+                                <td>시장 트렌드 연구자</td>
+                                <td class="highlight">당장 계약을 앞둔 창업자</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="lf-quote">
+                        "자리보고는 '더 많은 데이터'가 아니라<br><strong>'더 나은 계약 판단'</strong>을 제공합니다."
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Features 3 Cols (White) -->
+        <section class="land-feat-3cols">
+            <div class="land-container">
+                <div class="lf3-grid">
+                    <div class="lf3-card">
+                        <div class="lf3-header">
+                            <span class="lf3-num">01. FAST & SIMPLE</span>
+                            <h3 class="lf3-title">주소만 입력하면 즉시,<br>1분 안에 리스크를 파악할 수 있습니다.</h3>
+                        </div>
+                        <div class="lf3-body">
+                            <div style="background:white; border:1px solid var(--land-border); padding:20px; border-radius:12px; width:100%; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                                <div style="font-size:0.8rem; font-weight:600; color:var(--land-text-muted); margin-bottom:10px;">1. 위치 검색</div>
+                                <div class="land-hero-search" style="box-shadow:none; border-color:var(--land-border); transform:none; background:var(--land-light-bg);">
+                                    <span class="icon">📍</span><input type="text" value="검색어 입력..." style="color:var(--land-text-main);">
                                 </div>
-                                <div class="rp-badge" style="background:#fee2e2; color:#b91c1c;">위험도: High</div>
-                            </div>
-                            <div class="rp-summary">"❌ 이 자리는 지금 들어가면 위험합니다"</div>
-                            <ul class="rp-list">
-                                <li><span class="icon">⚠️</span> 경쟁 밀집도 상위 10% 구간입니다</li>
-                                <li><span class="icon">⚠️</span> 임대료가 평균 대비 +20% 높습니다</li>
-                                <li><span class="icon">⚠️</span> 손익분기점 기준 매출 초과 필요 구조입니다</li>
-                            </ul>
-                            <div class="rp-action" style="background: rgba(220, 38, 38, 0.05); border-left-color: #dc2626; color: #991b1b;">
-                                💡 <strong>경고:</strong> 임대료 협상 없이 계약 시, 월 매출 3,000만 원 이상이어야 적자가 나지 않습니다.
+                                <div style="margin-top:20px; display:flex; gap:10px;">
+                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px;">✅ 공공데이터 연동 완료</div>
+                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px;">✅ AI 추론 로직 적용</div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div class="lf3-card">
+                        <div class="lf3-header">
+                            <span class="lf3-num">02. FINANCIAL CHECK</span>
+                            <h3 class="lf3-title">권리금 타당성 검증 및<br>월세 구조를 검토합니다.</h3>
+                        </div>
+                        <div class="lf3-body">
+                            <div style="background:white; border:1px solid var(--land-border); padding:20px; border-radius:12px; width:100%; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                                <div style="font-size:0.8rem; font-weight:600; color:var(--land-text-muted); margin-bottom:10px;">월 고정비 (임대료/인건비)</div>
+                                <select style="width:100%; padding:10px; border:1px solid var(--land-border); border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
+                                    <option>월세 300만원 입력 완료</option>
+                                </select>
+                                <div style="font-size:0.8rem; font-weight:600; color:var(--land-text-muted); margin-bottom:10px;">권리금</div>
+                                <select style="width:100%; padding:10px; border:1px solid var(--land-border); border-radius:8px; font-size:0.9rem;">
+                                    <option>5,000만원 입력 완료</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lf3-card">
+                        <div class="lf3-header">
+                            <span class="lf3-num">03. RISK REPORT</span>
+                            <h3 class="lf3-title">사기 리스크 리포트 제공 및<br>현장 체크리스트를 드립니다.</h3>
+                        </div>
+                        <div class="lf3-body">
+                            <div style="background:white; border:1px solid var(--land-border); padding:20px; border-radius:12px; width:100%; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                                <div style="font-size:0.9rem; font-weight:700; margin-bottom:10px;">종합 위험 지수</div>
+                                <div style="font-size:2rem; font-weight:800; color:#ef4444;">45<span style="font-size:1rem;">점</span></div>
+                                <div style="height:6px; background:var(--land-border); border-radius:3px; margin:10px 0;">
+                                    <div style="width:45%; height:100%; background:#ef4444; border-radius:3px;"></div>
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--land-text-muted);">안정 (0~34) / 주의 (35~69) / 위험 (70~)</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Why Now Section (NEW) -->
-        <section class="landing-section bg-gray why-use-section">
-            <div class="container text-center">
-                <h2 class="section-title">계약 전에 반드시 확인해야 하는 이유</h2>
-                <p class="section-subtitle">임장 몇 번 가보고 권리금과 보증금을 걸었다가 후회하는 사장님들이 너무 많습니다.</p>
+        <!-- 7. Use Cases -->
+        <section class="land-usecases">
+            <div class="land-container">
+                <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">USE CASE</span>
+                <h2 class="land-title-sec">이런 순간에 자리보고가 필요합니다.</h2>
+                <p style="color:var(--land-text-muted);">권리금 계약 전, 다가오는 임장 전, 객관적인 기준이 필요한 모든 순간에 자리보고를 켜세요.</p>
                 
-                <div class="grid-card grid-3" style="margin-top: 40px; text-align: left;">
-                    <div class="land-card">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800;">💸 한 번 묶이면 끝나는 고정비</h3>
-                        <p style="color: #475569;">매우 높은 임대료와 인건비를 매출로 감당할 수 있는지 엑셀을 돌려보셨나요? 자리보고가 3초 만에 계산해 드립니다.</p>
+                <div class="luc-grid">
+                    <div class="luc-card">
+                        <div class="luc-icon">🤝</div>
+                        <h3 class="luc-title">권리금 계약 직전</h3>
+                        <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">부동산 말만 믿고 수천만 원을 건네기 전, 진짜 시세와 회수 가능성을 교차 검증하세요.</p>
                     </div>
-                    <div class="land-card">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800;">👀 겉보기에만 좋은 상권</h3>
-                        <p style="color: #475569;">주말권 유동인구만 보고 계약했다가 텅 빈 평일에 고통받는 경우가 많습니다. 요일별, 시간별 진짜 수요를 검증하세요.</p>
+                    <div class="luc-card">
+                        <div class="luc-icon">⚖️</div>
+                        <h3 class="luc-title">후보지 비교 중</h3>
+                        <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">A상가와 B상가 중 어디가 객관적으로 생존율이 높은지 점수로 비교합니다.</p>
                     </div>
-                    <div class="land-card">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800;">⚔️ 보이지 않는 경쟁점의 압박</h3>
-                        <p style="color: #475569;">내 가게 주변에 이미 얼마나 많은 경쟁자가 독식하고 있는지, 숫자로 된 점유율 데이터를 확인하지 않으면 위험합니다.</p>
+                    <div class="luc-card">
+                        <div class="luc-icon">🧮</div>
+                        <h3 class="luc-title">월세가 적정한지 고민될 때</h3>
+                        <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">해당 상권의 평균 객단가와 유동인구 대비 지금의 월세가 감당 가능한 수준인지 진단합니다.</p>
+                    </div>
+                    <div class="luc-card">
+                        <div class="luc-icon">📋</div>
+                        <h3 class="luc-title">창업이 처음이라 기준이 없을 때</h3>
+                        <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">무엇을 확인해야 할지 막막할 때 현장 방문 체크리스트로 가이드를 제시합니다.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Before / After Section (Modified for Conversion) -->
-        <section class="landing-section before-after-section">
-            <div class="container">
-                <h2 class="section-title">감이 아닌, 숫자로 확신을 가질 타이밍입니다</h2>
-                <p class="section-subtitle">어렵고 막막했던 입지 선정이 자리보고와 함께 확신으로 바뀝니다.</p>
+        <!-- 8. Trust Section -->
+        <section class="land-trust">
+            <div class="land-container">
+                <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">TRUST</span>
+                <h2 class="land-title-sec">사기 당하지 안전하게 창업하도록,<br>근거 데이터를 함께 찾아줍니다.</h2>
+                <p style="color:var(--land-text-muted);">자리보고는 공공기관과 신뢰할 수 있는 외부 지표만을 취합하여 분석 모델을 지속적으로 고도화합니다.</p>
                 
-                <div class="before-after-grid">
-                    <div class="ba-card before">
-                        <h3>결정 전 (Before)</h3>
-                        <ul class="ba-list">
-                            <li><span>❌</span> 감으로 계약</li>
-                            <li><span>❌</span> 매출 예측 실패</li>
-                            <li><span>❌</span> 권리금 회수 못하고 폐업 가능</li>
+                <div class="lt-grid">
+                    <div class="lt-item">
+                        <div class="lt-icon">🏛️</div>
+                        <h4 class="lt-title">공공데이터 기반 분석</h4>
+                        <p class="lt-desc">국세청, 통계청, 지자체 등 신뢰할 수 있는 데이터로 분석합니다.</p>
+                    </div>
+                    <div class="lt-item">
+                        <div class="lt-icon">🧠</div>
+                        <h4 class="lt-title">딥러닝 수익 예측</h4>
+                        <p class="lt-desc">상권별 매출 트렌드 학습을 통해 손익분기 도달 가능성을 예측합니다.</p>
+                    </div>
+                    <div class="lt-item">
+                        <div class="lt-icon">🛡️</div>
+                        <h4 class="lt-title">검증된 분석 로직</h4>
+                        <p class="lt-desc">프랜차이즈 상권 분석가들의 노하우가 알고리즘에 담겨 있습니다.</p>
+                    </div>
+                    <div class="lt-item">
+                        <div class="lt-icon">📑</div>
+                        <h4 class="lt-title">팩트 기반 리포트</h4>
+                        <p class="lt-desc">어떠한 이해관계도 없이 있는 그대로의 사실만을 전달합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="lt-badge">
+                    💡 자리보고의 분석 결과는 정답을 제시하는 것이 아닙니다. 최종 계약 판단을 위한 참고용으로만 활용하세요.
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. Pricing Section (Using previous Mypage classes style adapted for landing) -->
+        <section style="padding: 100px 0; background: var(--land-white); text-align:center;">
+            <div class="land-container">
+                <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">PRICING</span>
+                <h2 class="land-title-sec">필요할 때만 분석하는<br>크레딧 방식</h2>
+                <p style="color:var(--land-text-muted); margin-bottom:50px;">초기 2회 무료 제공 이후, 필요한 만큼만 충전하세요.<br>월 정기 결제 없이 자유롭게 이용하실 수 있습니다.</p>
+                
+                <div style="display:flex; justify-content:center; gap:20px; align-items:stretch;">
+                    <!-- Starter Pack -->
+                    <div style="width:300px; text-align:left; border:1px solid var(--land-border); border-radius:16px; padding:30px; box-shadow:0 10px 30px rgba(0,0,0,0.03);">
+                        <div style="font-size:1.2rem; font-weight:800; margin-bottom:5px;">Starter Pack</div>
+                        <div style="font-size:0.85rem; color:var(--land-text-muted); margin-bottom:20px;">10회 분석 크레딧</div>
+                        <div style="text-decoration:line-through; color:var(--land-text-muted); font-size:0.9rem;">64,900원</div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <span style="font-size:2rem; font-weight:800; color:var(--land-text-main);">32,450원</span>
+                            <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--land-accent-dark); background:rgba(59,130,246,0.1); padding:6px; border-radius:6px; text-align:center; margin-bottom:30px;">
+                            ✨ 초기 유저 50% 할인 특가
+                        </div>
+                        <ul style="list-style:none; padding:0; margin:0 0 30px; font-size:0.85rem; color:var(--land-text-muted); line-height:1.8;">
+                            <li>✓ 서울, 수도권 집중 타겟</li>
+                            <li>✓ 예비 창업자 최적 팩</li>
+                        </ul>
+                        <button class="btn-nav-login" style="width:100%; padding:14px; background:var(--land-dark-surface); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
+                    </div>
+
+                    <!-- Growth Pack -->
+                    <div style="width:300px; text-align:left; border:2px solid var(--land-accent-dark); border-radius:16px; padding:30px; box-shadow:0 15px 40px rgba(59,130,246,0.1); position:relative;">
+                        <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 12px; border-radius:20px;">BEST 추천</div>
+                        <div style="font-size:1.2rem; font-weight:800; margin-bottom:5px;">Growth Pack</div>
+                        <div style="font-size:0.85rem; color:var(--land-text-muted); margin-bottom:20px;">20회 분석 크레딧</div>
+                        <div style="text-decoration:line-through; color:var(--land-text-muted); font-size:0.9rem;">99,800원</div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <span style="font-size:2rem; font-weight:800; color:var(--land-text-main);">49,900원</span>
+                            <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--land-accent-dark); background:rgba(59,130,246,0.1); padding:6px; border-radius:6px; text-align:center; margin-bottom:30px;">
+                            ✨ 초기 유저 50% 할인 특가
+                        </div>
+                        <ul style="list-style:none; padding:0; margin:0 0 30px; font-size:0.85rem; color:var(--land-text-muted); line-height:1.8;">
+                            <li>✓ 여러 후보지 비교시 필수</li>
+                            <li>✓ 가맹점주 다회 분석</li>
+                        </ul>
+                        <button class="btn-nav-login" style="width:100%; padding:14px; background:var(--land-accent); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
+                    </div>
+
+                    <!-- Premium List -->
+                    <div style="width:250px; text-align:left; display:flex; flex-direction:column; justify-content:center; padding-left:20px;">
+                        <h4 style="font-size:1rem; margin-bottom:15px;">크레딧으로 제공되는 기능</h4>
+                        <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; color:var(--land-text-main); line-height:2.5;">
+                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 1회 분석 = 1크레딧 차감</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 마이페이지 리포트 보관</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 전국 지도 검색 조회</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 현장 방문 필수 체크리스트</li>
                         </ul>
                     </div>
-                    <div class="ba-divider">
-                        →
+                </div>
+            </div>
+        </section>
+
+        <!-- 10. FAQ -->
+        <section style="padding: 100px 0; background: var(--land-light-bg);">
+            <div class="land-container" style="display:flex; gap:60px; justify-content:center;">
+                <div style="flex:1; max-width:300px;">
+                    <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">FAQ</span>
+                    <h2 class="land-title-sec">자주 묻는 질문</h2>
+                    <div style="font-size:4rem; margin-top:20px;">💬</div>
+                </div>
+                <div style="flex:2;">
+                    <div class="faq-item">
+                        <div class="faq-q">Q. 분석 결과만 믿고 바로 계약해도 되나요? <span>+</span></div>
                     </div>
-                    <div class="ba-card after">
-                        <h3>자리보고 분석 후 (After)</h3>
-                        <ul class="ba-list">
-                            <li><span>✅</span> 데이터 기반 판단</li>
-                            <li><span>✅</span> 손익 구조 사전 확인</li>
-                            <li><span>✅</span> 리스크 낮은 입지만 선택</li>
-                        </ul>
+                    <div class="faq-item">
+                        <div class="faq-q">Q. 데이터가 정확한가요? <span>+</span></div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">Q. 어떤 업종을 분석할 수 있나요? <span>+</span></div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">Q. 크레딧은 언제 차감되나요? <span>+</span></div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">Q. 같은 자리를 다시 볼 수 있나요? <span>+</span></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Timing Section (NEW) -->
-        <section class="landing-section bg-gray timing-section text-center">
-            <div class="container">
-                <h2 class="section-title">이 분석이 필요한 순간</h2>
-                <div class="grid-card grid-3" style="margin-top: 40px;">
-                    <div class="land-card box-outline">
-                        <h3 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">📝 계약서 사인 전</h3>
-                    </div>
-                    <div class="land-card box-outline">
-                        <h3 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">💰 권리금 협상 전</h3>
-                    </div>
-                    <div class="land-card box-outline">
-                        <h3 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">🏢 임대료 확정 전</h3>
-                    </div>
+        <!-- 11. Final CTA -->
+        <section class="land-cta">
+            <div class="land-container">
+                <h2>계약 전, 한 번 더 확인하세요.</h2>
+                <p>권리금 계약금, 인테리어 보증금... 수천만 원을 건네기 직전이라면 반드시 체크해야 합니다.<br>자리보고와 함께 가장 확신 있는 결정을 내리세요.</p>
+                <button class="btn-cta-large btn-nav-login">지금 자리 분석하기 <span>→</span></button>
+                <div style="margin-top:40px;">
+                    <span style="font-size:0.8rem; color:rgba(255,255,255,0.4);">© 2026 Zaribogo. 상권 분석 데이터 솔루션</span>
                 </div>
             </div>
         </section>
-
-        <!-- Risk Section (NEW) -->
-        <section class="landing-section risk-section text-center">
-            <div class="container">
-                <h2 class="section-title" style="color: #ef4444;">이걸 확인하지 않으면 생기는 일</h2>
-                <div class="grid-card grid-3" style="margin-top: 40px; text-align: left;">
-                    <div class="land-card" style="border: 1px solid #fecaca; background: rgba(239, 68, 68, 0.03);">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800; color: #b91c1c;">💸 고정비 적자 수렁</h3>
-                        <p style="color: #475569;">계약과 동시에 매달 고정비 적자 구조로 시작하게 됩니다.</p>
-                    </div>
-                    <div class="land-card" style="border: 1px solid #fecaca; background: rgba(239, 68, 68, 0.03);">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800; color: #b91c1c;">📉 영원한 매출 장벽</h3>
-                        <p style="color: #475569;">이미 굳혀진 경쟁 매장에 밀려 폐업 전까지 매출 회복이 불가능합니다.</p>
-                    </div>
-                    <div class="land-card" style="border: 1px solid #fecaca; background: rgba(239, 68, 68, 0.03);">
-                        <h3 style="font-size: 1.3rem; margin-bottom: 12px; font-weight: 800; color: #b91c1c;">💀 권리금 전액 증발</h3>
-                        <p style="color: #475569;">다음 임차인을 영영 구하지 못해 권리금을 회수하지 못하고 빈손으로 폐업합니다.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Benefits Section -->
-        <section class="landing-section solution-section bg-gray">
-            <div class="container">
-                <h2 class="section-title">자리보고를 쓰면 달라지는 점</h2>
-                <p class="section-subtitle" style="color: #4f46e5; font-weight: 700; font-size: 1.2rem;">망할 자리를 계약 전에 확실하게 걸러냅니다.</p>
-                <div class="solution-feature-list" style="margin-top: 40px;">
-                    <div class="land-card feat-card flex-row">
-                        <span class="feat-icon">🛡️</span>
-                        <div class="feat-text">
-                            <h4>계약 전 치명적 입지 필터링</h4>
-                            <p>계약서에 도장을 찍기 직전이라도, 되돌이킬 수 없는 리스크를 가진 매물을 안전하게 피할 수 있습니다.</p>
-                        </div>
-                    </div>
-                    <div class="land-card feat-card flex-row">
-                        <span class="feat-icon">💬</span>
-                        <div class="feat-text">
-                            <h4>절대적인 임대료 협상 기준 확보</h4>
-                            <p>적자를 피하기 위해 월세를 어디까지 깎아야 하는지, 중개인과 임대인에게 제시할 구체적인 데이터를 얻습니다.</p>
-                        </div>
-                    </div>
-                    <div class="land-card feat-card flex-row">
-                        <span class="feat-icon">📈</span>
-                        <div class="feat-text">
-                            <h4>현실적인 매출 생존 목표 설정</h4>
-                            <p>막연한 기대감을 버리고, 주변 상권의 객관적 매출 데이터를 바탕으로 확실한 생존 계획을 세울 수 있습니다.</p>
-                        </div>
-                    </div>
-                    <div class="land-card feat-card flex-row">
-                        <span class="feat-icon">🧠</span>
-                        <div class="feat-text">
-                            <h4>감과 선동을 배제한 의사결정</h4>
-                            <p>'여기 좋아요'라는 말 한마디가 아닌, 통계청과 국세청의 교차 검증 데이터를 바탕으로 내 돈을 안전하게 지킵니다.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Trust Section (Updated logic for data) -->
-        <section class="landing-section trust-section bg-gray text-center">
-            <div class="container">
-                <h2 class="section-title">왜 이 분석을 무조건 믿을 수 있나요?</h2>
-                <p class="section-subtitle">주관이나 감이 1%도 섞이지 않은 팩트 기반 데이터만 사용합니다</p>
-                <p style="color: #ef4444; font-weight: 800; margin-bottom: 32px; font-size: 1.15rem; display: inline-block; background: #fee2e2; padding: 8px 16px; border-radius: 8px;">High Risk로 분석된 매물 중 실제 폐업 사례가 다수 확인되었습니다</p>
-                <div class="grid-card grid-3">
-                    <div class="land-card symptom-card" style="box-shadow: none;">
-                        <span class="card-icon">🏛️</span>
-                        <p><strong>공공기관 교차 검증 데이터</strong><br><span style="font-size:0.95rem; color:#64748b; font-weight:400; margin-top:10px; display:block;">국세청, 통계청, 지자체 공공데이터 등 10개 이상의 공신력 있는 자료를 통합 분석합니다.</span></p>
-                    </div>
-                    <div class="land-card symptom-card" style="box-shadow: none;">
-                        <span class="card-icon">🧮</span>
-                        <p><strong>수학적 리스크 평가 로직</strong><br><span style="font-size:0.95rem; color:#64748b; font-weight:400; margin-top:10px; display:block;">단순한 수치 나열이 아닌, 폐업률과 매출 방어력을 콤보로 계산하는 독자 평가 알고리즘을 사용합니다.</span></p>
-                    </div>
-                    <div class="land-card symptom-card" style="box-shadow: none;">
-                        <span class="card-icon">🎯</span>
-                        <p><strong>편향 없는 100% 팩트 리포팅</strong><br><span style="font-size:0.95rem; color:#64748b; font-weight:400; margin-top:10px; display:block;">영업이나 매물 추천이 목적이 아니기 때문에, 최악의 리스크도 있는 그대로 낱낱이 보여드립니다.</span></p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Final CTA Area -->
-        <section class="landing-section free-credit-section text-center">
-            <div class="container flex-cta-box" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border: none; padding: 100px 20px;">
-                <h2 class="section-title" style="color: #fff; font-size: 2.8rem; margin-bottom: 24px;">수천만 원을 잃기 전에,<br>1분만 투자하세요</h2>
-                <p class="section-subtitle" style="margin-bottom: 40px; color: #a5b4fc; font-size: 1.25rem;">회원가입 시 즉시 지급되는 2회 무료 크레딧을 이용해<br>지금 보고 있는 매물의 진짜 가치를 확인해 보세요.</p>
-                <div class="hero-actions">
-                    <button class="btn-start-app btn-primary-glam btn-large" style="background: #ffffff; color: #1e1b4b; font-weight: 800; font-size: 1.25rem; padding: 20px 48px;">계약 전 리스크 확인하기</button>
-                </div>
-            </div>
-        </section>
-
-        <footer class="landing-footer text-center">
-            <div class="container">
-                <p>&copy; 2026 자리보고. 데이터 기반 상권 생존 솔루션.</p>
-            </div>
-        </footer>
-
-        <!-- STICKY CTA BAR (NEW) -->
-        <div id="stickyCtaBar" class="sticky-cta-bar">
-            <div class="container sticky-cta-container">
-                <p><strong>계약은 되돌릴 수 없습니다.</strong> 지금 리스크를 먼저 확인하세요.</p>
-                <button class="btn-start-app btn-primary-glam">계약 전 리스크 확인하기</button>
-            </div>
-        </div>
     </section>
 
     <div id="app" class="hidden">
