@@ -21,10 +21,10 @@
 
 [data-theme="light"] {
   --bg-main: #f8fafc;
-  --bg-sidebar: rgba(255, 255, 255, 0.8);
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --text-main: #1e293b;
+  --bg-sidebar: #ffffff;
+  --card-bg: #ffffff;
+  --glass-border: #e2e8f0;
+  --text-main: #0f172a;
   --text-muted: #64748b;
   --accent-red: #ef4444;
   --accent-amber: #f59e0b;
@@ -33,9 +33,9 @@
   --source-override: #f59e0b;
   --source-public: #10b981;
   --accent-primary: #4f46e5;
-  --input-bg: #ffffff;
+  --input-bg: #f1f5f9;
   --panel-bg: #ffffff;
-  --panel-highlight: rgba(0, 0, 0, 0.04);
+  --panel-highlight: #f8fafc;
 }
 
 .app-header {
@@ -161,6 +161,7 @@ body {
   background: var(--bg-sidebar);
   backdrop-filter: blur(20px);
   border-right: 1px solid var(--glass-border);
+  color: var(--text-main);
   padding: 1.5rem;
   /* 24px padding all around */
   display: flex;
@@ -516,6 +517,10 @@ body {
   font-size: 0.9rem;
 }
 
+[data-theme="light"] .location-box input::placeholder {
+  color: #94a3b8;
+}
+
 .input-nav {
   display: flex;
   flex-direction: column;
@@ -572,6 +577,12 @@ select {
   color: var(--text-main);
   outline: none;
   font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+select option {
+  background: var(--bg-main);
+  color: var(--text-main);
 }
 
 /* Start Button */

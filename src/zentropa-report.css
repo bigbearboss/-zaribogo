@@ -29,12 +29,12 @@
 .zentropa-report {
   background-color: #f9fafb;
   min-height: 100vh;
-  padding: 24px;
+  padding: 40px 24px;
   font-family: 'Inter', 'Pretendard', sans-serif;
   color: var(--report-text);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .zentropa-container {
@@ -553,6 +553,119 @@
 }
 
 .ai-check-list li::before {
-  content: '☐';
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  flex-shrink: 0;
+}
+
+/* Strategic Advice Categories */
+.advice-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.advice-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.advice-card:hover {
+  border-color: var(--text-ai);
+  background: #f0f7ff;
+}
+
+.advice-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 8px;
+  color: var(--text-ai);
+}
+
+.advice-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.advice-desc {
+  font-size: 0.65rem;
   color: var(--report-muted);
+}
+
+/* Caution Banner */
+.caution-banner {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.caution-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c2410c;
+  font-weight: 800;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.caution-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #9a3412;
+}
+
+.caution-list li {
+  position: relative;
+  padding-left: 14px;
+}
+
+.caution-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+}
+
+/* Metric Accordion Detail */
+.metric-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-top: 1px solid var(--report-border);
+}
+
+.metric-detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.metric-detail-label {
+  color: var(--report-muted);
+}
+
+.metric-detail-val {
+  font-weight: 600;
+  color: var(--report-text);
 }
