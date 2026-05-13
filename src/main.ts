@@ -934,17 +934,27 @@ function normalizeDongName(value?: string): string {
 }
 
 
-const admCodeMapIndex = new Map(
-  (admCodeMap as any[]).map((row) => {
-    const key = [
-      normalizeSidoName(row.sidoName),
-      normalizeSigunguName(row.sigunguName),
-      normalizeDongName(row.dongName),
-    ].join("|");
+const admCodeMapIndex = new Map<string, string>();
+const sidoSigunguIndex = new Map<string, { dongName: string; admCd: string }[]>();
 
-    return [key, row.admCd];
-  })
-);
+(admCodeMap as any[]).forEach((row) => {
+  const s = normalizeSidoName(row.sidoName);
+  const sg = normalizeSigunguName(row.sigunguName);
+  const d = normalizeDongName(row.dongName);
+  
+  const key = `${s}|${sg}|${d}`;
+  admCodeMapIndex.set(key, row.admCd);
+
+  const parentKey = `${s}|${sg}`;
+  if (!sidoSigunguIndex.has(parentKey)) {
+    sidoSigunguIndex.set(parentKey, []);
+  }
+  const list = sidoSigunguIndex.get(parentKey)!;
+  if (list.length < 50) { // Keep list small for debug purposes
+    list.push({ dongName: row.dongName, admCd: row.admCd });
+  }
+});
+
 /**
  * 임시 매핑 함수
  * 다음 단계에서 실제 admCode 테이블(JSON/CSV) 연결 예정
@@ -954,12 +964,6 @@ function resolveAdmCdFromAddress(
   sigunguName?: string,
   dongName?: string
 ): string | undefined {
-  const raw = {
-    sidoName: sidoName || "",
-    sigunguName: sigunguName || "",
-    dongName: dongName || "",
-  };
-
   const normalized = {
     sido: normalizeSidoName(sidoName),
     sigungu: normalizeSigunguName(sigunguName),
@@ -968,30 +972,13 @@ function resolveAdmCdFromAddress(
 
   const key = `${normalized.sido}|${normalized.sigungu}|${normalized.dong}`;
 
-  console.log("[ADM DEBUG] raw =", JSON.stringify(raw));
-  console.log("[ADM DEBUG] normalized =", JSON.stringify({ ...normalized, key }));
-
-  if (!normalized.sido || !normalized.sigungu || !normalized.dong) {
-    console.warn("[ADM DEBUG] missing normalized region values");
-    return undefined;
-  }
-
   const admCd = admCodeMapIndex.get(key);
 
   if (!admCd) {
-    const candidates = (admCodeMap as any[])
-      .filter(
-        (row) =>
-          normalizeSidoName(row.sidoName) === normalized.sido &&
-          normalizeSigunguName(row.sigunguName) === normalized.sigungu
-      )
-      .slice(0, 20)
-      .map((row) => ({
-        dongName: row.dongName,
-        admCd: row.admCd,
-      }));
+    const parentKey = `${normalized.sido}|${normalized.sigungu}`;
+    const candidates = sidoSigunguIndex.get(parentKey) || [];
 
-    console.warn("[ADM DEBUG] no exact match. candidates =", JSON.stringify(candidates));
+    console.warn(`[ADM DEBUG] no exact match for [${key}]. candidates count in ${parentKey} = ${candidates.length}`);
     return undefined;
   }
 
