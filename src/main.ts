@@ -169,7 +169,7 @@ let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 
 // [DEBUG FLAGS] 원인 분석을 위한 디버그 스위치
 const DEBUG_DISABLE_META_RESOLVE = true;
-const DEBUG_DISABLE_MAP_UPDATE = true;
+const DEBUG_DISABLE_MAP_UPDATE = false;
 const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
 const DEBUG_DISABLE_RESET_ANALYSIS_VIEW_ON_LOCATION_SELECT = true;
 
