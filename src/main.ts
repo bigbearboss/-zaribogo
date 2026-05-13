@@ -35,6 +35,7 @@ import industryProfiles from "./engine/data/industryProfiles.json";
 import admCodeMap from "./engine/data/admCodeMap";
 
 
+
 // Apply mode attributes to <html> element immediately so CSS can hide QA-only elements
 applyModeToDocument();
 
@@ -169,7 +170,8 @@ let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 // [DEBUG FLAGS] 원인 분석을 위한 디버그 스위치
 const DEBUG_DISABLE_META_RESOLVE = true;
 const DEBUG_DISABLE_MAP_UPDATE = true;
-const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
+const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = true;
+
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
 type AIExtendedResult = AIAnalysisResult & {
