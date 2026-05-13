@@ -775,3 +775,23 @@
 #searchIconBtn:hover {
     color: var(--accent-primary) !important;
 }
+
+/* ===== Logo Image Dark/Light Mode ===== */
+/* 사이드바 로고: 다크 모드에서 흰색, 라이트 모드에서 검정 */
+.sidebar-logo-img {
+    filter: invert(1) brightness(1);
+    transition: filter 0.3s ease;
+}
+
+[data-theme="light"] .sidebar-logo-img {
+    filter: invert(0) brightness(1);
+}
+
+/* 랜딩 로고는 항상 흰색 배경이 어두우므로 invert 유지 */
+.logo-img {
+    display: block;
+    transition: opacity 0.2s ease;
+}
+.logo-img:hover {
+    opacity: 0.8;
+}

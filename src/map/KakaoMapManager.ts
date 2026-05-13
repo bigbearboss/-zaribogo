@@ -204,7 +204,20 @@ async resolveAddressMeta(lat: number, lng: number): Promise<{
 }> {
     const kakao = window.kakao;
 
-    return new Promise((resolve) => {
+    // 타임아웃 (3초) - API 무응답 시 UI freeze 방지
+    const timeout = new Promise<{}>((resolve) =>
+        setTimeout(() => {
+            console.warn('[KakaoMap] resolveAddressMeta timed out — returning empty meta');
+            resolve({});
+        }, 3000)
+    );
+
+    const apiCall = new Promise<{
+        address?: string;
+        sidoName?: string;
+        sigunguName?: string;
+        dongName?: string;
+    }>((resolve) => {
         if (!this.geocoder) {
             resolve({});
             return;
@@ -227,6 +240,13 @@ async resolveAddressMeta(lat: number, lng: number): Promise<{
             });
         });
     });
+
+    return Promise.race([apiCall, timeout]) as Promise<{
+        address?: string;
+        sidoName?: string;
+        sigunguName?: string;
+        dongName?: string;
+    }>;
 }
     
     // ──────────────────────────────────────────────────────────
