@@ -25,31 +25,7 @@
                     <h1 class="land-title-main">이 자리,<br>계약해도 될까요?</h1>
                     <p class="land-subtitle">감이 아니라 데이터로 판단하세요.<br>수천만 원의 권리금과 보증금이 걸린 창업, 감으로 대충 정할 수는 없습니다.<br>진짜 데이터로 똑똑하게 리스크를 파악하세요.</p>
                     
-                    <button class="btn-cta-large btn-nav-login">지금 자리 분석하기 <span>→</span></button>
-
-                    <div class="land-hero-stats">
-                        <div class="lh-stat-item">
-                            <div class="lh-stat-icon">📄</div>
-                            <div class="lh-stat-text">
-                                <span class="lh-stat-val">45만 건</span>
-                                <span class="lh-stat-lbl">누적 분석 리포트</span>
-                            </div>
-                        </div>
-                        <div class="lh-stat-item">
-                            <div class="lh-stat-icon">👥</div>
-                            <div class="lh-stat-text">
-                                <span class="lh-stat-val">1.2만 명</span>
-                                <span class="lh-stat-lbl">활성 유저</span>
-                            </div>
-                        </div>
-                        <div class="lh-stat-item">
-                            <div class="lh-stat-icon">🏢</div>
-                            <div class="lh-stat-text">
-                                <span class="lh-stat-val">82개</span>
-                                <span class="lh-stat-lbl">가입 부동산 파트너</span>
-                            </div>
-                        </div>
-                    </div>
+                    <button class="btn-cta-large btn-start-app">지금 자리 분석하기 <span>→</span></button>
                 </div>
 
                 <div class="land-hero-visual">
@@ -160,7 +136,7 @@
                     <span style="color:#93c5fd; font-weight:700; letter-spacing:1px; font-size:0.85rem;">01. SMART INSIGHT</span>
                     <h2>분석 결과는 숫자가 아니라<br>판단으로 보여줍니다.</h2>
                     <p>유동인구 5만 명, 경쟁점 10개... 이런 모호한 숫자를 주지 않습니다. 이 자리가 '얼마나 위험한지', '계약해도 되는지' 명확한 가이드라인으로 제시합니다.</p>
-                    <button class="btn-cta-large" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);">샘플 리포트 확인하기</button>
+                    <button class="btn-cta-large" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);" onclick="document.getElementById('sampleReportModal').classList.remove('hidden')">샘플 리포트 확인하기</button>
                 </div>
                 <div class="lf-visual">
                     <div class="land-hero-dash-card" style="box-shadow: none;">
@@ -409,7 +385,7 @@
                         <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; color:var(--land-text-main); line-height:2.5;">
                             <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 1회 분석 = 1크레딧 차감</li>
                             <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 마이페이지 리포트 보관</li>
-                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 전국 지도 검색 조회</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 서울/경기 수도권 분석 한정<br><span style="font-size:0.75rem; color:var(--land-text-muted); margin-left:26px;">(추후 전국 단위 확대 예정)</span></li>
                             <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 현장 방문 필수 체크리스트</li>
                         </ul>
                     </div>
@@ -426,20 +402,25 @@
                     <div style="font-size:4rem; margin-top:20px;">💬</div>
                 </div>
                 <div style="flex:2;">
-                    <div class="faq-item">
-                        <div class="faq-q">Q. 분석 결과만 믿고 바로 계약해도 되나요? <span>+</span></div>
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">Q. 분석 결과만 믿고 바로 계약해도 되나요? <span class="faq-icon">+</span></div>
+                        <div class="faq-a">자리보고의 분석 결과는 공공데이터를 기반으로 리스크를 진단하지만, 최종적인 계약 결정의 유일한 근거가 될 수는 없습니다. 제공되는 현장 방문 체크리스트와 함께 종합적으로 판단하시길 권장합니다.</div>
                     </div>
-                    <div class="faq-item">
-                        <div class="faq-q">Q. 데이터가 정확한가요? <span>+</span></div>
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">Q. 데이터가 정확한가요? <span class="faq-icon">+</span></div>
+                        <div class="faq-a">국세청, 통계청, 지자체 공공데이터 등 10개 이상의 공신력 있는 자료를 교차 검증하여 사용하고 있습니다.</div>
                     </div>
-                    <div class="faq-item">
-                        <div class="faq-q">Q. 어떤 업종을 분석할 수 있나요? <span>+</span></div>
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">Q. 어떤 업종을 분석할 수 있나요? <span class="faq-icon">+</span></div>
+                        <div class="faq-a">현재 외식업, 서비스업, 도소매업 등 주요 상가 창업 업종을 지원하고 있으며, 세부 업종별 맞춤 분석도 지속적으로 추가되고 있습니다.</div>
                     </div>
-                    <div class="faq-item">
-                        <div class="faq-q">Q. 크레딧은 언제 차감되나요? <span>+</span></div>
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">Q. 크레딧은 언제 차감되나요? <span class="faq-icon">+</span></div>
+                        <div class="faq-a">원하시는 주소와 업종 정보를 입력하고 '자리 분석하기' 버튼을 눌러 종합 분석 리포트가 정상적으로 생성 완료된 시점에 1크레딧이 차감됩니다.</div>
                     </div>
-                    <div class="faq-item">
-                        <div class="faq-q">Q. 같은 자리를 다시 볼 수 있나요? <span>+</span></div>
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">Q. 같은 자리를 다시 볼 수 있나요? <span class="faq-icon">+</span></div>
+                        <div class="faq-a">네, 한 번 분석이 완료된 리포트는 마이페이지 내 보관함에 저장되어 언제든지 크레딧 추가 차감 없이 재열람이 가능합니다.</div>
                     </div>
                 </div>
             </div>
@@ -450,12 +431,39 @@
             <div class="land-container">
                 <h2>계약 전, 한 번 더 확인하세요.</h2>
                 <p>권리금 계약금, 인테리어 보증금... 수천만 원을 건네기 직전이라면 반드시 체크해야 합니다.<br>자리보고와 함께 가장 확신 있는 결정을 내리세요.</p>
-                <button class="btn-cta-large btn-nav-login">지금 자리 분석하기 <span>→</span></button>
+                <button class="btn-cta-large btn-start-app">지금 자리 분석하기 <span>→</span></button>
                 <div style="margin-top:40px;">
                     <span style="font-size:0.8rem; color:rgba(255,255,255,0.4);">© 2026 Zaribogo. 상권 분석 데이터 솔루션</span>
                 </div>
             </div>
         </section>
+        </section>
+
+        <!-- Sample Report Modal -->
+        <div id="sampleReportModal" class="land-modal hidden">
+            <div class="land-modal-content">
+                <button class="land-modal-close" onclick="document.getElementById('sampleReportModal').classList.add('hidden')">✕</button>
+                <h3 style="margin-bottom:16px; font-size: 1.5rem; color: #1e293b;">샘플 리포트</h3>
+                <div style="background:#f1f5f9; padding:24px; border-radius:12px; max-height: 60vh; overflow-y:auto; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <span style="font-weight:700; color:#1e293b;">서울 용산구 이태원동 카페</span>
+                        <span style="color:#ef4444; font-weight:800; font-size:1.1rem;">종합 CRI: 45점 (계약 주의)</span>
+                    </div>
+                    <div style="background:white; padding:16px; border-radius:8px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                        <h4 style="margin-bottom:8px; color:#3b82f6;">핵심 리스크 1</h4>
+                        <p style="font-size:0.9rem; color:#64748b; line-height:1.5;">주변 500m 이내 동일 업종 경쟁이 매우 심화되어 폐업률이 상승하는 추세입니다. 진입 시 치열한 경쟁이 예상됩니다.</p>
+                    </div>
+                    <div style="background:white; padding:16px; border-radius:8px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                        <h4 style="margin-bottom:8px; color:#3b82f6;">핵심 리스크 2</h4>
+                        <p style="font-size:0.9rem; color:#64748b; line-height:1.5;">요구되는 월세 300만원을 감당하려면 일 매출 최소 50만원 이상이 필요하나, 현재 상권 평균은 35만원 수준에 불과합니다.</p>
+                    </div>
+                    <div style="background:white; padding:16px; border-radius:8px; border:1px solid #e2e8f0; border-left:4px solid #ef4444;">
+                        <h4 style="margin-bottom:8px; color:#ef4444;">행동 방안</h4>
+                        <p style="font-size:0.9rem; color:#64748b; line-height:1.5;">권리금 협상을 통해 초기 자본 부담을 최소 30% 이상 낮추거나, 다른 후보지를 함께 고려하는 것을 강력히 권장합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <div id="app" class="hidden">
