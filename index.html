@@ -11,6 +11,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css">
     <link rel="stylesheet" href="./src/landing.css">
+    <link rel="stylesheet" href="./src/zentropa-report.css">
     <!-- External Libraries (Phase 16) -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -762,7 +763,8 @@
         </aside>
 
         <main class="dashboard-modern">
-            <div class="dashboard-content-wrapper-modern">
+            <div id="zentropaReportContainer" class="zentropa-report hidden"></div>
+            <div id="legacyDashboardContent" class="dashboard-content-wrapper-modern">
                 <!-- 1. Top Status Banner -->
                 <div class="status-banner-modern">
                     <div class="status-left">
