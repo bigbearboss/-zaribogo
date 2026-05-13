@@ -767,3 +767,142 @@
   background: var(--land-light-bg);
   color: var(--land-text-main);
 }
+
+
+/* --- Mobile Responsive Updates --- */
+
+@media (max-width: 768px) {
+    .land-mobile-menu-btn {
+        display: block !important;
+    }
+    .land-auth {
+        display: none !important;
+    }
+    .land-nav {
+        display: none !important;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: rgba(9, 14, 23, 0.95);
+        flex-direction: column !important;
+        padding: 20px;
+        gap: 20px !important;
+        border-bottom: 1px solid var(--land-border-dark);
+    }
+    .land-nav.active {
+        display: flex !important;
+    }
+
+    /* Header */
+    .land-header .land-container {
+        padding: 0 16px;
+    }
+    .land-nav {
+        display: none !important; /* Hide links on mobile, show hamburger if needed */
+    }
+    
+    /* Hero Section */
+    .land-hero-v2 {
+        padding: 60px 16px;
+    }
+    .land-hero-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 40px;
+    }
+    .land-title-main {
+        font-size: 2.2rem;
+    }
+    .land-hero-search {
+        max-width: 100%;
+    }
+    .land-hero-search input {
+        font-size: 0.85rem;
+    }
+    
+    /* Problem Section */
+    .lp-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px;
+    }
+    .lp-card {
+        padding: 16px;
+    }
+    .lp-card h4 {
+        font-size: 0.95rem;
+    }
+    .lp-card p {
+        font-size: 0.8rem;
+    }
+    
+    /* Process Section */
+    .lpr-flow {
+        flex-direction: column;
+        gap: 16px;
+    }
+    .lpr-arrow {
+        transform: rotate(90deg);
+    }
+    
+    /* Feature Splits */
+    .lf-split {
+        flex-direction: column;
+        gap: 40px;
+    }
+    .lf-split-rev {
+        flex-direction: column;
+    }
+    .lf-text {
+        text-align: center;
+    }
+    
+    /* Feature 3 Cols */
+    .lf3-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Use Cases */
+    .luc-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    
+    /* Trust Section */
+    .lt-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    /* Pricing Section */
+    #land-pricing .land-container > div {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    #land-pricing .land-container > div > div {
+        width: 48% !important; /* Side by side on mobile for pricing cards */
+        min-width: 150px;
+        padding: 20px 15px !important;
+    }
+    #land-pricing .land-container > div > div:last-child {
+        width: 100% !important;
+        margin-top: 20px;
+        text-align: center;
+        align-items: center;
+    }
+    
+    /* FAQ Section */
+    .land-container[style*="display:flex; gap:60px;"] {
+        flex-direction: column;
+        gap: 30px !important;
+        align-items: center;
+    }
+    .faq-item {
+        padding: 15px;
+    }
+    .faq-q {
+        font-size: 0.95rem;
+    }
+}

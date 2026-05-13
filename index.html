@@ -33,7 +33,12 @@
                     <a href="#" onclick="document.getElementById('land-pricing').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">가격 안내</a>
                     <a href="#" onclick="alert('고객 후기는 아직 준비 중입니다.'); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">고객 후기</a>
                 </nav>
+                
+                <div class="land-mobile-menu-btn" style="display:none; cursor:pointer;" onclick="document.querySelector('.land-nav').classList.toggle('active')">
+                    <i data-lucide="menu" style="width:28px;height:28px;color:var(--land-white);"></i>
+                </div>
                 <div class="land-auth">
+
                     <button class="btn-nav-login" onclick="document.getElementById('btnLogin').click()" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.9rem; transition:background 0.2s;">로그인 / 가입</button>
                 </div>
             </div>
@@ -1079,6 +1084,31 @@
                 if(btnLogin) btnLogin.click();
             }
         }
+
+        // Observe auth state via btnLogin visibility
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnLogin = document.getElementById('btnLogin');
+            const navAuthBtn = document.querySelector('.land-auth .btn-nav-login');
+            
+            if (!btnLogin || !navAuthBtn) return;
+
+            const updateNavBtn = () => {
+                if (btnLogin.classList.contains('hidden')) {
+                    navAuthBtn.textContent = '마이페이지';
+                    navAuthBtn.onclick = () => window.location.href = '/mypage.html';
+                } else {
+                    navAuthBtn.textContent = '로그인 / 가입';
+                    navAuthBtn.onclick = () => btnLogin.click();
+                }
+            };
+
+            // Initial check
+            updateNavBtn();
+
+            // Observer for class changes on btnLogin
+            const observer = new MutationObserver(updateNavBtn);
+            observer.observe(btnLogin, { attributes: true, attributeFilter: ['class'] });
+        });
     </script>
 
     <script>lucide.createIcons();</script>
