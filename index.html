@@ -1078,13 +1078,12 @@
         }
 
         /* ── Issue 3: 지도 주소를 지도 하단 bar에 반영 ── */
-        const labelEl = document.getElementById('kakaoSelectedLabel');
-        const addrBar = document.querySelector('.map-addr-text');
-        if (labelEl && addrBar) {
-            const sync = () => { addrBar.textContent = labelEl.textContent || '위치를 검색하거나 지도에서 선택하세요'; };
-            sync();
-            new MutationObserver(sync).observe(labelEl, { childList: true, characterData: true, subtree: true });
-        }
+        /* ── Issue 3: 지도 주소 동기화 ── */
+/*
+  kakaoSelectedLabel 요소가 이미 지도 하단 주소 텍스트(.map-addr-text)이므로
+  MutationObserver로 자기 자신을 다시 업데이트하지 않습니다.
+  기존 observer는 textContent 변경 시 무한 루프를 만들 수 있어 제거합니다.
+*/
 
         /* ── Issue 6: 분석 실행 전 CRI 대시보드가 반응하지 않도록 차단 ── */
         // 분석 완료 플래그 – startAnalysis 버튼 클릭 후에만 true
