@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./src/landing.css">
     <!-- External Libraries (Phase 16) -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body data-theme="dark">
@@ -30,9 +31,9 @@
 
                 <div class="land-hero-visual">
                     <div class="land-hero-search">
-                        <span class="icon">📍</span>
+                        <span class="icon"><i data-lucide="map-pin" style="width:20px;height:20px;"></i></span>
                         <input type="text" value="서울 용산구 이태원동 / 카페 / 50평" readonly>
-                        <button class="btn-search-mock">🔍</button>
+                        <button class="btn-search-mock"><i data-lucide="search" style="width:20px;height:20px;"></i></button>
                     </div>
 
                     <div class="land-hero-dash-card">
@@ -44,13 +45,13 @@
                             <div class="lhd-level">계약 보류 권장</div>
                         </div>
                         <div class="lhd-alert">
-                            <h4>⚠️ 계약 전 추가 확인 필요</h4>
+                            <h4 style="display:flex; align-items:center; gap:8px;"><i data-lucide="triangle-alert" style="width:20px;height:20px;"></i> 계약 전 추가 확인 필요</h4>
                             <p>유동인구 대비 경쟁 매장 밀집도가 매우 높습니다. 1년 내 폐업률이 상승하는 추세입니다.</p>
                         </div>
                         <div style="display:flex; gap:10px; margin-top:20px; font-size:0.85rem; color:var(--land-text-light-muted); justify-content:space-between;">
-                            <span>경쟁 밀집 🔴</span>
-                            <span>매출 유지 🟡</span>
-                            <span>성장 전망 🔴</span>
+                            <span>경쟁 밀집 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-left:4px;"></span></span>
+                            <span>매출 유지 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#facc15;margin-left:4px;"></span></span>
+                            <span>성장 전망 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-left:4px;"></span></span>
                         </div>
                     </div>
                 </div>
@@ -65,22 +66,22 @@
                 
                 <div class="lp-grid">
                     <div class="lp-card">
-                        <div class="lp-icon">🏢</div>
+                        <div class="lp-icon"><i data-lucide="map-pin" style="width:28px;height:28px;"></i></div>
                         <h4>입지가 타당한지 모르겠어요</h4>
                         <p>단순히 역세권이라고 진짜 사람이 몰릴까? 유동인구의 동선 분석이 필요합니다.</p>
                     </div>
                     <div class="lp-card">
-                        <div class="lp-icon">📉</div>
+                        <div class="lp-icon"><i data-lucide="bar-chart-3" style="width:28px;height:28px;"></i></div>
                         <h4>주변 상권이 축소될까 두려워요</h4>
                         <p>상권이 점점 죽어가는 곳인지, 성장하는 곳인지 트렌드 파악이 안 됩니다.</p>
                     </div>
                     <div class="lp-card">
-                        <div class="lp-icon">💸</div>
+                        <div class="lp-icon"><i data-lucide="coins" style="width:28px;height:28px;"></i></div>
                         <h4>권리금 뺏길까봐 걱정돼요</h4>
                         <p>이 상가에 요구하는 권리금이 상권 매출 대비 타당한 금액인지 알 수 없습니다.</p>
                     </div>
                     <div class="lp-card">
-                        <div class="lp-icon">🚨</div>
+                        <div class="lp-icon"><i data-lucide="shield-check" style="width:28px;height:28px;"></i></div>
                         <h4>사기 당할까 걱정돼요</h4>
                         <p>등기부등본 확인이나 주변 불법 건축물 여부 등 챙겨야 할 리스크가 너무 많습니다.</p>
                     </div>
@@ -98,33 +99,33 @@
                     <div class="lpr-box">
                         <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">입력 정보</h4>
                         <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
-                            <li>📍 주소 / 매장 위치</li>
-                            <li>🏢 업종</li>
-                            <li>📏 매장 평수</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin" style="width:16px;height:16px;color:var(--land-accent);"></i> 주소 / 매장 위치</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="storefront" style="width:16px;height:16px;color:var(--land-accent);"></i> 업종</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="scaling" style="width:16px;height:16px;color:var(--land-accent);"></i> 매장 평수</li>
                         </ul>
                     </div>
-                    <div class="lpr-arrow">➡️</div>
+                    <div class="lpr-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
                     <div class="lpr-box lpr-box-center">
                         <h4 style="margin-bottom:10px; color:var(--land-accent-dark);">자리보고 AI 분석 엔진</h4>
                         <div class="lpr-grid-inner">
-                            <div class="lpr-item">🏪<br>상권 현황</div>
-                            <div class="lpr-item">💰<br>재무 위험</div>
-                            <div class="lpr-item">⚔️<br>경쟁 매장</div>
-                            <div class="lpr-item">🛡️<br>사기/리스크</div>
+                            <div class="lpr-item"><i data-lucide="users" style="width:24px;height:24px;color:var(--land-accent);margin-bottom:8px;"></i><br>상권 현황</div>
+                            <div class="lpr-item"><i data-lucide="coins" style="width:24px;height:24px;color:#ef4444;margin-bottom:8px;"></i><br>재무 위험</div>
+                            <div class="lpr-item"><i data-lucide="storefront" style="width:24px;height:24px;color:#8b5cf6;margin-bottom:8px;"></i><br>경쟁 매장</div>
+                            <div class="lpr-item"><i data-lucide="triangle-alert" style="width:24px;height:24px;color:#f59e0b;margin-bottom:8px;"></i><br>사기/리스크</div>
                         </div>
                     </div>
-                    <div class="lpr-arrow">➡️</div>
+                    <div class="lpr-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
                     <div class="lpr-box">
                         <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">분석 결과</h4>
                         <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
-                            <li>📋 종합 CRI 스코어</li>
-                            <li>⚠️ 3대 핵심 리스크</li>
-                            <li>🗺️ 상권 데이터 맵</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="gauge" style="width:16px;height:16px;color:var(--land-accent);"></i> 종합 CRI 스코어</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="triangle-alert" style="width:16px;height:16px;color:#ef4444;"></i> 3대 핵심 리스크</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="map" style="width:16px;height:16px;color:var(--land-accent);"></i> 상권 데이터 맵</li>
                         </ul>
                     </div>
                 </div>
                 <div class="lpr-badge-bottom">
-                    ✅ 계약 전 리스크 진단부터 분석 리포트, 계약 전 체크리스트까지 전 과정 지원
+                    <i data-lucide="check-circle-2" style="width:18px;height:18px;"></i> 계약 전 리스크 진단부터 분석 리포트, 계약 전 체크리스트까지 전 과정 지원
                 </div>
             </div>
         </section>
@@ -217,11 +218,11 @@
                             <div style="background:white; border:1px solid var(--land-border); padding:20px; border-radius:12px; width:100%; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
                                 <div style="font-size:0.8rem; font-weight:600; color:var(--land-text-muted); margin-bottom:10px;">1. 위치 검색</div>
                                 <div class="land-hero-search" style="box-shadow:none; border-color:var(--land-border); transform:none; background:var(--land-light-bg);">
-                                    <span class="icon">📍</span><input type="text" value="검색어 입력..." style="color:var(--land-text-main);">
+                                    <span class="icon"><i data-lucide="map-pin" style="width:20px;height:20px;"></i></span><input type="text" value="검색어 입력..." style="color:var(--land-text-main);">
                                 </div>
                                 <div style="margin-top:20px; display:flex; gap:10px;">
-                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px;">✅ 공공데이터 연동 완료</div>
-                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px;">✅ AI 추론 로직 적용</div>
+                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px; display:flex; align-items:center; gap:4px;"><i data-lucide="check" style="width:14px;height:14px;"></i> 공공데이터 연동 완료</div>
+                                    <div style="font-size:0.8rem; color:var(--land-accent); background:rgba(59,130,246,0.1); padding:4px 8px; border-radius:4px; display:flex; align-items:center; gap:4px;"><i data-lucide="check" style="width:14px;height:14px;"></i> AI 추론 로직 적용</div>
                                 </div>
                             </div>
                         </div>
@@ -273,22 +274,22 @@
                 
                 <div class="luc-grid">
                     <div class="luc-card">
-                        <div class="luc-icon">🤝</div>
+                        <div class="luc-icon"><i data-lucide="handshake" style="width:40px;height:40px;color:var(--land-accent);"></i></div>
                         <h3 class="luc-title">권리금 계약 직전</h3>
                         <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">부동산 말만 믿고 수천만 원을 건네기 전, 진짜 시세와 회수 가능성을 교차 검증하세요.</p>
                     </div>
                     <div class="luc-card">
-                        <div class="luc-icon">⚖️</div>
+                        <div class="luc-icon"><i data-lucide="scale" style="width:40px;height:40px;color:var(--land-accent);"></i></div>
                         <h3 class="luc-title">후보지 비교 중</h3>
                         <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">A상가와 B상가 중 어디가 객관적으로 생존율이 높은지 점수로 비교합니다.</p>
                     </div>
                     <div class="luc-card">
-                        <div class="luc-icon">🧮</div>
+                        <div class="luc-icon"><i data-lucide="calculator" style="width:40px;height:40px;color:var(--land-accent);"></i></div>
                         <h3 class="luc-title">월세가 적정한지 고민될 때</h3>
                         <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">해당 상권의 평균 객단가와 유동인구 대비 지금의 월세가 감당 가능한 수준인지 진단합니다.</p>
                     </div>
                     <div class="luc-card">
-                        <div class="luc-icon">📋</div>
+                        <div class="luc-icon"><i data-lucide="clipboard-list" style="width:40px;height:40px;color:var(--land-accent);"></i></div>
                         <h3 class="luc-title">창업이 처음이라 기준이 없을 때</h3>
                         <p style="font-size:0.85rem; color:var(--land-text-muted); margin-top:10px;">무엇을 확인해야 할지 막막할 때 현장 방문 체크리스트로 가이드를 제시합니다.</p>
                     </div>
@@ -305,29 +306,29 @@
                 
                 <div class="lt-grid">
                     <div class="lt-item">
-                        <div class="lt-icon">🏛️</div>
+                        <div class="lt-icon"><i data-lucide="landmark" style="width:32px;height:32px;"></i></div>
                         <h4 class="lt-title">공공데이터 기반 분석</h4>
                         <p class="lt-desc">국세청, 통계청, 지자체 등 신뢰할 수 있는 데이터로 분석합니다.</p>
                     </div>
                     <div class="lt-item">
-                        <div class="lt-icon">🧠</div>
+                        <div class="lt-icon"><i data-lucide="cpu" style="width:32px;height:32px;"></i></div>
                         <h4 class="lt-title">딥러닝 수익 예측</h4>
                         <p class="lt-desc">상권별 매출 트렌드 학습을 통해 손익분기 도달 가능성을 예측합니다.</p>
                     </div>
                     <div class="lt-item">
-                        <div class="lt-icon">🛡️</div>
+                        <div class="lt-icon"><i data-lucide="shield-check" style="width:32px;height:32px;"></i></div>
                         <h4 class="lt-title">검증된 분석 로직</h4>
                         <p class="lt-desc">프랜차이즈 상권 분석가들의 노하우가 알고리즘에 담겨 있습니다.</p>
                     </div>
                     <div class="lt-item">
-                        <div class="lt-icon">📑</div>
+                        <div class="lt-icon"><i data-lucide="file-text" style="width:32px;height:32px;"></i></div>
                         <h4 class="lt-title">팩트 기반 리포트</h4>
                         <p class="lt-desc">어떠한 이해관계도 없이 있는 그대로의 사실만을 전달합니다.</p>
                     </div>
                 </div>
                 
                 <div class="lt-badge">
-                    💡 자리보고의 분석 결과는 정답을 제시하는 것이 아닙니다. 최종 계약 판단을 위한 참고용으로만 활용하세요.
+                    <i data-lucide="lightbulb" style="width:20px;height:20px;margin-bottom:-4px;"></i> 자리보고의 분석 결과는 정답을 제시하는 것이 아닙니다. 최종 계약 판단을 위한 참고용으로만 활용하세요.
                 </div>
             </div>
         </section>
@@ -350,7 +351,7 @@
                             <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
                         </div>
                         <div style="font-size:0.8rem; color:var(--land-accent-dark); background:rgba(59,130,246,0.1); padding:6px; border-radius:6px; text-align:center; margin-bottom:30px;">
-                            ✨ 초기 유저 50% 할인 특가
+                            <i data-lucide="sparkles" style="width:16px;height:16px;margin-bottom:-3px;"></i> 초기 유저 50% 할인 특가
                         </div>
                         <ul style="list-style:none; padding:0; margin:0 0 30px; font-size:0.85rem; color:var(--land-text-muted); line-height:1.8;">
                             <li>✓ 서울, 수도권 집중 타겟</li>
@@ -370,7 +371,7 @@
                             <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
                         </div>
                         <div style="font-size:0.8rem; color:var(--land-accent-dark); background:rgba(59,130,246,0.1); padding:6px; border-radius:6px; text-align:center; margin-bottom:30px;">
-                            ✨ 초기 유저 50% 할인 특가
+                            <i data-lucide="sparkles" style="width:16px;height:16px;margin-bottom:-3px;"></i> 초기 유저 50% 할인 특가
                         </div>
                         <ul style="list-style:none; padding:0; margin:0 0 30px; font-size:0.85rem; color:var(--land-text-muted); line-height:1.8;">
                             <li>✓ 여러 후보지 비교시 필수</li>
@@ -383,10 +384,10 @@
                     <div style="width:250px; text-align:left; display:flex; flex-direction:column; justify-content:center; padding-left:20px;">
                         <h4 style="font-size:1rem; margin-bottom:15px;">크레딧으로 제공되는 기능</h4>
                         <ul style="list-style:none; padding:0; margin:0; font-size:0.9rem; color:var(--land-text-main); line-height:2.5;">
-                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 1회 분석 = 1크레딧 차감</li>
-                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 마이페이지 리포트 보관</li>
-                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 서울/경기 수도권 분석 한정<br><span style="font-size:0.75rem; color:var(--land-text-muted); margin-left:26px;">(추후 전국 단위 확대 예정)</span></li>
-                            <li><span style="color:var(--land-accent); margin-right:8px;">✅</span> 현장 방문 필수 체크리스트</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;"><i data-lucide="check" style="width:18px;height:18px;margin-bottom:-4px;"></i></span> 1회 분석 = 1크레딧 차감</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;"><i data-lucide="check" style="width:18px;height:18px;margin-bottom:-4px;"></i></span> 마이페이지 리포트 보관</li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;"><i data-lucide="check" style="width:18px;height:18px;margin-bottom:-4px;"></i></span> 서울/경기 수도권 분석 한정<br><span style="font-size:0.75rem; color:var(--land-text-muted); margin-left:26px;">(추후 전국 단위 확대 예정)</span></li>
+                            <li><span style="color:var(--land-accent); margin-right:8px;"><i data-lucide="check" style="width:18px;height:18px;margin-bottom:-4px;"></i></span> 현장 방문 필수 체크리스트</li>
                         </ul>
                     </div>
                 </div>
@@ -399,7 +400,7 @@
                 <div style="flex:1; max-width:300px;">
                     <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">FAQ</span>
                     <h2 class="land-title-sec">자주 묻는 질문</h2>
-                    <div style="font-size:4rem; margin-top:20px;">💬</div>
+                    <div style="margin-top:20px;"><i data-lucide="message-circle-question" style="width:64px;height:64px;color:var(--land-accent);"></i></div>
                 </div>
                 <div style="flex:2;">
                     <div class="faq-item" onclick="this.classList.toggle('active')">
@@ -1042,5 +1043,6 @@
             }
         });
     </script>
+    <script>lucide.createIcons();</script>
 </body>
 </html>
