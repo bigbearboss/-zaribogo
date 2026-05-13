@@ -1,8 +1,5 @@
 export const onRequestPost = async (context: any) => {
-<<<<<<< Updated upstream
   try {
-=======
->>>>>>> Stashed changes
     const body = await context.request.json();
     const apiKey = context.env?.OPENAI_API_KEY;
 
