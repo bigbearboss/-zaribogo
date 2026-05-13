@@ -165,6 +165,11 @@ const elements = {
 
 let currentCRI = 0;
 let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
+
+// [DEBUG FLAGS] 원인 분석을 위한 디버그 스위치
+const DEBUG_DISABLE_META_RESOLVE = true;
+const DEBUG_DISABLE_MAP_UPDATE = false;
+const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
 type AIExtendedResult = AIAnalysisResult & {
@@ -2585,9 +2590,13 @@ function handleLocationSelect(params: {
     dongName,
   } = params;
 
-
-  
-  const admCd = resolveAdmCdFromAddress(sidoName, sigunguName, dongName);
+  // 1. ADM resolve (DEBUG_DISABLE_META_RESOLVE 시 생략)
+  let admCd: string | undefined = undefined;
+  if (DEBUG_DISABLE_META_RESOLVE) {
+    console.log("[address] meta resolve skipped by debug flag (ADM)");
+  } else {
+    admCd = resolveAdmCdFromAddress(sidoName, sigunguName, dongName);
+  }
 
   currentLocation = {
     lat,
@@ -2601,7 +2610,12 @@ function handleLocationSelect(params: {
     admCd,
   };
 
-  mapManager.setMarker(lat, lng, currentRadius);
+  // 2. Map Update (DEBUG_DISABLE_MAP_UPDATE 시 생략)
+  if (DEBUG_DISABLE_MAP_UPDATE) {
+    console.log("[address] map update skipped by debug flag");
+  } else {
+    mapManager.setMarker(lat, lng, currentRadius);
+  }
 
   const labelEl = document.getElementById("kakaoSelectedLabel");
   if (labelEl) labelEl.textContent = label;
@@ -2766,6 +2780,16 @@ loadKakaoMap()
       e.preventDefault();
       e.stopPropagation();
 
+      // [DEBUG] MINIMAL CLICK ONLY
+      if (DEBUG_MINIMAL_ADDRESS_CLICK_ONLY) {
+        console.log("[debug] minimal address click only");
+        closeSearchResults();
+        if (searchInput) {
+           searchInput.blur();
+        }
+        return;
+      }
+
       // 2. 가드 체크
       if (isSelectingAddress) return;
       isSelectingAddress = true;
@@ -2795,7 +2819,6 @@ loadKakaoMap()
         }
 
         // 4. 위치 선택 처리 (최소 데이터로 즉시 반영)
-        // resolveAddressMeta는 UI 업데이트 후 비동기로 처리하여 프리징 방지
         let meta: { address?: string; sidoName?: string; sigunguName?: string; dongName?: string } = {
           address: r.roadAddressName || r.addressName || r.placeName,
           sidoName: r.sidoName,
@@ -2815,15 +2838,16 @@ loadKakaoMap()
           dongName: meta.dongName,
         });
 
-        // 5. 상세 주소 정보(Meta)가 없는 경우에만 백그라운드에서 보완
-        if (!meta.sidoName || !meta.sigunguName || !meta.dongName) {
+        // 5. 상세 주소 정보(Meta) 보완 (DEBUG_DISABLE_META_RESOLVE 시 전체 생략)
+        if (DEBUG_DISABLE_META_RESOLVE) {
+          console.log("[address] meta resolve skipped by debug flag");
+        } else if (!meta.sidoName || !meta.sigunguName || !meta.dongName) {
           console.log("[address] Detailed meta missing, resolving in background...");
           setTimeout(async () => {
              try {
                const resolved = await mapManager.resolveAddressMeta(r.lat, r.lng);
                if (resolved && (resolved.sidoName || resolved.dongName)) {
                  console.log("[address] Background meta resolved", resolved);
-                 // 필요한 경우 여기서 상태만 업데이트 (분석 실행은 하지 않음)
                  currentLocation = { ...currentLocation, ...resolved };
                }
              } catch (err) {
