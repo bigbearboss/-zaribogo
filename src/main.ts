@@ -168,7 +168,7 @@ let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 
 // [DEBUG FLAGS] 원인 분석을 위한 디버그 스위치
 const DEBUG_DISABLE_META_RESOLVE = true;
-const DEBUG_DISABLE_MAP_UPDATE = false;
+const DEBUG_DISABLE_MAP_UPDATE = true;
 const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
@@ -1046,6 +1046,21 @@ function resetAnalysisView() {
   if (elements.estimationBanner) {
     elements.estimationBanner.classList.add("hidden");
   }
+}
+
+// [NEW] 주소 선택 시 필요한 최소 UI 상태만 초기화하는 경량 함수
+function resetLocationSelectionStateOnly(label: string) {
+  lastAnalysisResult = null;
+
+  if (elements.reportStatusBadge) {
+    elements.reportStatusBadge.textContent = "판단 대기 중";
+  }
+
+  if (elements.reportSummary) {
+    elements.reportSummary.textContent = "위치가 선택되었습니다. 업종과 조건을 입력한 뒤 자리 판단하기를 눌러주세요.";
+  }
+  
+  console.log("[address] selection state reset only (lightweight)");
 }
 
 function showAnalysisProgress(message?: string) {
@@ -2621,7 +2636,13 @@ function handleLocationSelect(params: {
   if (labelEl) labelEl.textContent = label;
 
   const locationSearchEl = document.getElementById("locationSearch") as HTMLInputElement | null;
-  if (locationSearchEl) locationSearchEl.value = label;
+  if (locationSearchEl) {
+    if (DEBUG_DISABLE_META_RESOLVE) {
+      console.log("[address] locationSearch update skipped by debug flag");
+    } else {
+      locationSearchEl.value = label;
+    }
+  }
 
   console.log("[KakaoMap] Location Selected", {
     lat,
@@ -2636,7 +2657,8 @@ function handleLocationSelect(params: {
     admCd: currentLocation.admCd,
   });
 
-  resetAnalysisView();
+  // [Suspect Fix] 무거운 resetAnalysisView 대신 경량 초기화 함수 호출
+  resetLocationSelectionStateOnly(label);
   console.log("[address] handleLocationSelect done");
 }
 
