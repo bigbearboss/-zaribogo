@@ -171,7 +171,7 @@ let isSelectingAddress = false; // [Guard] 주소 선택 처리 중 플래그
 const DEBUG_DISABLE_META_RESOLVE = false;
 const DEBUG_DISABLE_MAP_UPDATE = false;
 const DEBUG_MINIMAL_ADDRESS_CLICK_ONLY = false;
-const DEBUG_DISABLE_RESET_ANALYSIS_VIEW_ON_LOCATION_SELECT = true;
+
 
 type ResultConfidenceLevel = "high" | "medium" | "low";
 type ResultRiskLevel = "low" | "medium" | "high";
