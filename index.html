@@ -19,8 +19,32 @@
 <body data-theme="dark">
     <!-- ── Landing Page Section (Premium SaaS Conversion Focus) ──────────────────────────── -->
     <section id="landingPage" class="landing-page">
+        <!-- Landing Top Navigation -->
+        <header class="land-header" style="position:sticky; top:0; z-index:100; background:rgba(9, 14, 23, 0.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--land-border-dark);">
+            <div class="land-container" style="display:flex; justify-content:space-between; align-items:center; height:70px;">
+                <div class="logo" style="cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="window.scrollTo({top:0, behavior:'smooth'})">
+                    <i data-lucide="search" style="width:24px;height:24px;color:var(--land-accent);"></i>
+                    <span style="color:var(--land-white); font-family:'Outfit', sans-serif; font-weight:800; font-size:1.4rem;">자리보고</span>
+                </div>
+                <nav class="land-nav" style="display:flex; gap:30px; font-size:0.9rem; font-weight:500;">
+                    <a href="#" onclick="document.getElementById('land-hero').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">서비스 소개</a>
+                    <a href="#" onclick="document.getElementById('land-process').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">분석 항목</a>
+                    <a href="#" onclick="document.getElementById('land-feature1').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">리포트 샘플</a>
+                    <a href="#" onclick="document.getElementById('land-pricing').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">가격 안내</a>
+                    <a href="#" onclick="alert('고객 후기는 아직 준비 중입니다.'); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">고객 후기</a>
+                </nav>
+                <div class="land-auth">
+                    <button class="btn-nav-login" onclick="document.getElementById('btnLogin').click()" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.9rem; transition:background 0.2s;">로그인 / 가입</button>
+                </div>
+            </div>
+            <style>
+                .land-nav a:hover { color: var(--land-white) !important; }
+                .land-auth button:hover { background: rgba(255,255,255,0.1) !important; }
+            </style>
+        </header>
+
         <!-- 1. Hero Section -->
-        <section class="land-hero-v2">
+        <section id="land-hero" class="land-hero-v2">
             <div class="land-container land-hero-content">
                 <div class="land-hero-text">
                     <h1 class="land-title-main">이 자리,<br>계약해도 될까요?</h1>
@@ -90,7 +114,7 @@
         </section>
 
         <!-- 3. Process Section -->
-        <section class="land-process">
+        <section id="land-process" class="land-process">
             <div class="land-container">
                 <h2 class="land-title-sec" style="color:var(--land-accent-dark);">자리보고<span style="color:var(--land-text-main);">는 데이터를 창업 판단 언어로 바꿉니다.</span></h2>
                 <p style="color:var(--land-text-muted);">국세청, 통계청, 지자체 공공데이터 등 10개 이상의 공신력 있는 자료를 통합 분석하여<br>단순한 수치 나열이 아닌, 계약 결정에 직결되는 '판단'을 제공합니다.</p>
@@ -100,8 +124,8 @@
                         <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">입력 정보</h4>
                         <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
                             <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin" style="width:16px;height:16px;color:var(--land-accent);"></i> 주소 / 매장 위치</li>
-                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="storefront" style="width:16px;height:16px;color:var(--land-accent);"></i> 업종</li>
-                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="scaling" style="width:16px;height:16px;color:var(--land-accent);"></i> 매장 평수</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="store" style="width:16px;height:16px;color:var(--land-accent);"></i> 업종</li>
+                            <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="ruler" style="width:16px;height:16px;color:var(--land-accent);"></i> 매장 평수</li>
                         </ul>
                     </div>
                     <div class="lpr-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
@@ -110,7 +134,7 @@
                         <div class="lpr-grid-inner">
                             <div class="lpr-item"><i data-lucide="users" style="width:24px;height:24px;color:var(--land-accent);margin-bottom:8px;"></i><br>상권 현황</div>
                             <div class="lpr-item"><i data-lucide="coins" style="width:24px;height:24px;color:#ef4444;margin-bottom:8px;"></i><br>재무 위험</div>
-                            <div class="lpr-item"><i data-lucide="storefront" style="width:24px;height:24px;color:#8b5cf6;margin-bottom:8px;"></i><br>경쟁 매장</div>
+                            <div class="lpr-item"><i data-lucide="store" style="width:24px;height:24px;color:#8b5cf6;margin-bottom:8px;"></i><br>경쟁 매장</div>
                             <div class="lpr-item"><i data-lucide="triangle-alert" style="width:24px;height:24px;color:#f59e0b;margin-bottom:8px;"></i><br>사기/리스크</div>
                         </div>
                     </div>
@@ -131,7 +155,7 @@
         </section>
 
         <!-- 4. Feature Details 1 (Dark) -->
-        <section class="land-dark-section">
+        <section id="land-feature1" class="land-dark-section">
             <div class="land-container lf-split">
                 <div class="lf-text">
                     <span style="color:#93c5fd; font-weight:700; letter-spacing:1px; font-size:0.85rem;">01. SMART INSIGHT</span>
@@ -334,7 +358,7 @@
         </section>
 
         <!-- 9. Pricing Section (Using previous Mypage classes style adapted for landing) -->
-        <section style="padding: 100px 0; background: var(--land-white); text-align:center;">
+        <section id="land-pricing" style="padding: 100px 0; background: var(--land-white); text-align:center;">
             <div class="land-container">
                 <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">PRICING</span>
                 <h2 class="land-title-sec">필요할 때만 분석하는<br>크레딧 방식</h2>
@@ -357,7 +381,7 @@
                             <li>✓ 서울, 수도권 집중 타겟</li>
                             <li>✓ 예비 창업자 최적 팩</li>
                         </ul>
-                        <button class="btn-nav-login" style="width:100%; padding:14px; background:var(--land-dark-surface); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
+                        <button onclick="handlePricingCta()" style="width:100%; padding:14px; background:var(--land-dark-surface); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
                     </div>
 
                     <!-- Growth Pack -->
@@ -377,7 +401,7 @@
                             <li>✓ 여러 후보지 비교시 필수</li>
                             <li>✓ 가맹점주 다회 분석</li>
                         </ul>
-                        <button class="btn-nav-login" style="width:100%; padding:14px; background:var(--land-accent); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
+                        <button onclick="handlePricingCta()" style="width:100%; padding:14px; background:var(--land-accent); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">가입하고 결제하기</button>
                     </div>
 
                     <!-- Premium List -->
@@ -471,7 +495,7 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <header class="app-header">
-                <div class="logo">
+                <div class="logo" style="cursor:pointer;" onclick="document.getElementById('app').classList.add('hidden'); document.getElementById('landingPage').classList.remove('hidden'); window.scrollTo(0,0);">
                     <span class="logo-icon">🔍</span>
                     <span class="logo-text">자리보고</span>
                 </div>
@@ -1043,6 +1067,20 @@
             }
         });
     </script>
+    
+    <script>
+        function handlePricingCta() {
+            const btnLogin = document.getElementById('btnLogin');
+            if (btnLogin && btnLogin.classList.contains('hidden')) {
+                // Logged in
+                window.location.href = '/mypage.html#payment';
+            } else {
+                // Not logged in
+                if(btnLogin) btnLogin.click();
+            }
+        }
+    </script>
+
     <script>lucide.createIcons();</script>
 </body>
 </html>
