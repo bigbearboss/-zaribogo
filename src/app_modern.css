@@ -678,3 +678,100 @@
     padding: 0;
     margin-top: 4px;
 }
+
+/* ===== Scenario Toggle (Full Width) ===== */
+.scenario-toggle-full {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--input-bg);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    gap: 4px;
+}
+
+.scenario-btn-full {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.scen-title-full {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.scen-desc-full {
+    font-size: 0.72rem;
+    font-weight: 400;
+    opacity: 0.8;
+    line-height: 1.2;
+}
+
+.scenario-btn-full:hover {
+    color: var(--text-primary);
+    background: var(--card-border);
+}
+
+.scenario-btn-full.active {
+    background: var(--accent-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* ===== Map Block (Square + Address Below) ===== */
+.map-block {
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+}
+
+.map-square {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--input-bg);
+    overflow: hidden;
+    position: relative;
+}
+
+.map-square > div,
+.map-square > * {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.map-addr-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--input-border);
+    background: var(--input-bg);
+}
+
+.map-addr-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    flex: 1;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+/* Hide old selected-addr-card styles for the new map-block */
+.map-block .selected-addr-card { display: none !important; }
+
+/* Search icon cursor pointer feedback */
+#searchIconBtn:hover {
+    color: var(--accent-primary) !important;
+}

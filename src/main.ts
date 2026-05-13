@@ -2414,6 +2414,7 @@ if (persist) {
 }
 
 elements.startAnalysis?.addEventListener("click", () => {
+  (window as any)._analysisExecuted = true;
   handleStartAnalysisClick();
 });
 
@@ -2424,15 +2425,19 @@ elements.businessType?.addEventListener("change", () => {
 });
 
 elements.scenarioToggle?.addEventListener("click", (e) => {
-  const btn = (e.target as HTMLElement).closest(".scenario-btn");
+  const btn = (e.target as HTMLElement).closest(".scenario-btn, .scenario-btn-full");
   if (!btn) return;
 
-  elements.scenarioToggle.querySelectorAll(".scenario-btn").forEach((b) => b.classList.remove("active"));
+  elements.scenarioToggle.querySelectorAll(".scenario-btn, .scenario-btn-full").forEach((b) => b.classList.remove("active"));
   btn.classList.add("active");
 
   currentScenario = btn.getAttribute("data-scenario") as any;
   applyProfile();
-  runAnalysis();
+
+  // 분석 실행 전에는 UI 업데이트 차단 (분석버튼을 눌러야만 결과 표시)
+  if ((window as any)._analysisExecuted) {
+    runAnalysis();
+  }
 });
 
 let activeQaScenario: string | undefined = undefined;

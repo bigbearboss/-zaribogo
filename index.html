@@ -583,23 +583,32 @@
             </header>
 
             <nav class="input-nav-modern">
-                <!-- Strategy & Radius Row -->
-                <div class="sidebar-row-split">
-                    <div class="sidebar-section-compact">
-                        <div class="section-title-sm">분석 전략 모드 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
-                        <div class="scenario-toggle" id="scenarioToggle">
-                            <button class="scenario-btn" data-scenario="conservative">보수<br><span class="scen-desc">(안전 중심)</span></button>
-                            <button class="scenario-btn active" data-scenario="base">기본<br><span class="scen-desc">(균형형)</span></button>
-                            <button class="scenario-btn" data-scenario="aggressive">공격<br><span class="scen-desc">(성장 기대)</span></button>
-                        </div>
+                <!-- Radius Row -->
+                <div class="sidebar-section-compact">
+                    <div class="section-title-sm">분석 반경 설정 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
+                    <div class="radius-toggle" id="radiusToggle">
+                        <button class="btn-toggle" data-radius="300">300m</button>
+                        <button class="btn-toggle active" data-radius="500">500m</button>
+                        <button class="btn-toggle" data-radius="1000">1000m</button>
                     </div>
-                    <div class="sidebar-section-compact">
-                        <div class="section-title-sm">분석 반경 설정 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
-                        <div class="radius-toggle" id="radiusToggle">
-                            <button class="btn-toggle" data-radius="300">300m</button>
-                            <button class="btn-toggle active" data-radius="500">500m</button>
-                            <button class="btn-toggle" data-radius="1000">1000m</button>
-                        </div>
+                </div>
+
+                <!-- Strategy Mode (Full Width, below radius) -->
+                <div class="sidebar-section-compact">
+                    <div class="section-title-sm">분석 전략 모드 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
+                    <div class="scenario-toggle-full" id="scenarioToggle">
+                        <button class="scenario-btn-full" data-scenario="conservative">
+                            <span class="scen-title-full">보수</span>
+                            <span class="scen-desc-full">안전 중심</span>
+                        </button>
+                        <button class="scenario-btn-full active" data-scenario="base">
+                            <span class="scen-title-full">기본</span>
+                            <span class="scen-desc-full">균형형</span>
+                        </button>
+                        <button class="scenario-btn-full" data-scenario="aggressive">
+                            <span class="scen-title-full">공격</span>
+                            <span class="scen-desc-full">성장 기대</span>
+                        </button>
                     </div>
                 </div>
 
@@ -608,18 +617,18 @@
                     <div class="section-title-sm">위치 선택 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
                     <div id="kakaoMapSection" style="position:relative;">
                         <div class="search-input-modern">
-                            <i data-lucide="search" style="width:18px;height:18px;color:var(--text-muted);"></i>
+                            <i data-lucide="search" id="searchIconBtn" style="width:18px;height:18px;color:var(--text-muted);cursor:pointer;flex-shrink:0;"></i>
                             <input id="kakaoSearchInput" type="text" placeholder="지도에서 위치 검색... (예: 강남역)">
                             <button id="kakaoSearchBtn" type="button" style="display:none;">🔍</button>
                         </div>
                         <ul id="kakaoSearchResults" class="search-results-modern"></ul>
-                        
-                        <div class="selected-addr-card" id="kakaoSelectedAddr">
-                            <div class="map-thumb-placeholder" id="kakaoMapContainer"></div>
-                            <div class="addr-info">
-                                <span class="addr-label">선택된 주소</span>
-                                <span id="kakaoSelectedLabel" class="addr-value">서울시 강남구 테헤란로 123</span>
-                                <button class="btn-map-detail">주소 상세 보기 <i data-lucide="external-link" style="width:12px;height:12px;"></i></button>
+
+                        <!-- Map container (square) + address below -->
+                        <div id="kakaoSelectedAddr" class="map-block">
+                            <div id="kakaoMapContainer" class="map-square"></div>
+                            <div class="map-addr-bar">
+                                <i data-lucide="map-pin" style="width:14px;height:14px;color:var(--accent-primary);flex-shrink:0;"></i>
+                                <span id="kakaoSelectedLabel" class="map-addr-text">위치를 검색하거나 지도에서 선택하세요</span>
                                 <span id="kakaoSelectedPin" style="display:none;">📍</span>
                             </div>
                         </div>
@@ -685,7 +694,7 @@
                             <input type="number" id="deposit" placeholder="예) 50,000,000" value="50000000">
                         </div>
                         <div class="input-modern">
-                            <label>포트폴리오 직원 수 (명)</label>
+                            <label>직원 수 (명)</label>
                             <input type="number" id="albiCount" placeholder="예) 3" value="3">
                         </div>
                         <div class="input-modern">
@@ -715,17 +724,30 @@
                             <div class="input-modern"><label>권리금 (원)</label><input type="number" id="premium" placeholder="예) 20,000,000" value="20000000"></div>
                         </div>
                         <div class="input-grid-2x2" style="margin-top:12px; align-items:center;">
-                            <div class="input-modern-check" style="margin-top:0;">
+                            <div class="input-modern-check" style="margin-top:0; grid-column: span 2; display:flex; align-items:center; gap:8px;">
                                 <input type="checkbox" id="hasParking">
                                 <label for="hasParking">전용 주차 가능</label>
                             </div>
                             <div class="input-modern">
                                 <label>접객 좌석</label>
-                                <select><option>선택하세요 v</option></select>
+                                <select id="seatingCount">
+                                    <option value="">선택하세요</option>
+                                    <option value="10이하">10석 이하</option>
+                                    <option value="11-20">11 ~ 20석</option>
+                                    <option value="21-30">21 ~ 30석</option>
+                                    <option value="31-50">31 ~ 50석</option>
+                                    <option value="51이상">51석 이상</option>
+                                </select>
                             </div>
-                            <div class="input-modern" style="grid-column: span 2;">
-                                <label>매출·수익 지표</label>
-                                <select><option>선택하세요 v</option></select>
+                            <div class="input-modern">
+                                <label>매출 수준</label>
+                                <select id="revenueLevel">
+                                    <option value="">선택하세요</option>
+                                    <option value="low">월 500만원 미만</option>
+                                    <option value="mid">월 500~1,500만원</option>
+                                    <option value="high">월 1,500~3,000만원</option>
+                                    <option value="vhigh">월 3,000만원 이상</option>
+                                </select>
                             </div>
                         </div>
                         <div class="input-grid-2x2" style="margin-top:12px;">
@@ -1041,6 +1063,79 @@
     </script>
 
     <script>lucide.createIcons();</script>
+
+    <script>
+    /* ── Issue 2: 돋보기 아이콘 클릭 시 검색 실행 ── */
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchIcon = document.getElementById('searchIconBtn');
+        const searchInput = document.getElementById('kakaoSearchInput');
+        const searchBtn = document.getElementById('kakaoSearchBtn');
+
+        if (searchIcon && searchInput && searchBtn) {
+            searchIcon.addEventListener('click', () => {
+                // Trigger the same search that Enter key would
+                const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+                searchInput.dispatchEvent(event);
+                // Also try clicking the hidden btn (main.ts may wire this)
+                searchBtn.click();
+            });
+        }
+
+        /* ── Issue 3: 지도 주소를 지도 하단 bar에 반영 ── */
+        const labelEl = document.getElementById('kakaoSelectedLabel');
+        const addrBar = document.querySelector('.map-addr-text');
+        if (labelEl && addrBar) {
+            const sync = () => { addrBar.textContent = labelEl.textContent || '위치를 검색하거나 지도에서 선택하세요'; };
+            sync();
+            new MutationObserver(sync).observe(labelEl, { childList: true, characterData: true, subtree: true });
+        }
+
+        /* ── Issue 6: 분석 실행 전 CRI 대시보드가 반응하지 않도록 차단 ── */
+        // 분석 완료 플래그 – startAnalysis 버튼 클릭 후에만 true
+        window._analysisExecuted = false;
+
+        const startBtn = document.getElementById('startAnalysis');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                window._analysisExecuted = true;
+            }, { capture: true });
+        }
+
+        // scenarioToggle 내 버튼 클릭 시, 분석 실행 전이면 gauge/score 업데이트 차단
+        const scenarioToggle = document.getElementById('scenarioToggle');
+        if (scenarioToggle) {
+            scenarioToggle.addEventListener('click', (e) => {
+                if (window._analysisExecuted) return; // 이미 분석했으면 정상 동작
+
+                // 클릭 후 main.ts가 updateUI()를 호출해 점수를 바꿀 수 있으므로,
+                // 다음 틱에 gauge/score를 강제 초기화
+                setTimeout(() => {
+                    const compositeScore = document.getElementById('compositeScore');
+                    const riskTier = document.getElementById('riskTier');
+                    const gaugePath = document.getElementById('gaugePath');
+                    const fScore = document.getElementById('fScore');
+                    const mScore = document.getElementById('mScore');
+                    const valCompetition = document.getElementById('valCompetition');
+                    const valDiversity = document.getElementById('valDiversity');
+
+                    if (compositeScore && compositeScore.textContent !== '--') {
+                        compositeScore.textContent = '--';
+                    }
+                    if (riskTier && riskTier.textContent !== '판단 대기 중') {
+                        riskTier.textContent = '판단 대기 중';
+                    }
+                    if (gaugePath) {
+                        gaugePath.style.strokeDashoffset = '251.3';
+                    }
+                    if (fScore && fScore.textContent !== '--') fScore.textContent = '--';
+                    if (mScore && mScore.textContent !== '--') mScore.textContent = '--';
+                    if (valCompetition && valCompetition.textContent !== '--') valCompetition.textContent = '--';
+                    if (valDiversity && valDiversity.textContent !== '--') valDiversity.textContent = '--';
+                }, 50);
+            });
+        }
+    });
+    </script>
 
     <script>
         // Observe llmCard to toggle empty state in Action Guide
