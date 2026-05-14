@@ -3102,14 +3102,14 @@ function updateJudgmentUI(
         <div class="risk-grade-header">
           <span class="grade-badge ${gradeClass}">${riskText} · GRADE ${grade}</span>
         </div>
-        <div class="risk-grade-desc" style="font-weight:800; font-size:1.2rem; color:#111827; margin-top:8px;">
+        <div class="risk-grade-desc" style="font-weight:800; font-size:1.2rem; color:var(--text-primary); margin-top:8px;">
           ${aiOneLine}
         </div>
         <div class="risk-grade-desc" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
-          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:#d97706;"></i> 고정비 부담이 높음</div>
-          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:#d97706;"></i> 수요/경쟁 지표 추가 확인 필요</div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:var(--warning-amber);"></i> 고정비 부담이 높음</div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:var(--warning-amber);"></i> 수요/경쟁 지표 추가 확인 필요</div>
         </div>
-        <div class="risk-grade-tip" style="margin-top:16px; border:none; background:#ffffff; font-size:0.8rem; color:#64748b;">
+        <div class="risk-grade-tip" style="margin-top:16px; border:none; font-size:0.8rem;">
           기준일: ${today} | 분석 반경: ${currentRadius}m | 업종: ${sectorLabel} | 주소: ${address}
         </div>
       </div>
@@ -3145,7 +3145,7 @@ function updateJudgmentUI(
                 <div class="cri-score-label">점</div>
               </div>
             </div>
-            <div style="font-size:0.85rem; font-weight:700; color:#1e40af; margin-top:8px;">
+            <div style="font-size:0.85rem; font-weight:700; color:var(--brand-blue-strong); margin-top:8px;">
               ${cri >= 70 ? "위험" : cri >= 50 ? "주의" : "안정권"}
             </div>
             <div class="text-sub" style="font-size:0.65rem;">0~30: 안정 | 31~69: 주의 | 70+: 위험</div>
@@ -3213,7 +3213,7 @@ function updateJudgmentUI(
         </div>
       </div>
 
-      <div class="zentropa-card" style="border-left: 4px solid #7c3aed;">
+      <div class="zentropa-card" style="border-left: 4px solid var(--ai-purple);">
         <div class="zentropa-card-title">
           AI 결론 및 행동 방안 <span class="badge badge-ai">AI 판단</span>
         </div>
@@ -3223,7 +3223,7 @@ function updateJudgmentUI(
           <ul class="ai-rationale-list" id="zentropaWhyList">
             ${aiRationale.length > 0 ? aiRationale.map(r => `
               <li class="ai-rationale-item">
-                <i data-lucide="info" style="width:14px; height:14px; color:#7c3aed; flex-shrink:0; margin-top:3px;"></i>
+                <i data-lucide="info" style="width:14px; height:14px; color:var(--ai-purple); flex-shrink:0; margin-top:3px;"></i>
                 <span>${r}</span>
               </li>
             `).join("") : `
@@ -3239,7 +3239,7 @@ function updateJudgmentUI(
           <ul class="ai-rationale-list" id="zentropaStrategyList">
             ${aiAdvice.length > 0 ? aiAdvice.map(a => `
               <li class="ai-rationale-item">
-                <i data-lucide="zap" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0; margin-top:3px;"></i>
+                <i data-lucide="zap" style="width:14px; height:14px; color:var(--warning-amber); flex-shrink:0; margin-top:3px;"></i>
                 <span>${a}</span>
               </li>
             `).join("") : `
@@ -3339,9 +3339,9 @@ function updateJudgmentUI(
             <div class="financial-item-row"><span>현금 보유 기간</span><span class="financial-item-val">${fp.depositLiquidityMonths || 3.2}개월</span></div>
             <div class="financial-item-row"><span>손익률</span><span class="financial-item-val">12%</span></div>
           </div>
-          <div style="background:#f8fafc;">
+          <div style="background:var(--surface-subtle);">
             <div class="text-sub" style="margin-bottom:12px;">안정권 진입 매출 (목표)</div>
-            <div style="font-size:1.4rem; font-weight:800; color:#2563eb;">${fmtMan(fp.targetMonthlyRevenue || 0)}</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--brand-blue);">${fmtMan(fp.targetMonthlyRevenue || 0)}</div>
             <div class="text-desc" style="margin-top:8px; font-size:0.75rem;">현재 조건에서는 최소 ${fmtMan(fp.targetMonthlyRevenue || 0)} 이상의 매출이 필요합니다. 고정비 비율이 높아 매출 변동성에 취약할 수 있습니다.</div>
           </div>
         </div>
@@ -3350,11 +3350,11 @@ function updateJudgmentUI(
       <div class="zentropa-card">
         <div class="zentropa-card-title">부동산/임대인에게 꼭 확인할 것 <span class="badge badge-ai">AI 가이드</span></div>
         <ul class="checklist-grid ai-check-list" id="zentropaRealtorChecks">
-          ${aiRealtorChecklist.length > 0 ? aiRealtorChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>실제 월세·관리비 외 추가 부담금이 있는지 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>권리금 산정 근거와 협상 가능 여부 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>원상복구 범위와 중도해지 조건 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>건물 하자, 누수, 전력 용량, 배수 시설 확인</span></li>
+          ${aiRealtorChecklist.length > 0 ? aiRealtorChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--success-green); flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--success-green); flex-shrink:0;"></i> <span>실제 월세·관리비 외 추가 부담금이 있는지 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--success-green); flex-shrink:0;"></i> <span>권리금 산정 근거와 협상 가능 여부 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--success-green); flex-shrink:0;"></i> <span>원상복구 범위와 중도해지 조건 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--success-green); flex-shrink:0;"></i> <span>건물 하자, 누수, 전력 용량, 배수 시설 확인</span></li>
           `}
         </ul>
       </div>
@@ -3362,11 +3362,11 @@ function updateJudgmentUI(
       <div class="zentropa-card">
         <div class="zentropa-card-title">현장 진단 체크리스트 <span class="badge badge-ai">AI 가이드</span></div>
         <ul class="checklist-grid ai-check-list" id="zentropaFieldChecks">
-          ${aiFieldChecklist.length > 0 ? aiFieldChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>점심/저녁/주말 유동량을 최소 3회 이상 직접 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>비 오는 날과 맑은 날의 유동 차이 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>상위 경쟁점의 대기열, 회전율, 리뷰 반응 확인</span></li>
-            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>건물 전면 가시성, 간판 노출, 주차 편의성 확인</span></li>
+          ${aiFieldChecklist.length > 0 ? aiFieldChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--brand-blue); flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--brand-blue); flex-shrink:0;"></i> <span>점심/저녁/주말 유동량을 최소 3회 이상 직접 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--brand-blue); flex-shrink:0;"></i> <span>비 오는 날과 맑은 날의 유동 차이 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--brand-blue); flex-shrink:0;"></i> <span>상위 경쟁점의 대기열, 회전율, 리뷰 반응 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--brand-blue); flex-shrink:0;"></i> <span>건물 전면 가시성, 간판 노출, 주차 편의성 확인</span></li>
           `}
         </ul>
       </div>
@@ -3374,10 +3374,10 @@ function updateJudgmentUI(
       <div class="zentropa-card">
         <div class="zentropa-card-title">현장 확인 필수 체크리스트 <span class="badge badge-notice">서비스 고지</span></div>
         <ul class="checklist-grid ai-check-list">
-          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>전기·수도·가스 등 공과금 관련 추가 비용 확인</span></li>
-          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>매장 내부 및 외부 시설 하자 확인</span></li>
-          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>주변 소음/악취/민원 발생 가능성 확인</span></li>
-          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>이전 임차인의 퇴점 사유 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--warning-amber); flex-shrink:0;"></i> <span>전기·수도·가스 등 공과금 관련 추가 비용 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--warning-amber); flex-shrink:0;"></i> <span>매장 내부 및 외부 시설 하자 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--warning-amber); flex-shrink:0;"></i> <span>주변 소음/악취/민원 발생 가능성 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:var(--warning-amber); flex-shrink:0;"></i> <span>이전 임차인의 퇴점 사유 확인</span></li>
         </ul>
       </div>
 
@@ -3395,12 +3395,12 @@ function updateJudgmentUI(
         </details>
       </div>
 
-      <div class="caution-banner" style="background:#fffbeb; border-color:#fef3c7; border-radius:12px; padding:20px; border:1px solid #fde68a;">
-        <div class="caution-header" style="color:#b45309; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <div class="caution-banner">
+        <div class="caution-header">
           <i data-lucide="alert-circle" style="width:18px; height:18px;"></i>
           <span>최종 유의사항</span>
         </div>
-        <div class="text-desc" style="color:#92400e; font-size:0.8rem;">
+        <div class="caution-desc">
           자리보고의 분석 결과는 창업 의사결정을 돕기 위한 참고 자료입니다. 최종 계약 전에는 반드시 현장 확인과 전문가 검토를 함께 진행하세요. 
           AI는 현장 동선, 건물 상태, 임대 협상 여지 등을 직접 확인할 수 없으므로 최종 결정은 사용자 판단이 필요합니다.
         </div>

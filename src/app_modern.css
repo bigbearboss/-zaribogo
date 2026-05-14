@@ -4,31 +4,67 @@
 
 /* Variables overrides for modern app */
 [data-theme="dark"] {
-    --bg-main: #0f172a;
-    --sidebar-bg: #111827;
-    --card-bg: rgba(30, 41, 59, 0.6);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --input-bg: rgba(15, 23, 42, 0.8);
-    --input-border: rgba(255, 255, 255, 0.1);
+    /* Legacy App Variables */
+    --bg-main: #07111f;
+    --sidebar-bg: #0f1b2d;
+    --card-bg: #132238;
+    --card-border: rgba(148, 163, 184, 0.2);
+    --input-bg: #0b1220;
+    --input-border: rgba(148, 163, 184, 0.2);
     --text-primary: #f8fafc;
     --text-muted: #94a3b8;
     --accent-primary: #3b82f6;
-    --accent-hover: #2563eb;
+    --accent-hover: #60a5fa;
     --accent-light: rgba(59, 130, 246, 0.1);
+
+    /* New Zentropa Tokens */
+    --page-bg: #07111F;
+    --surface-main: #0F1B2D;
+    --surface-subtle: #132238;
+    --surface-elevated: #17263D;
+    --border-soft: rgba(148, 163, 184, 0.18);
+    --text-secondary: #CBD5E1;
+    --brand-blue: #3B82F6;
+    --brand-blue-strong: #60A5FA;
+    --brand-cyan: #22D3EE;
+    --risk-red: #F87171;
+    --risk-orange: #FB923C;
+    --warning-amber: #FBBF24;
+    --success-green: #34D399;
+    --ai-purple: #A78BFA;
+    --shadow-report: 0 12px 32px rgba(0, 0, 0, 0.22);
 }
 
 [data-theme="light"] {
-    --bg-main: #f1f5f9;
+    /* Legacy App Variables */
+    --bg-main: #f5f7fb;
     --sidebar-bg: #ffffff;
     --card-bg: #ffffff;
-    --card-border: #e2e8f0;
-    --input-bg: #f8fafc;
+    --card-border: #e5eaf2;
+    --input-bg: #ffffff;
     --input-border: #cbd5e1;
     --text-primary: #0f172a;
     --text-muted: #64748b;
-    --accent-primary: #3b82f6;
-    --accent-hover: #2563eb;
+    --accent-primary: #2563eb;
+    --accent-hover: #1d4ed8;
     --accent-light: #eff6ff;
+
+    /* New Zentropa Tokens */
+    --page-bg: #F5F7FB;
+    --surface-main: #FFFFFF;
+    --surface-subtle: #F8FAFC;
+    --surface-elevated: #FFFFFF;
+    --border-soft: #E5EAF2;
+    --text-secondary: #475569;
+    --brand-blue: #2563EB;
+    --brand-blue-strong: #1D4ED8;
+    --brand-cyan: #06B6D4;
+    --risk-red: #EF4444;
+    --risk-orange: #F97316;
+    --warning-amber: #F59E0B;
+    --success-green: #10B981;
+    --ai-purple: #7C3AED;
+    --shadow-report: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 /* Sidebar Layout */
