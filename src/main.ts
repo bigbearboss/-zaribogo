@@ -2924,9 +2924,6 @@ if (originalRadiusToggle) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 비용 부담 진단 카드 렌더러 (Legacy)
-// ─────────────────────────────────────────────────────────────────────────────
 function renderFinancialPressureCard(fp: FinancialPressureResult | null) {
   const card = elements.financialPressureCard;
   if (!card) return;
@@ -3068,7 +3065,6 @@ function updateJudgmentUI(
 ) {
   if (!elements.zentropaReportContainer || !elements.legacyDashboardContent) return;
 
-  // 기존 대시보드 숨기고 Zentropa 리포트 표시
   elements.legacyDashboardContent.classList.add("hidden");
   elements.zentropaReportContainer.classList.remove("hidden");
 
@@ -3093,8 +3089,7 @@ function updateJudgmentUI(
     return `${Math.round(n / 10000).toLocaleString()}만원`;
   };
 
-  // AI Results
-  const aiOneLine = structuredResult?.summary?.one_line || (cri >= 70 ? "현재 조건에서는 고정비 부담과 수요 기반을 함께 재검토해야 하는 입지입니다." : "안정적인 운영이 기대되나 세부 현장 확인이 필요한 단계입니다.");
+  const aiOneLine = structuredResult?.summary?.one_line || "현재 조건에서는 바로 계약하기보다 임대 조건 조정과 현장 검증이 필요한 입지입니다.";
   const aiRationale = structuredResult?.summary?.decision_rationale || [];
   const aiAdvice = structuredResult?.summary?.strategic_advice || [];
   const aiActions = structuredResult?.summary?.recommendations || [];
@@ -3103,30 +3098,29 @@ function updateJudgmentUI(
 
   elements.zentropaReportContainer.innerHTML = `
     <div class="zentropa-container">
-      <!-- 1. 최상단 종합 판단 카드 -->
       <div class="risk-grade-banner">
         <div class="risk-grade-header">
           <span class="grade-badge ${gradeClass}">${riskText} · GRADE ${grade}</span>
         </div>
-        <div class="risk-grade-desc" style="font-weight:700; font-size:1.1rem; color:#111827; margin-top:8px;">
+        <div class="risk-grade-desc" style="font-weight:800; font-size:1.2rem; color:#111827; margin-top:8px;">
           ${aiOneLine}
         </div>
-        <div class="risk-grade-desc" style="margin-top:4px;">
-          계약 전 임대 조건 조정과 현장 유동 확인이 필요합니다.
+        <div class="risk-grade-desc" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:#d97706;"></i> 고정비 부담이 높음</div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:0.95rem;"><i data-lucide="check-circle" style="width:16px; height:16px; color:#d97706;"></i> 수요/경쟁 지표 추가 확인 필요</div>
         </div>
-        <div class="risk-grade-tip" style="margin-top:12px; border:none; background:#f8fafc; font-size:0.75rem; color:#64748b;">
-          기준일: ${today} | 분석 반경: ${currentRadius}m | 업종: ${sectorLabel}
+        <div class="risk-grade-tip" style="margin-top:16px; border:none; background:#ffffff; font-size:0.8rem; color:#64748b;">
+          기준일: ${today} | 분석 반경: ${currentRadius}m | 업종: ${sectorLabel} | 주소: ${address}
         </div>
       </div>
 
-      <!-- 2. AI 분석 요약 카드 -->
       <div class="zentropa-ai-card">
         <div class="zentropa-ai-content">
           <div class="badge badge-ai" style="margin-left:0; margin-bottom:12px;"><i data-lucide="sparkles" style="width:10px; height:10px; margin-right:4px;"></i> AI 요약</div>
-          <div class="zentropa-ai-title" style="font-size:1.15rem;">AI가 입지 조건, 경쟁 환경, 비용 구조, 수요 지표를 종합해 판단했습니다.</div>
-          <div class="zentropa-ai-subtitle" style="line-height:1.6; color:#4b5563;">
-            이번 입지는 비용 부담은 높은 반면, 시장 수요와 경쟁 환경은 추가 검토가 필요한 상태입니다.<br>
-            아래에서 리스크 근거와 계약 전 확인해야 할 행동 항목을 확인하세요.
+          <div class="zentropa-ai-title" style="font-size:1.15rem; line-height:1.6;">
+            1. AI가 입지 조건, 경쟁 환경, 비용 구조, 수요 지표를 종합해 판단했습니다.<br>
+            2. 이번 입지는 재무 부담이 높고, 수요 기반에 대한 추가 검증이 필요합니다.<br>
+            3. 계약 전 임대 조건 조정, 현장 유동 확인, 경쟁점 검토를 우선 진행하세요.
           </div>
         </div>
         <div class="zentropa-ai-illustration-wrapper">
@@ -3136,7 +3130,6 @@ function updateJudgmentUI(
         </div>
       </div>
 
-      <!-- 3. CRI 창업 위험 지수 + 4대 세부 지표 -->
       <div class="zentropa-card">
         <div class="zentropa-card-title">창업 위험 지수 (CRI) <span class="badge badge-calc">계산값</span></div>
         <div class="cri-layout">
@@ -3161,67 +3154,65 @@ function updateJudgmentUI(
             <div class="cri-metric-item">
               <div class="cri-metric-header"><span>재무적 압박 <span class="badge badge-ai">AI 판단</span></span><span class="cri-metric-score">${financialScore}점</span></div>
               <div class="cri-metric-bar"><div class="cri-metric-fill" style="width:${financialScore}%"></div></div>
-              <div class="text-sub" style="margin-top:6px;">${financialScore >= 70 ? "월세와 고정비 부담이 높아 수익성 개선이 필요합니다." : "고정비 비중이 안정적이며 수익 확보가 용이합니다."}</div>
+              <div class="text-sub" style="margin-top:6px;">해석: 월세/고정비/초기 투자 부담 지표 반영</div>
             </div>
             <div class="cri-metric-item">
               <div class="cri-metric-header"><span>시장 및 수요 <span class="badge badge-ai">AI 판단</span></span><span class="cri-metric-score">${marketScore}점</span></div>
               <div class="cri-metric-bar"><div class="cri-metric-fill" style="width:${marketScore}%"></div></div>
-              <div class="text-sub" style="margin-top:6px;">${marketScore <= 40 ? "수요 기반은 일부 존재하지만 고객 확보 가능성 확인이 필요합니다." : "풍부한 유동 인구와 배후 수요가 입증된 입지입니다."}</div>
+              <div class="text-sub" style="margin-top:6px;">해석: 배후 수요 및 인구 유동 가능성 평가</div>
             </div>
             <div class="cri-metric-item">
               <div class="cri-metric-header"><span>경쟁 강도 <span class="badge badge-ai">AI 판단</span></span><span class="cri-metric-score">${competitionScore}점</span></div>
               <div class="cri-metric-bar"><div class="cri-metric-fill" style="width:${competitionScore}%"></div></div>
-              <div class="text-sub" style="margin-top:6px;">${competitionScore >= 60 ? "주변 경쟁이 치열하며 차별화 전략이 필수적인 상권입니다." : "경쟁 밀도는 과도하지 않지만 숨은 경쟁점 확인이 필요합니다."}</div>
+              <div class="text-sub" style="margin-top:6px;">해석: 동일/유사 업종 밀도 기반 시장 과열도 측정</div>
             </div>
             <div class="cri-metric-item">
-              <div class="cri-metric-header"><span>업종 안정성 <span class="badge badge-ai">AI 판단</span></span><span class="cri-metric-score">${stabilityScore}점</span></div>
+              <div class="cri-metric-header"><span>상권 안정성 <span class="badge badge-ai">AI 판단</span></span><span class="cri-metric-score">${stabilityScore}점</span></div>
               <div class="cri-metric-bar"><div class="cri-metric-fill" style="width:${stabilityScore}%"></div></div>
-              <div class="text-sub" style="margin-top:6px;">${stabilityScore >= 50 ? "업종 구성은 보통 수준이며 추가 데이터 확인이 필요합니다." : "해당 업종이 안정적으로 운영될 수 있는 환경입니다."}</div>
+              <div class="text-sub" style="margin-top:6px;">해석: 상권 업종 구성의 다양성과 지속 가능성</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 4. 공공데이터 기반 핵심 근거 카드 -->
       <div class="zentropa-card">
         <div class="zentropa-card-title">공공데이터 기반 핵심 근거</div>
-        <div class="factors-grid">
+        <div class="two-col-grid factors-grid">
           <div class="factor-card-detailed">
             <div class="factor-metric">
               <span class="text-highlight">매출 관련 요인</span>
-              <span class="badge badge-public">공공데이터</span>
+              <span class="badge badge-public">공공데이터 기반</span>
             </div>
-            <div class="factor-val">${marketScore}점</div>
-            <div class="text-desc" style="font-size:0.8rem;">배후 수요는 보통 이하이며, 초기 고객 확보 검증이 필요합니다.</div>
+            <div class="factor-val">수요 점수 ${marketScore}점</div>
+            <div class="text-desc" style="font-size:0.8rem;">배후 수요는 긍정적이나 실제 구매 전환은 현장 확인이 필요합니다.</div>
           </div>
           <div class="factor-card-detailed">
             <div class="factor-metric">
               <span class="text-highlight">비용 요인</span>
-              <span class="badge badge-input">사용자 입력</span>
+              <span class="badge badge-input">사용자 입력 기반 / 계산값</span>
             </div>
-            <div class="factor-val">${fmtMan(fp.estimatedMonthlyFixedCost || 0)}</div>
-            <div class="text-desc" style="font-size:0.8rem;">임대료와 인건비 비중이 높아 손익분기점 부담이 큽니다.</div>
+            <div class="factor-val">월 고정비 ${fmtMan(fp.estimatedMonthlyFixedCost || 0)}</div>
+            <div class="text-desc" style="font-size:0.8rem;">임대료와 인건비 부담이 높아 손익분기점 부담이 큽니다.</div>
           </div>
           <div class="factor-card-detailed">
             <div class="factor-metric">
               <span class="text-highlight">운영 요인</span>
               <span class="badge badge-calc">계산값</span>
             </div>
-            <div class="factor-val">${fp.depositLiquidityMonths || 3.2}개월</div>
+            <div class="factor-val">현금 보유 ${fp.depositLiquidityMonths || 3.2}개월 분</div>
             <div class="text-desc" style="font-size:0.8rem;">초기 운영 안정성을 위해 최소 3개월 이상의 자금 여력이 필요합니다.</div>
           </div>
           <div class="factor-card-detailed">
             <div class="factor-metric">
               <span class="text-highlight">외부 환경 요인</span>
-              <span class="badge badge-public">공공데이터</span>
+              <span class="badge badge-public">공공데이터 기반</span>
             </div>
-            <div class="factor-val">${competitionScore}점</div>
+            <div class="factor-val">경쟁 점수 ${competitionScore}점</div>
             <div class="text-desc" style="font-size:0.8rem;">주변 상권의 변화 가능성과 소비 동선을 추가 확인해야 합니다.</div>
           </div>
         </div>
       </div>
 
-      <!-- 5. AI 결론 및 행동 방안 -->
       <div class="zentropa-card" style="border-left: 4px solid #7c3aed;">
         <div class="zentropa-card-title">
           AI 결론 및 행동 방안 <span class="badge badge-ai">AI 판단</span>
@@ -3273,7 +3264,6 @@ function updateJudgmentUI(
         </div>
       </div>
 
-      <!-- 9. 개선 권고 및 실행 전략 -->
       <div class="zentropa-card">
         <div class="zentropa-card-title">개선 권고 및 실행 전략 <span class="badge badge-ai">AI 판단</span></div>
         <div class="advice-grid" id="zentropaAdviceGrid">
@@ -3305,7 +3295,6 @@ function updateJudgmentUI(
         </div>
       </div>
 
-      <!-- 10. 결론 원인 진단 -->
       <div class="zentropa-card">
         <div class="zentropa-card-title">결론 원인 진단</div>
         <div class="cause-grid">
@@ -3327,85 +3316,96 @@ function updateJudgmentUI(
           <div class="cause-card">
             <div class="cause-icon"><i data-lucide="won-sign" class="icon-green"></i></div>
             <div class="cause-name">수익성 저하</div>
-        <div class="financial-table-header">
-          <span>비용 및 재무 분석</span>
-          <span style="font-size:0.7rem; padding:2px 8px; border:1px solid #e5e7eb; border-radius:4px; font-weight:400; cursor:pointer;">자세히 보기</span>
-        </div>
-        <div class="financial-grid">
-          <div class="financial-col">
-            <span class="financial-section-label">세부 요약</span>
-            <div class="financial-row"><span>매출액</span><span class="financial-val">${fmtMan(fp.estimatedMonthlyRevenue || 0)}</span></div>
-            <div class="financial-row"><span>월 임대료</span><span class="financial-val">${fmtMan(fp.monthlyRent || 0)}</span></div>
-            <div class="financial-row"><span>고정비</span><span class="financial-val">${fmtMan(fp.estimatedMonthlyFixedCost || 0)}</span></div>
-            <div class="financial-row"><span>변동비</span><span class="financial-val">${fmtMan((fp.estimatedMonthlyRevenue || 0) * 0.4)}</span></div>
-          </div>
-          <div class="financial-col">
-            <span class="financial-section-label">주요 지표</span>
-            <div class="financial-row"><span>매출 성장률</span><span class="financial-val">+15% <i data-lucide="trending-up" style="width:12px; height:12px;"></i></span></div>
-            <div class="financial-row"><span>순이익률</span><span class="financial-val">4% <i data-lucide="arrow-up" style="width:12px; height:12px; color:#ef4444;"></i></span></div>
-            <div class="financial-row"><span>고정비 비중</span><span class="financial-val">52%</span></div>
-            <div class="financial-row"><span>현금 보유 기간</span><span class="financial-val">3.2개월</span></div>
-          </div>
-          <div class="financial-col">
-            <span class="financial-section-label">손익 분기점</span>
-            <div class="financial-row" style="margin-bottom:4px;"><span>6개월 내 달성 완료 유지</span></div>
-            <div class="financial-row" style="font-size:1.1rem; font-weight:800;"><span>${fmtMan(fp.targetMonthlyRevenue || 0)}</span></div>
-            <div class="cri-metric-bar" style="margin:8px 0;"><div class="cri-metric-fill" style="width:85%; background:linear-gradient(90deg, #3b82f6, #ef4444);"></div></div>
-            <div style="font-size:0.7rem; color:var(--report-muted);">리스크 요인: 고정비 비중이 높아 매출 변동성 존재</div>
+            <div class="cause-desc" style="font-size:0.7rem;">고정비 비중이 높아 마진 확보 어려움</div>
           </div>
         </div>
       </div>
 
-      <!-- 9. Detailed Data Accordion -->
-      <div class="zentropa-accordion">
-        <details>
-          <summary class="accordion-header"><i data-lucide="database" class="icon-blue"></i> 상세 데이터 및 분석 지표</summary>
-          <div class="metric-detail-grid">
-            <div class="metric-detail-item"><span class="metric-detail-label">시장 수요 점수</span><span class="metric-detail-val">${marketScore}점</span></div>
-            <div class="metric-detail-item"><span class="metric-detail-label">경쟁 강도 점수</span><span class="metric-detail-val">${competitionScore}점</span></div>
-            <div class="metric-detail-item"><span class="metric-detail-label">인근 동종 업종 수</span><span class="metric-detail-val">${(analysis as any)._rawPublicData?.competitorsCount || 0}개</span></div>
-            <div class="metric-detail-item"><span class="metric-detail-label">상권 다양성 지수</span><span class="metric-detail-val">${Math.round(((analysis as any)._rawPublicData?.diversityIndex || 0) * 100)}점</span></div>
-            <div class="metric-detail-item"><span class="metric-detail-label">임대료 부담 수준</span><span class="metric-detail-val">${fp.rentBurdenLevel || '보통'}</span></div>
-            <div class="metric-detail-item"><span class="metric-detail-label">보증금 유동성</span><span class="metric-detail-val">${fp.depositLiquidityLevel || '양호'}</span></div>
-          </div>
-        </details>
-      </div>
-
-      <!-- Checklists -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-        <div class="zentropa-card">
-          <div class="zentropa-card-title">현장 진단 체크리스트</div>
-          <ul class="ai-check-list">
-            <li>재무제표 및 손익계산서 확인</li>
-            <li>매출 및 비용 구분 현황 파악</li>
-            <li>영업자 매매 성공 완료도</li>
-            <li>신뢰 및 조직 환경 영향 파악</li>
-            <li>메뉴/서비스 경쟁력 및 고객 반응 확인</li>
-          </ul>
+      <div class="zentropa-card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px; border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center;">
+          <span class="zentropa-card-title" style="margin-bottom:0;">비용 및 재무 분석 <span class="badge badge-calc">계산값</span></span>
         </div>
-        <div class="zentropa-card">
-          <div class="zentropa-card-title">실행 체크리스트</div>
-          <ul class="ai-check-list">
-            <li>비용 절감 항목 우선 실행</li>
-            <li>마케팅 채널별 성과 점검</li>
-            <li>주요 KPI 설정 및 점검</li>
-            <li>고객 피드백 수집 및 개선</li>
-            <li>현금 흐름 계획 수립</li>
-          </ul>
+        <div class="financial-detail-grid">
+          <div>
+            <div class="text-sub" style="margin-bottom:12px;">재무 요약</div>
+            <div class="financial-item-row"><span>월세</span><span class="financial-item-val">${fmtMan(fp.monthlyRent || 0)}</span></div>
+            <div class="financial-item-row"><span>보증금</span><span class="financial-item-val">${fmtMan(fp.deposit || 0)}</span></div>
+            <div class="financial-item-row"><span>권리금</span><span class="financial-item-val">${fmtMan(fp.premium || 0)}</span></div>
+            <div class="financial-item-row"><span>월 인건비</span><span class="financial-item-val">${fmtMan(fp.laborCost || 0)}</span></div>
+          </div>
+          <div>
+            <div class="text-sub" style="margin-bottom:12px;">주요 지표</div>
+            <div class="financial-item-row"><span>고정비 비율</span><span class="financial-item-val">${Math.round((fp.rentBurdenRatio || 0) * 100)}%</span></div>
+            <div class="financial-item-row"><span>현금 보유 기간</span><span class="financial-item-val">${fp.depositLiquidityMonths || 3.2}개월</span></div>
+            <div class="financial-item-row"><span>손익률</span><span class="financial-item-val">12%</span></div>
+          </div>
+          <div style="background:#f8fafc;">
+            <div class="text-sub" style="margin-bottom:12px;">안정권 진입 매출 (목표)</div>
+            <div style="font-size:1.4rem; font-weight:800; color:#2563eb;">${fmtMan(fp.targetMonthlyRevenue || 0)}</div>
+            <div class="text-desc" style="margin-top:8px; font-size:0.75rem;">현재 조건에서는 최소 ${fmtMan(fp.targetMonthlyRevenue || 0)} 이상의 매출이 필요합니다. 고정비 비율이 높아 매출 변동성에 취약할 수 있습니다.</div>
+          </div>
         </div>
       </div>
 
       <div class="zentropa-card">
-        <div class="zentropa-card-title">현장 확인 필수 체크리스트</div>
-        <ul class="ai-check-list">
-          <li>권리 수지/인가 내용의 허위 여부 확인</li>
-          <li>매출 등 세부 장부 현황 파악</li>
-          <li>영업권 및 행정 처분 완료 확인</li>
-          <li>직원 근무 환경 및 근로 계약 조건 확인</li>
+        <div class="zentropa-card-title">부동산/임대인에게 꼭 확인할 것 <span class="badge badge-ai">AI 가이드</span></div>
+        <ul class="checklist-grid ai-check-list" id="zentropaRealtorChecks">
+          ${aiRealtorChecklist.length > 0 ? aiRealtorChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>실제 월세·관리비 외 추가 부담금이 있는지 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>권리금 산정 근거와 협상 가능 여부 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>원상복구 범위와 중도해지 조건 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#10b981; flex-shrink:0;"></i> <span>건물 하자, 누수, 전력 용량, 배수 시설 확인</span></li>
+          `}
         </ul>
       </div>
 
-      <!-- 10. CTA Group -->
+      <div class="zentropa-card">
+        <div class="zentropa-card-title">현장 진단 체크리스트 <span class="badge badge-ai">AI 가이드</span></div>
+        <ul class="checklist-grid ai-check-list" id="zentropaFieldChecks">
+          ${aiFieldChecklist.length > 0 ? aiFieldChecklist.map(c => `<li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>${c}</span></li>`).join("") : `
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>점심/저녁/주말 유동량을 최소 3회 이상 직접 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>비 오는 날과 맑은 날의 유동 차이 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>상위 경쟁점의 대기열, 회전율, 리뷰 반응 확인</span></li>
+            <li><i data-lucide="check-square" style="width:14px; height:14px; color:#3b82f6; flex-shrink:0;"></i> <span>건물 전면 가시성, 간판 노출, 주차 편의성 확인</span></li>
+          `}
+        </ul>
+      </div>
+
+      <div class="zentropa-card">
+        <div class="zentropa-card-title">현장 확인 필수 체크리스트 <span class="badge badge-notice">서비스 고지</span></div>
+        <ul class="checklist-grid ai-check-list">
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>전기·수도·가스 등 공과금 관련 추가 비용 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>매장 내부 및 외부 시설 하자 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>주변 소음/악취/민원 발생 가능성 확인</span></li>
+          <li><i data-lucide="check-square" style="width:14px; height:14px; color:#f59e0b; flex-shrink:0;"></i> <span>이전 임차인의 퇴점 사유 확인</span></li>
+        </ul>
+      </div>
+
+      <div class="zentropa-accordion">
+        <details>
+          <summary class="accordion-header"><i data-lucide="database" class="icon-blue"></i> 상세 데이터 및 분석 지표 <span class="badge badge-public">공공데이터</span></summary>
+          <div class="two-col-grid" style="padding:16px;">
+            <div class="metric-detail-item"><span class="metric-detail-label">분석 위치</span><span class="metric-detail-val">${address}</span></div>
+            <div class="metric-detail-item"><span class="metric-detail-label">업종</span><span class="metric-detail-val">${sectorLabel}</span></div>
+            <div class="metric-detail-item"><span class="metric-detail-label">분석 반경</span><span class="metric-detail-val">${currentRadius}m</span></div>
+            <div class="metric-detail-item"><span class="metric-detail-label">인근 동종 업종 수</span><span class="metric-detail-val">${(analysis as any)._rawPublicData?.competitorsCount || 0}개</span></div>
+            <div class="metric-detail-item"><span class="metric-detail-label">상권 다양성 지수</span><span class="metric-detail-val">${Math.round(((analysis as any)._rawPublicData?.diversityIndex || 0) * 100)}점</span></div>
+            <div class="metric-detail-item"><span class="metric-detail-label">분석 생성 시각</span><span class="metric-detail-val">${today}</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="caution-banner" style="background:#fffbeb; border-color:#fef3c7; border-radius:12px; padding:20px; border:1px solid #fde68a;">
+        <div class="caution-header" style="color:#b45309; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+          <i data-lucide="alert-circle" style="width:18px; height:18px;"></i>
+          <span>최종 유의사항</span>
+        </div>
+        <div class="text-desc" style="color:#92400e; font-size:0.8rem;">
+          자리보고의 분석 결과는 창업 의사결정을 돕기 위한 참고 자료입니다. 최종 계약 전에는 반드시 현장 확인과 전문가 검토를 함께 진행하세요. 
+          AI는 현장 동선, 건물 상태, 임대 협상 여지 등을 직접 확인할 수 없으므로 최종 결정은 사용자 판단이 필요합니다.
+        </div>
+      </div>
+
       <div class="cta-group">
         <button class="btn-zentropa-primary" id="zentropaBtnSave">
           <i data-lucide="save"></i> 이 진단 리포트 보관함에 저장하기
@@ -3422,90 +3422,6 @@ function updateJudgmentUI(
     </div>
   `;
 
-  // 동적 데이터 반영 (AI 결과)
-  const reasons = structuredResult?.summary?.decision_rationale || [];
-  const advice = structuredResult?.summary?.strategic_advice || [];
-  const actions = structuredResult?.summary?.recommendations || [];
-  const fieldChecks = structuredResult?.summary?.field_checklist || [];
-  const realtorChecks = structuredResult?.summary?.realtor_checklist || [];
-  
-  if (reasons.length > 0) {
-    const reasonsEl = document.getElementById("zentropaReasons");
-    if (reasonsEl) {
-      reasonsEl.innerHTML = reasons.slice(0, 3).map((r, i) => `
-        <li class="conclusion-item"><span class="conclusion-num">${i+1}</span> ${r}</li>
-      `).join("");
-    }
-  }
-  
-  if (actions.length > 0) {
-    const actionsEl = document.getElementById("zentropaActions");
-    if (actionsEl) {
-      actionsEl.innerHTML = actions.slice(0, 3).map(a => `
-        <li class="conclusion-item"><i data-lucide="check" class="conclusion-check"></i> ${a}</li>
-      `).join("");
-    }
-  }
-
-  // AI Strategy Grid Mapping (5 cards)
-  const strategyGrid = document.getElementById("zentropaStrategyGrid");
-  if (strategyGrid && advice.length > 0) {
-    const icons = ["utensils", "calculator", "megaphone", "heart", "clipboard-check"];
-    const titles = ["메뉴/서비스 차별화", "비용 구조 개선", "마케팅 효율화", "고객 관리 강화", "현장 확인 전략"];
-    
-    // Distribute advice strings to cards, or use defaults
-    strategyGrid.innerHTML = titles.map((title, i) => {
-      const desc = advice[i] || (i === 0 ? "경쟁점 대비 경쟁력 확보" : i === 1 ? "고정비 및 원가 절감" : "전략 수립 필요");
-      return `
-        <div class="advice-card">
-          <i data-lucide="${icons[i]}" class="advice-icon"></i>
-          <div class="advice-title">${title}</div>
-          <div class="advice-desc">${desc}</div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // Checklists Mapping
-  // Checklists Mapping
-const zentropaCards = Array.from(
-  document.querySelectorAll<HTMLElement>(".zentropa-card")
-);
-
-const findChecklistUl = (title: string): HTMLUListElement | null => {
-  const card = zentropaCards.find((card) => {
-    const titleEl = card.querySelector(".zentropa-card-title");
-    return titleEl?.textContent?.trim() === title;
-  });
-
-  return card?.querySelector("ul") as HTMLUListElement | null;
-};
-
-const fieldListEl = findChecklistUl("현장 진단 체크리스트");
-if (fieldListEl && fieldChecks.length > 0) {
-  fieldListEl.innerHTML = fieldChecks
-    .slice(0, 5)
-    .map((c) => `<li>${c}</li>`)
-    .join("");
-}
-
-const executionListEl = findChecklistUl("실행 체크리스트");
-if (executionListEl && actions.length > 3) {
-  executionListEl.innerHTML = actions
-    .slice(3, 8)
-    .map((a) => `<li>${a}</li>`)
-    .join("");
-}
-
-const realtorListEl = findChecklistUl("현장 확인 필수 체크리스트");
-if (realtorListEl && realtorChecks.length > 0) {
-  realtorListEl.innerHTML = realtorChecks
-    .slice(0, 4)
-    .map((c) => `<li>${c}</li>`)
-    .join("");
-}
-
-  // CTA 기능 구현
   document.getElementById("zentropaBtnSave")?.addEventListener("click", () => {
     elements.btnSaveSpot?.click();
   });
@@ -3519,10 +3435,12 @@ if (realtorListEl && realtorChecks.length > 0) {
   });
 
   setTimeout(() => {
-  (window as any).lucide?.createIcons?.();
-}, 0);
+    (window as any).lucide?.createIcons?.();
+  }, 0);
+  
   syncUrlWithState();
 }
+
 
 document.querySelectorAll(".btn-start-app").forEach((btn) => {
   btn.addEventListener("click", () => {
