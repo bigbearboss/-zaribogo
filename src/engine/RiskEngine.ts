@@ -148,6 +148,7 @@ export class RiskEngine {
             monthlyRent: financial.rent || 0,
             deposit: financial.deposit || 0,
             premium: financial.premium || 0,
+            laborCost: financial.laborCost || 0,
             estimatedMonthlyRevenue: financial.monthlyRevenue || 0,
             estimatedMonthlyFixedCost: computedFixedCost > 0 ? computedFixedCost : undefined,
             industryNetMargin,

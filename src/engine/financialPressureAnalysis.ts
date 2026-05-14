@@ -19,6 +19,8 @@ export interface FinancialPressureInput {
   deposit: number;
   /** 권리금 (원) */
   premium: number;
+  /** 월 인건비 (원) */
+  laborCost?: number;
   /** 예상/입력 월매출 (원). 없으면 0 */
   estimatedMonthlyRevenue: number;
   /** 월 고정비 합계 (원). 없으면 monthlyRent 기반 추정 */
@@ -53,6 +55,7 @@ export interface FinancialPressureResult {
   monthlyRent: number;
   deposit: number;
   premium: number;
+  laborCost: number;
   estimatedMonthlyRevenue: number;
   estimatedMonthlyFixedCost: number;
   estimatedMonthlyNetProfit: number;
@@ -295,6 +298,7 @@ export function analyzeFinancialPressure(
     monthlyRent: rent,
     deposit,
     premium,
+    laborCost: input.laborCost ?? 0,
     estimatedMonthlyRevenue: estimatedRevenue,
     estimatedMonthlyFixedCost,
     estimatedMonthlyNetProfit,
