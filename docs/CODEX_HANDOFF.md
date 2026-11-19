@@ -7,9 +7,21 @@
 - 소스 기준: `bigbearboss/-zaribogo`, 시작 커밋 `dc7f4f6`.
 - 이번 작업 브랜치: `codex/mobile-ready`.
 - 기존 Vite/TypeScript 구조를 유지한다. 새 프레임워크나 새 DB로 이전한 것이 아니다.
-- 소스를 Codex 환경에서 실행했고 모바일 화면을 수정했다. 실제 배포는 별도 단계다.
+- 소스를 Codex 환경에서 실행했고 모바일 화면을 수정했다. Cloudflare의 브랜치 미리보기 배포가 성공했으며 운영 도메인 반영은 별도 단계다.
 - 기존 Antigravity 컴퓨터의 미커밋 파일과 `.env`는 이 Git 저장소에 포함되어 있지 않으므로, 원본 로컬 작업이 있다면 별도 비교해야 한다.
 - 개발 환경에 실제 API 설정값이 없어 로그인·지도·실데이터 분석·저장·결제를 통합 검증하지 못했다.
+
+## 배포 미리보기 확인
+
+- PR: https://github.com/bigbearboss/-zaribogo/pull/1 (초안, main 미반영)
+- 브랜치 미리보기: https://codex-mobile-ready.zaribogo.pages.dev/
+- 확인한 배포: https://8b1a2197.zaribogo.pages.dev/ (`9eea3d7`, Cloudflare Pages check 성공)
+- 실제 배포 화면에서 소개 → 입력 화면 전환, 입력값 변경, 연결 불가 안내 및 분석 버튼 복구를 확인했다.
+- Preview 빌드에서 `VITE_KAKAO_MAP_APP_KEY`가 누락되었다는 오류를 확인했다. Supabase URL/공개 키도 하나 이상 미설정되어 분석 연결 안내가 표시된다.
+- 기존 Production의 필요한 클라이언트 설정을 Preview 환경에도 연결한 뒤 다시 빌드해야 한다. 비밀키를 소스나 채팅으로 전달할 필요는 없다.
+- 로그인·실제 지도·실데이터·결제 검증은 아직 수행하지 않았다. 브랜치 미리보기 성공을 실제 서비스 연동 성공으로 보지 않는다.
+
+배포된 소개 페이지 기록: [deployed-preview.jpg](screenshots/deployed-preview.jpg)
 
 ## 실행
 

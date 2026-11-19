@@ -2,6 +2,10 @@
 
 계약 전 후보지의 상권·재무 조건을 확인하는 Vite + TypeScript 웹 앱입니다. 기존 GitHub 저장소를 Codex에서 이어 개발하며, Supabase와 Cloudflare에 있는 서비스는 그대로 연결합니다.
 
+[모바일 개편 미리보기](https://codex-mobile-ready.zaribogo.pages.dev/) · [변경 검토 PR](https://github.com/bigbearboss/-zaribogo/pull/1)
+
+미리보기는 별도 브랜치 배포입니다. 현재 Preview 환경에 지도 및 분석 연결 설정이 없어 화면을 확인할 수 있는 상태이며, 실제 기능 연동은 설정 후 검증해야 합니다.
+
 ## 개발 시작
 
 Node 24를 사용합니다 (`.nvmrc`). Windows에서도 같은 npm 명령을 사용할 수 있습니다.
