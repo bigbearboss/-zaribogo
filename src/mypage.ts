@@ -1,6 +1,11 @@
 import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts } from './services/paymentService';
+import { focusDialog } from './ui/dialogFocus';
+
+const isLayoutPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-preview') === 'mypage';
+let releaseWithdrawFocus: (() => void) | undefined;
+let releaseRefundFocus: (() => void) | undefined;
 
 
 // ==========================================
@@ -42,7 +47,6 @@ const DOM = {
         btnWithdrawOpen: document.getElementById('btnWithdrawOpen') as HTMLButtonElement,
     btnRetry: document.getElementById('btnRetry') as HTMLButtonElement,
     btnBackToMain: document.getElementById('btnBackToMain') as HTMLButtonElement,
-    logoToMain: document.getElementById('logoToMain') as HTMLElement,
     btnAnalyzeNow: document.getElementById('btnAnalyzeNow') as HTMLButtonElement,
     btnStartFirst: document.getElementById('btnStartFirst') as HTMLButtonElement,
     btnViewAllReports: document.getElementById('btnViewAllReports') as HTMLButtonElement,
@@ -257,6 +261,23 @@ async function initMypage() {
     setupEventListeners();
     initTheme();
     showLoading();
+
+    if (import.meta.env.DEV && isLayoutPreview) {
+        const preview = await import('./dev/mypagePreview');
+        state.user = preview.previewUser;
+        state.profile = preview.previewProfile;
+        state.credits = preview.previewCredits;
+        state.recentReports = preview.previewReports;
+        state.allReports = preview.previewReports;
+        updateDashboardUI();
+        updateProfileUI();
+        renderAllReports(state.allReports);
+        renderProductCards(preview.previewProducts);
+        preview.showPreviewNotice();
+        hideLoading();
+        switchView('dashboard');
+        return;
+    }
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment_success') || params.get('payment_fail')) {
@@ -474,8 +495,9 @@ function updateDashboardUI() {
         DOM.recentReportsList.classList.remove('hidden');
 
         state.recentReports.forEach(report => {
-            const card = document.createElement('div');
-            card.className = 'report-card';
+            const card = document.createElement('a');
+            card.href = '#report-detail';
+            card.className = 'report-card report-link';
             card.innerHTML = `
                 <div class="report-card-header">
                     <h4>${report.title}</h4>
@@ -485,7 +507,10 @@ function updateDashboardUI() {
                     <span>${new Date(report.created_at).toLocaleDateString()}</span>
                 </div>
             `;
-            card.addEventListener('click', () => openReportDetail(report));
+            card.addEventListener('click', (event) => {
+                event.preventDefault();
+                openReportDetail(report);
+            });
             DOM.recentReportsList.appendChild(card);
         });
     }
@@ -514,8 +539,9 @@ function renderAllReports(reports: any[]) {
         DOM.allReportsList.classList.remove('hidden');
 
         reports.forEach(report => {
-            const card = document.createElement('div');
-            card.className = 'report-card';
+            const card = document.createElement('a');
+            card.href = '#report-detail';
+            card.className = 'report-card report-link';
             card.innerHTML = `
                 <div class="report-card-header">
                     <h4>${report.title}</h4>
@@ -525,7 +551,10 @@ function renderAllReports(reports: any[]) {
                     <span>${new Date(report.created_at).toLocaleDateString()}</span>
                 </div>
             `;
-            card.addEventListener('click', () => openReportDetail(report));
+            card.addEventListener('click', (event) => {
+                event.preventDefault();
+                openReportDetail(report);
+            });
             DOM.allReportsList.appendChild(card);
         });
     }
@@ -765,7 +794,7 @@ function openReportDetail(report: any) {
             "현장 중심의 확인이 언제나 예측 데이터보다 우선되어야 합니다.";
     }
 
-    switchView('report-detail');
+    switchView('report-detail', true);
 }
 
 
@@ -801,7 +830,7 @@ function renderProductCards(products: import('./services/paymentService').Credit
             tagline: '처음 충전에 딱 맞는 선택',
         },
         'Growth Pack': {
-            features: ['20회 분석 크레딧 즉시 지급', '여러 업종·지역 연속 비교 가능', '회당 최저 단가 (≈8,500원/회)', '크레딧 만료 없음'],
+            features: ['20회 분석 크레딧 즉시 지급', '여러 업종·지역 연속 비교 가능', '회당 단가로 충전 비용 확인', '크레딧 만료 없음'],
             recommended: true,
             btnLabel: '그로스로 충전하기',
             tagline: '자주 분석하는 분께 추천',
@@ -872,7 +901,12 @@ function renderProductCards(products: import('./services/paymentService').Credit
             if (DOM.creditPreviewBox) DOM.creditPreviewBox.style.display = 'none';
         });
 
-        btn.addEventListener('click', () => handleProductPurchase(product, btn));
+        if (isLayoutPreview) {
+            btn.disabled = true;
+            btn.textContent = '화면 예시 · 결제 불가';
+        } else {
+            btn.addEventListener('click', () => handleProductPurchase(product, btn));
+        }
         DOM.productCards.appendChild(card);
     });
 
@@ -998,7 +1032,7 @@ function checkCreditedParam() {
 // ==========================================
 // 10. Navigation & Setup
 // ==========================================
-function switchView(viewId: string) {
+function switchView(viewId: string, focusContent = false) {
     state.currentView = viewId as any;
 
     DOM.views.forEach(view => {
@@ -1013,14 +1047,22 @@ function switchView(viewId: string) {
     }
 
     DOM.navLinks.forEach(link => {
-        if (link.getAttribute('data-target') === viewId) {
+        if (link.getAttribute('data-target') === (viewId === 'report-detail' ? 'reports' : viewId)) {
             link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
         } else {
             link.classList.remove('active');
+            link.removeAttribute('aria-current');
         }
     });
 
-    if (viewId === 'reports' && state.allReports.length === 0) {
+    if (focusContent && target) {
+        const main = document.getElementById('mypageContent');
+        main?.focus({ preventScroll: true });
+        main?.scrollIntoView({ block: 'start' });
+    }
+
+    if (viewId === 'reports' && state.allReports.length === 0 && !isLayoutPreview) {
         showLoading();
         fetchAllReports().finally(() => hideLoading());
     }
@@ -1030,30 +1072,33 @@ function switchView(viewId: string) {
     }
 }
 
+let eventListenersAttached = false;
 function setupEventListeners() {
+    if (eventListenersAttached) return;
+    eventListenersAttached = true;
     DOM.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const target = (e.currentTarget as HTMLElement).getAttribute('data-target');
-            if (target) switchView(target);
+            if (target) switchView(target, true);
         });
     });
 
     const goMain = () => window.location.href = '/index.html';
 
-    DOM.logoToMain.addEventListener('click', goMain);
     DOM.btnBackToMain.addEventListener('click', goMain);
     DOM.btnAnalyzeNow.addEventListener('click', goMain);
     DOM.btnStartFirst.addEventListener('click', goMain);
 
     DOM.btnLogout.addEventListener('click', async () => {
+        if (isLayoutPreview) return;
         await authService.logout();
         goMain();
     });
 
         setupWithdrawModalListeners();
-    DOM.btnViewAllReports.addEventListener('click', () => switchView('reports'));
-    DOM.btnBackToList.addEventListener('click', () => switchView('reports'));
+    DOM.btnViewAllReports.addEventListener('click', () => switchView('reports', true));
+    DOM.btnBackToList.addEventListener('click', () => switchView('reports', true));
 
     DOM.btnCloseBanner?.addEventListener('click', () => {
         DOM.creditSuccessBanner?.classList.add('hidden');
@@ -1066,9 +1111,9 @@ function setupEventListeners() {
     DOM.searchInput.addEventListener('input', (e) => {
         const term = (e.target as HTMLInputElement).value.toLowerCase();
         const filtered = state.allReports.filter(r =>
-            r.title.toLowerCase().includes(term) ||
-            r.location.toLowerCase().includes(term) ||
-            r.business_type.toLowerCase().includes(term)
+            String(r.title ?? '').toLowerCase().includes(term) ||
+            String(r.location ?? '').toLowerCase().includes(term) ||
+            String(r.business_type ?? '').toLowerCase().includes(term)
         );
         renderAllReports(filtered);
     });
@@ -1080,6 +1125,7 @@ function setupEventListeners() {
         body.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         DOM.themeKnob.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+        DOM.themeToggle.setAttribute('aria-label', newTheme === 'dark' ? '밝은 화면으로 전환' : '어두운 화면으로 전환');
     });
 }
 
@@ -1087,6 +1133,7 @@ function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.body.setAttribute('data-theme', savedTheme);
     DOM.themeKnob.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+    DOM.themeToggle.setAttribute('aria-label', savedTheme === 'dark' ? '밝은 화면으로 전환' : '어두운 화면으로 전환');
 }
 
 function showLoading() {
@@ -1124,15 +1171,19 @@ function openWithdrawModal() {
     DOM.btnWithdrawSubmit.textContent = '탈퇴 진행';
     DOM.btnWithdrawCancel.textContent = '취소';
 
+    if (isLayoutPreview) {
+        DOM.btnWithdrawSubmit.disabled = true;
+        DOM.btnWithdrawSubmit.textContent = '화면 예시 · 탈퇴 불가';
+    }
     DOM.withdrawModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-
-    setTimeout(() => {
-        DOM.withdrawReasonType.focus();
-    }, 100);
+    releaseWithdrawFocus = focusDialog(DOM.withdrawModal, closeWithdrawModal, () => DOM.btnWithdrawClose.disabled);
 }
 
 function closeWithdrawModal() {
+    if (DOM.btnWithdrawClose.disabled) return;
+    releaseWithdrawFocus?.();
+    releaseWithdrawFocus = undefined;
     DOM.withdrawModal.classList.add('hidden');
     document.body.style.overflow = '';
 }
@@ -1165,6 +1216,7 @@ function showWithdrawResult(type: 'success' | 'error', message?: string) {
 }
 
 async function submitWithdrawRequest() {
+    if (isLayoutPreview) return;
     const reasonType = DOM.withdrawReasonType.value.trim();
     const reasonDetail = DOM.withdrawReasonDetail.value.trim();
     const confirmed = DOM.withdrawConfirmCheck.checked;
@@ -1295,6 +1347,13 @@ function showBillingSkeletons() {
 }
 
 async function loadPaymentHistory() {
+    if (import.meta.env.DEV && isLayoutPreview) {
+        const preview = await import('./dev/mypagePreview');
+        renderPaymentHistory(preview.previewPayments);
+        DOM.billingLoading.classList.add('hidden');
+        setupRefundModalListeners();
+        return;
+    }
     if (!state.user || !DOM.paymentHistoryList || isLoadingPaymentHistory) return;
     isLoadingPaymentHistory = true;
 
@@ -1473,12 +1532,19 @@ function openRefundModal(payment: PaymentRecord) {
     DOM.btnRefundSubmit.textContent = '환불 요청 제출';
     DOM.btnRefundCancel.textContent = '취소';
 
+    if (isLayoutPreview) {
+        DOM.btnRefundSubmit.disabled = true;
+        DOM.btnRefundSubmit.textContent = '화면 예시 · 제출 불가';
+    }
     DOM.refundModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    setTimeout(() => DOM.refundReason.focus(), 100);
+    releaseRefundFocus = focusDialog(DOM.refundModal, closeRefundModal, () => DOM.btnRefundModalClose.disabled);
 }
 
 function closeRefundModal() {
+    if (DOM.btnRefundModalClose.disabled) return;
+    releaseRefundFocus?.();
+    releaseRefundFocus = undefined;
     DOM.refundModal.classList.add('hidden');
     document.body.style.overflow = '';
     activeRefundPayment = null;
@@ -1500,6 +1566,7 @@ function setRefundSubmitLocked(locked: boolean) {
 }
 
 async function submitRefundRequest() {
+    if (isLayoutPreview) return;
     if (!activeRefundPayment) return;
 
     const reason = DOM.refundReason.value.trim();
@@ -1698,12 +1765,6 @@ function setupRefundModalListeners() {
 
     DOM.refundModal?.addEventListener('click', (e) => {
         if (e.target === DOM.refundModal) {
-            closeRefundModal();
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !DOM.refundModal?.classList.contains('hidden')) {
             closeRefundModal();
         }
     });

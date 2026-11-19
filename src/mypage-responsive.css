@@ -1,0 +1,156 @@
+/* My Page owns its layout: shared analysis styles must not set its widths. */
+.mypage-page {
+  --bg-card: var(--surface-main);
+  --border-color: var(--glass-border);
+  --bg-input: var(--input-bg);
+  --bg-hover: var(--panel-highlight);
+  height: auto;
+  min-height: 100dvh;
+  overflow: auto;
+  line-height: 1.6;
+}
+.mypage-page #app { height: auto; min-height: 100dvh; align-items: flex-start; }
+.mypage-page .sidebar {
+  position: sticky; top: 0; width: 280px; min-width: 280px;
+  height: 100dvh; padding: 24px 20px; gap: 20px;
+  background: var(--surface-main);
+}
+.mypage-page .app-header { padding: 0 0 20px; margin: 0; gap: 4px; }
+.mypage-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.mypage-page .logo { margin: 0; min-width: 0; min-height: 44px; }
+.mypage-logo { display: block; width: 174px; height: auto; max-width: 100%; filter: invert(1); }
+.mypage-page[data-theme="light"] .mypage-logo { filter: none; }
+.mypage-theme-button {
+  flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px;
+  border: 1px solid var(--glass-border); background: var(--panel-highlight);
+  font: inherit; font-size: 20px; cursor: pointer;
+}
+.mypage-page .header-tagline { font-size: 13px; letter-spacing: 0; }
+.mypage-page .mypage-nav { margin: 0; gap: 8px; flex: 1; }
+.mypage-page .nav-link { min-height: 48px; line-height: 1.4; }
+.mypage-page .nav-link.active { background: #2563eb; color: #fff; }
+.mypage-page .nav-icon { flex-shrink: 0; }
+.mypage-page #btnBackToMain { min-height: 48px; margin: auto 0 0; width: 100%; padding: 12px; }
+.mypage-page .mypage-main { min-width: 0; width: 100%; overflow: visible; padding: 36px; gap: 24px; }
+.mypage-page .mypage-view { width: 100%; max-width: 1200px; margin-inline: auto; overflow-wrap: anywhere; }
+.mypage-page .mypage-header h2, .mypage-page .report-title-row h2 { font-size: clamp(1.35rem, 2.4vw, 1.8rem); line-height: 1.4; }
+.mypage-page .mypage-header { margin-bottom: 24px; }
+.mypage-page .mypage-header p { margin-top: 8px; }
+.mypage-page .credit-widget { flex-wrap: wrap; gap: 24px; margin-bottom: 32px; }
+.mypage-page .credit-info { flex: 1 1 240px; min-width: 0; }
+.mypage-page .credit-meta, .mypage-page .credit-hint { color: var(--text-muted); }
+.mypage-page .credit-amount { flex-wrap: wrap; gap: 8px; }
+.mypage-page .credit-action { min-width: 0; }
+.mypage-page .credit-preview-box { flex-wrap: wrap; }
+.mypage-page .reports-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.mypage-page .reports-list-container { width: 100%; }
+.mypage-page .report-card { min-width: 0; }
+.mypage-page .report-link { display: block; text-align: left; color: inherit; text-decoration: none; }
+.mypage-page .report-card-meta { flex-wrap: wrap; gap: 8px 16px; }
+.mypage-page .report-card-header h4 { line-height: 1.5; }
+.mypage-page .product-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); max-width: none; width: 100%; gap: 20px; }
+.mypage-page .product-card { min-width: 0; width: 100%; padding: 28px 24px; }
+.mypage-page .card-price { font-size: clamp(1.75rem, 2.8vw, 2.25rem); overflow-wrap: anywhere; }
+.mypage-page .card-features { flex: 1; }
+.mypage-page .product-btn { min-height: 48px; }
+.mypage-page .payment-history-card { flex-wrap: wrap; }
+.mypage-page .payment-card-body { flex-basis: 250px; }
+.mypage-page .payment-card-amount { white-space: normal; }
+.mypage-page .profile-card { max-width: 680px; }
+.mypage-page .profile-info-row { gap: 16px; align-items: flex-start; }
+.mypage-page .profile-info-row > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.mypage-page .profile-actions { flex-wrap: wrap; }
+.mypage-page .profile-actions button { flex: 1 1 140px; }
+.mypage-page .report-title-row { align-items: flex-start; }
+.mypage-page .report-title-row h2 { flex: 1; min-width: 0; }
+.mypage-page .grade-badge { flex-shrink: 0; }
+.mypage-page .report-meta-row { flex-wrap: wrap; gap: 8px 20px; }
+.mypage-page .report-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mypage-page .cri-content, .mypage-page .card-header { flex-wrap: wrap; }
+.mypage-page .fp-card-header, .mypage-page .fp-row, .mypage-page .fp-row-value { flex-wrap: wrap; gap: 12px; }
+.mypage-page .fp-input-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mypage-page button, .mypage-page .btn-link { min-height: 44px; }
+.mypage-page .btn-primary, .mypage-page .btn-primary-glam,
+.mypage-page .product-btn.btn-primary-card {
+  background: #2563eb; color: #fff; border: 1px solid #2563eb;
+  border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.mypage-page .btn-text, .mypage-page .btn-auth-logout {
+  padding: 10px 14px; border: 1px solid var(--glass-border); border-radius: 10px;
+  background: var(--panel-highlight); color: var(--text-main); font: inherit; cursor: pointer;
+}
+.mypage-page button:disabled { cursor: not-allowed; }
+.mypage-page .refund-btn-submit { background: #b45309; color: #fff; }
+.mypage-page .withdraw-btn-submit { background: #b91c1c; color: #fff; }
+.mypage-page[data-theme="dark"] .withdraw-warning-box strong { color: #fca5a5; }
+/* Shared mobile styles force document scrolling; contain it while a dialog is open. */
+html:has(.mypage-page [role="dialog"]:not(.hidden)) { overflow: hidden !important; }
+.mypage-page input:not([type="checkbox"]), .mypage-page textarea, .mypage-page select { font: inherit; font-size: 16px; max-width: 100%; min-width: 0; }
+.mypage-page input:not([type="checkbox"]), .mypage-page select { min-height: 48px; }
+.mypage-page :focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 3px; }
+.mypage-page .mypage-main:focus { outline: none; }
+.mypage-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.mypage-skip-link { position: fixed; top: 12px; left: 12px; transform: translateY(-200%); padding: 12px 16px; border-radius: 8px; background: var(--surface-main); color: var(--text-main); z-index: 1200; }
+.mypage-skip-link:focus { transform: none; }
+.mypage-page .refund-modal-overlay, .mypage-page .withdraw-modal-overlay { padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); overflow-y: auto; }
+.mypage-page .refund-modal, .mypage-page .withdraw-modal { width: 100%; max-height: calc(100dvh - 32px); overscroll-behavior: contain; overflow-wrap: anywhere; }
+.mypage-page .refund-modal-close, .mypage-page .withdraw-modal-close, .mypage-page .banner-close { width: 44px; min-width: 44px; min-height: 44px; }
+.mypage-page .refund-summary-value { min-width: 0; }
+.mypage-page .withdraw-check { min-height: 44px; align-items: flex-start; }
+.mypage-page .withdraw-check input { flex: 0 0 20px; width: 20px; height: 20px; margin-top: 3px; }
+.mypage-page[data-theme="light"] .badge-paid { color: #047857; }
+.mypage-page[data-theme="light"] .badge-refund-requested,
+.mypage-page[data-theme="light"] .refund-notice strong { color: #92400e; }
+.mypage-page[data-theme="light"] .badge-refunded { color: #4338ca; }
+
+@media (max-width: 1023px) {
+  .mypage-page #app { flex-direction: column; }
+  .mypage-page .sidebar {
+    position: static; width: 100%; min-width: 0; height: auto;
+    border-right: 0; border-bottom: 1px solid var(--glass-border);
+    padding: 16px 24px; gap: 16px;
+  }
+  .mypage-page .app-header { padding: 0; border: 0; flex-direction: column; gap: 0; }
+  .mypage-page .mypage-brand-row { width: 100%; }
+  .mypage-page .mypage-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; flex: none; }
+  .mypage-page .nav-link { justify-content: center; padding: 12px 8px; gap: 8px; font-size: 14px; }
+  .mypage-page #btnBackToMain { margin: 0; }
+  .mypage-page .mypage-main { padding: 28px 24px max(32px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 600px) {
+  .mypage-page .sidebar { padding: 12px 16px 16px; gap: 12px; }
+  .mypage-page .mypage-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .mypage-page .nav-link { justify-content: flex-start; padding: 12px; }
+  .mypage-page .mypage-main { padding: 24px 16px max(32px, env(safe-area-inset-bottom)); }
+  .mypage-page .credit-widget { flex-direction: column; align-items: stretch; padding: 24px 20px; gap: 20px; }
+  .mypage-page .credit-info { flex-basis: auto; }
+  .mypage-page .credit-action, .mypage-page .credit-action button { width: 100%; }
+  .mypage-page .product-cards, .mypage-page .report-row { grid-template-columns: minmax(0, 1fr); }
+  .mypage-page .product-card { padding: 28px 20px; }
+  .mypage-page .report-card { padding: 24px 20px; border-radius: 16px; }
+  .mypage-page .payment-history-card { padding: 24px 20px; flex-direction: column; gap: 16px; }
+  .mypage-page .payment-card-body { flex-basis: auto; width: 100%; }
+  .mypage-page .payment-card-amount { text-align: left; }
+  .mypage-page .payment-card-meta { gap: 6px 12px; }
+  .mypage-page .profile-card { padding: 24px 20px; }
+  .mypage-page .profile-info-row { flex-direction: column; gap: 6px; }
+  .mypage-page .report-meta-row { flex-direction: column; }
+  .mypage-page .report-title-row { gap: 12px; }
+  .mypage-page .grade-badge { font-size: 1.15rem; padding: 6px 12px; }
+  .mypage-page .section-header { flex-wrap: wrap; gap: 8px 16px; }
+  .mypage-page .credit-success-banner { align-items: flex-start; gap: 10px; padding: 16px; }
+  .mypage-page .refund-modal-header, .mypage-page .withdraw-modal-header { padding: 12px 16px; }
+  .mypage-page .refund-payment-summary, .mypage-page .refund-notice, .mypage-page .refund-form,
+  .mypage-page .refund-result-box, .mypage-page .withdraw-warning-box, .mypage-page .withdraw-form,
+  .mypage-page .withdraw-result-box { margin: 16px 16px 0; }
+  .mypage-page .refund-payment-summary { padding: 16px; }
+  .mypage-page .refund-summary-row { align-items: flex-start; flex-wrap: wrap; gap: 4px 12px; }
+  .mypage-page .refund-summary-value { text-align: left; }
+  .mypage-page .refund-modal-actions, .mypage-page .withdraw-modal-actions { padding: 16px; flex-direction: column-reverse; }
+  .mypage-page .refund-modal-actions button, .mypage-page .withdraw-modal-actions button { width: 100%; min-height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mypage-page *, .mypage-page *::before, .mypage-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
