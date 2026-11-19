@@ -351,6 +351,7 @@
 
 .lpr-box {
   flex: 1;
+  min-width: 0;
   background: var(--land-white);
   border: 1px solid var(--land-border);
   border-radius: 16px;
@@ -372,19 +373,27 @@
 .lpr-arrow {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   color: var(--land-accent);
   font-size: 1.5rem;
 }
 
 .lpr-grid-inner {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   width: 100%;
   margin-top: 20px;
 }
 
 .lpr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
   background: var(--land-light-bg);
   padding: 16px 10px;
   border-radius: 12px;
@@ -837,15 +846,6 @@
         font-size: 0.8rem;
     }
     
-    /* Process Section */
-    .lpr-flow {
-        flex-direction: column;
-        gap: 16px;
-    }
-    .lpr-arrow {
-        transform: rotate(90deg);
-    }
-    
     /* Feature Splits */
     .lf-split {
         flex-direction: column;
@@ -873,24 +873,6 @@
     .lt-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 20px;
-    }
-    
-    /* Pricing Section */
-    #land-pricing .land-container > div {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    #land-pricing .land-container > div > div {
-        width: 48% !important; /* Side by side on mobile for pricing cards */
-        min-width: 150px;
-        padding: 20px 15px !important;
-    }
-    #land-pricing .land-container > div > div:last-child {
-        width: 100% !important;
-        margin-top: 20px;
-        text-align: center;
-        align-items: center;
     }
     
     /* FAQ Section */

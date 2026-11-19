@@ -98,7 +98,7 @@
         </section>
 
         <!-- 2. Problem Agitation Section -->
-        <section class="land-problem">
+        <section id="land-problem" class="land-problem">
             <div class="land-container">
                 <h2 class="land-title-sec" style="color:var(--land-text-main);">계약서 앞에서 가장 어려운 질문은 늘 같습니다.<br><span style="color:var(--land-accent-dark);">'이 자리, 정말 괜찮을까?'</span></h2>
                 <p style="color:var(--land-text-muted);">부동산은 좋다고 말하고, 지도에는 정보가 너무 많고, 상권분석 사이트는 숫자만 보여줍니다.<br>하지만 초보 창업자에게 필요한 건 복잡한 데이터가 아니라 계약 전 판단 기준입니다.</p>
@@ -120,7 +120,13 @@
                         <p>인구, 유동, 업종 수보다 중요한 건 계약해도 되는지에 대한 판단 기준입니다.</p>
                     </div>
                     <div class="lp-card">
-                        <div class="lp-icon"><i data-lucide="clipboard-question" style="width:28px;height:28px;"></i></div>
+                        <div class="lp-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="8" y="2" width="8" height="4" rx="1" />
+                                <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2" />
+                                <path d="M9.5 11a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 1.5-2.5 3M12 18h.01" />
+                            </svg>
+                        </div>
                         <h4>임대인에게 뭘 물어봐야 할지 모르겠어요.</h4>
                         <p>월세 외 비용, 권리금 근거, 실제 유동처럼 계약 전 꼭 확인할 질문이 필요합니다.</p>
                     </div>
@@ -144,17 +150,17 @@
                             <li style="display:flex; align-items:center; gap:8px;"><i data-lucide="circle-dot" style="width:16px;height:16px;color:var(--land-accent);"></i> 반경</li>
                         </ul>
                     </div>
-                    <div class="lpr-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
+                    <div class="lpr-arrow" aria-hidden="true"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
                     <div class="lpr-box lpr-box-center">
                         <h4 style="margin-bottom:10px; color:var(--land-accent-dark);">AI 분석</h4>
                         <div class="lpr-grid-inner">
-                            <div class="lpr-item"><i data-lucide="coins" style="width:24px;height:24px;color:#ef4444;margin-bottom:8px;"></i><br>비용 부담</div>
-                            <div class="lpr-item"><i data-lucide="users" style="width:24px;height:24px;color:var(--land-accent);margin-bottom:8px;"></i><br>배후 수요</div>
-                            <div class="lpr-item"><i data-lucide="swords" style="width:24px;height:24px;color:#8b5cf6;margin-bottom:8px;"></i><br>경쟁 강도</div>
-                            <div class="lpr-item"><i data-lucide="shield-check" style="width:24px;height:24px;color:#10b981;margin-bottom:8px;"></i><br>입지 안정성</div>
+                            <div class="lpr-item"><i data-lucide="coins" style="width:24px;height:24px;color:#ef4444;"></i><span>비용 부담</span></div>
+                            <div class="lpr-item"><i data-lucide="users" style="width:24px;height:24px;color:var(--land-accent);"></i><span>배후 수요</span></div>
+                            <div class="lpr-item"><i data-lucide="swords" style="width:24px;height:24px;color:#8b5cf6;"></i><span>경쟁 강도</span></div>
+                            <div class="lpr-item"><i data-lucide="shield-check" style="width:24px;height:24px;color:#10b981;"></i><span>입지 안정성</span></div>
                         </div>
                     </div>
-                    <div class="lpr-arrow"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
+                    <div class="lpr-arrow" aria-hidden="true"><i data-lucide="arrow-right" style="width:24px;height:24px;"></i></div>
                     <div class="lpr-box">
                         <h4 style="color:var(--land-accent-dark); margin-bottom:10px;">핵심 판단 및 가이드</h4>
                         <ul style="text-align:left; font-size:0.9rem; color:var(--land-text-muted); list-style:none; line-height:1.8;">
@@ -171,7 +177,7 @@
 
         
         <!-- 4. Key Benefit Section -->
-        <section class="land-trust" style="background:var(--land-light-bg);">
+        <section id="land-benefits" class="land-trust land-benefits-section" style="background:var(--land-light-bg);">
             <div class="land-container">
                 <h2 class="land-title-sec" style="color:var(--land-text-main);">계약 후에 후회할 수 있는 리스크를<br><span style="color:var(--land-accent-dark);">계약 전에 먼저 확인하세요.</span></h2>
                 <p style="color:var(--land-text-muted);">자리보고는 더 많은 데이터를 보여주는 서비스가 아닙니다.<br>계약 전에 꼭 확인해야 할 위험을 먼저 짚어드립니다.</p>
@@ -421,13 +427,13 @@
                 <h2 class="land-title-sec">필요한 만큼만 분석하세요.</h2>
                 <p style="color:var(--land-text-muted); margin-bottom:50px;">후보지가 생길 때마다 필요한 만큼만 사용할 수 있습니다.<br>초기 유저 할인 가격이 바로 적용됩니다.</p>
                 
-                <div class="pricing-grid" style="display:flex; justify-content:center; gap:20px; align-items:stretch;">
+                <div class="pricing-grid">
                     <!-- Starter Pack -->
-                    <div style="width:300px; text-align:left; border:1px solid var(--land-border); border-radius:16px; padding:30px; box-shadow:0 10px 30px rgba(0,0,0,0.03);">
+                    <div class="pricing-card">
                         <div style="font-size:1.2rem; font-weight:800; margin-bottom:5px;">Starter Pack</div>
                         <div style="font-size:0.85rem; color:var(--land-text-muted); margin-bottom:20px;">10회 분석 크레딧</div>
                         <div style="text-decoration:line-through; color:var(--land-text-muted); font-size:0.9rem;">64,900원</div>
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                        <div class="pricing-price">
                             <span style="font-size:2rem; font-weight:800; color:var(--land-text-main);">32,450원</span>
                             <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
                         </div>
@@ -441,12 +447,12 @@
                     </div>
 
                     <!-- Growth Pack -->
-                    <div style="width:300px; text-align:left; border:2px solid var(--land-accent-dark); border-radius:16px; padding:30px; box-shadow:0 15px 40px rgba(59,130,246,0.1); position:relative;">
+                    <div class="pricing-card pricing-card-featured">
                         <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 12px; border-radius:20px;">BEST 추천</div>
                         <div style="font-size:1.2rem; font-weight:800; margin-bottom:5px;">Growth Pack</div>
                         <div style="font-size:0.85rem; color:var(--land-text-muted); margin-bottom:20px;">20회 분석 크레딧</div>
                         <div style="text-decoration:line-through; color:var(--land-text-muted); font-size:0.9rem;">99,800원</div>
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                        <div class="pricing-price">
                             <span style="font-size:2rem; font-weight:800; color:var(--land-text-main);">49,900원</span>
                             <span style="background:var(--land-accent-dark); color:white; font-size:0.75rem; font-weight:700; padding:4px 8px; border-radius:20px;">50% 할인</span>
                         </div>
@@ -460,7 +466,7 @@
                     </div>
 
                     <!-- Premium List -->
-                    <div style="width:250px; text-align:left; display:flex; flex-direction:column; justify-content:center; padding-left:20px;">
+                    <div class="pricing-note">
                         <div style="background:rgba(59,130,246,0.05); padding:20px; border-radius:12px; border:1px solid rgba(59,130,246,0.1);">
                             <h4 style="font-size:1rem; margin-bottom:10px; color:var(--land-accent-dark);">알아두세요</h4>
                             <p style="font-size:0.85rem; color:var(--land-text-muted); line-height:1.6; margin:0;">초기 유저 할인 가격이 바로 적용됩니다.<br>별도 할인 코드 없이 표시된 금액으로 결제할 수 있습니다.</p>

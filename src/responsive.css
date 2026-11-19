@@ -12,6 +12,14 @@ button:disabled { cursor: wait; opacity: .65; }
 .land-hero-search input { min-width: 0; width: 100%; }
 .land-hero-search .btn-search-mock { flex-shrink: 0; }
 .land-benefits { flex-wrap: wrap; }
+.land-benefits-section .lt-item { min-width: 0; padding: 2rem 1.25rem; border-radius: 16px; }
+.pricing-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .85fr); align-items: stretch; gap: 24px; max-width: 1000px; margin: 0 auto; }
+.pricing-card { width: 100%; min-width: 0; padding: 30px; text-align: left; border: 1px solid var(--land-border); border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .03); }
+.pricing-card-featured { position: relative; border: 2px solid var(--land-accent-dark); box-shadow: 0 15px 40px rgba(59, 130, 246, .1); }
+.pricing-price { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pricing-price > span { flex-shrink: 0; white-space: nowrap; }
+.pricing-card button { min-height: 48px; }
+.pricing-note { min-width: 0; display: flex; flex-direction: column; justify-content: center; text-align: left; }
 .land-hero-actions { flex-wrap: wrap; }
 .land-mobile-menu-btn { background: transparent; border: 0; min-width: 44px; min-height: 44px; }
 .land-modal, .modal { padding: 1rem; overflow-y: auto; }
@@ -143,6 +151,12 @@ details[open] .details-toggle-label::after { content: '접기 −'; }
   .land-hero-text { width: 100%; }
   .lf-split, .lf-split-rev { flex-direction: column; gap: 2rem; }
   .lf-text, .lf-visual { width: 100%; }
+  .lpr-flow { flex-direction: column; align-items: stretch; gap: 12px; padding: 20px; }
+  .lpr-box { flex: none; width: 100%; padding: 24px 16px; }
+  .lpr-arrow { align-self: center; flex: none; width: 32px; height: 32px; }
+  .lpr-arrow > svg { transform: rotate(90deg); }
+  .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pricing-note { grid-column: 1 / -1; }
 }
 
 @media (max-width: 767px) {
@@ -164,12 +178,12 @@ details[open] .details-toggle-label::after { content: '접기 −'; }
   .lp-card, .luc-card { text-align: left; }
   .lp-card p, .luc-card p, .lt-grid p, .lf-text p, .lf3-col p { font-size: 1rem; line-height: 1.7; }
   .lp-card h4 { font-size: 1.125rem; }
-  .lpr-flow { align-items: stretch; }
-  .lpr-box { width: 100%; min-width: 0; }
+  .lpr-flow { padding: 16px; }
+  .lpr-grid-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lf-table { table-layout: fixed; width: 100%; font-size: .875rem; }
   .lf-table :is(td, th) { padding: .875rem .5rem; white-space: normal; overflow-wrap: anywhere; }
-  #land-pricing .pricing-grid { display: grid !important; grid-template-columns: minmax(0, 1fr); gap: 1.5rem !important; }
-  #land-pricing .pricing-grid > div { width: 100% !important; min-width: 0; padding: 1.5rem !important; margin-top: 0 !important; }
+  .pricing-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .pricing-card { padding: 24px 20px; }
   .land-faq-layout { flex-direction: column; gap: 1.5rem !important; }
   .land-faq-layout > div { width: 100%; max-width: none !important; min-width: 0; }
   .land-modal-content { padding: 1.25rem; }

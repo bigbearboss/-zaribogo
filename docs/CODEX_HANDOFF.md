@@ -61,6 +61,24 @@ Node 24에서 `npm ci`, `npm run doctor`, `npm run dev` 순으로 실행한다. 
 - 로그인되지 않은 분석 요청을 정상적인 안내 상태로 처리한다. 요청 중 중복 클릭을 막고 실패 후 버튼을 복구한다.
 - CRI 계산, DB 스키마, 결제·환불, 크레딧 차감 로직은 변경하지 않았다.
 
+## 소개 페이지 모바일 후속 수정 (2026-11-19)
+
+- 질문 카드의 지원되지 않는 `clipboard-question` 아이콘을 인라인 SVG로 교체했다.
+- 분석 과정은 태블릿 이하에서 세로로 쌓고, 화살표를 독립된 32px 영역에 배치한다. 아이콘만 아래 방향으로 회전하며 휴대폰의 분석 항목은 2열이다.
+- 주요 기능 카드에 위아래 32px, 좌우 20px의 내부 여백을 추가했다.
+- 요금제 카드의 너비를 48%로 강제하던 레거시 규칙을 제거했다. 휴대폰에서는 한 열로 전체 폭을 채우고, 할인 배지는 가격과 함께 카드 내부에 배치한다.
+- 320/360/390/430/768/1024/1440px에서 가로 넘침, 가격·버튼의 카드 경계, 화살표의 단계 사이 위치를 측정했다. 휴대폰 4개 너비 모두 요금제 카드와 그리드 폭이 일치하며, 화살표 겹침이 없다.
+- 390px의 네 문제 구간을 직접 화면으로 검토했고 `npm run build`(타입 검사 포함), `git diff --check`를 통과했다. 실제 모바일 기기 검증을 대체하지는 않는다.
+- `dev/responsive.html`에서 수정 구간으로 바로 이동하고 개발 서버 / 배포 미리보기를 선택할 수 있다.
+
+| 아이콘 | 분석 과정 |
+| --- | --- |
+| ![질문 아이콘](screenshots/mobile-icon-fixed.jpg) | ![분석 화살표](screenshots/mobile-process-fixed.jpg) |
+
+| 기능 카드 여백 | Starter | Growth |
+| --- | --- | --- |
+| ![기능 카드 여백](screenshots/mobile-benefits-fixed.jpg) | ![Starter 카드](screenshots/mobile-pricing-fixed.jpg) | ![Growth 카드](screenshots/mobile-growth-fixed.jpg) |
+
 ## 코드 위치
 
 | 경로 | 역할 |
