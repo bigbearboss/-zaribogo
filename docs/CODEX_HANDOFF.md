@@ -7,13 +7,24 @@
 - 소스 기준: `bigbearboss/-zaribogo`, 시작 커밋 `dc7f4f6`.
 - 이번 작업 브랜치: `codex/mobile-ready`.
 - 기존 Vite/TypeScript 구조를 유지한다. 새 프레임워크나 새 DB로 이전한 것이 아니다.
-- 소스를 Codex 환경에서 실행했고 모바일 화면을 수정했다. Cloudflare의 브랜치 미리보기 배포가 성공했으며 운영 도메인 반영은 별도 단계다.
+- 소스를 Codex 환경에서 실행했고 모바일 화면을 수정했다. 2026-11-19 사용자 승인 후 운영 브랜치에 병합했고 Cloudflare 정식 배포와 www.zaribogo.com 반영을 확인했다.
 - 기존 Antigravity 컴퓨터의 미커밋 파일과 `.env`는 이 Git 저장소에 포함되어 있지 않으므로, 원본 로컬 작업이 있다면 별도 비교해야 한다.
 - 개발 환경에 실제 API 설정값이 없어 로그인·지도·실데이터 분석·저장·결제를 통합 검증하지 못했다.
 
-## 배포 미리보기 확인
+## 정식 배포 확인
 
-- PR: https://github.com/bigbearboss/-zaribogo/pull/1 (초안, main 미반영)
+- 운영 주소: https://www.zaribogo.com/
+- PR #1 병합 커밋: `a37ecf601d03db049c97fb527c2de563c7fd4e38` (사용자 명시적 배포 승인).
+- Cloudflare Pages 배포 성공: https://7ebaa0ed.zaribogo.pages.dev/
+- 운영 도메인에서 질문 아이콘, 주요 기능 카드의 32px 상하 여백, 새 요금제 카드 및 모바일 CSS 반영을 확인했다.
+- 소개 → 분석 조건 화면 전환, Kakao 지도 표시 및 서울시청 주소 검색 결과를 확인했다.
+- 로그인 후 분석·저장·크레딧 차감·결제는 이번 배포에서 실행하지 않았다.
+
+![정식 배포된 화면](screenshots/production-deployment.jpg)
+
+## 첫 미리보기 확인 기록 (운영 반영 전)
+
+- PR: https://github.com/bigbearboss/-zaribogo/pull/1 (병합 완료)
 - 브랜치 미리보기: https://codex-mobile-ready.zaribogo.pages.dev/
 - 확인한 배포: https://8b1a2197.zaribogo.pages.dev/ (`9eea3d7`, Cloudflare Pages check 성공)
 - 실제 배포 화면에서 소개 → 입력 화면 전환, 입력값 변경, 연결 불가 안내 및 분석 버튼 복구를 확인했다.
@@ -112,7 +123,7 @@ Node 24에서 `npm ci`, `npm run doctor`, `npm run dev` 순으로 실행한다. 
 2. 허용된 개발 주소에서 로그인과 지도 검색을 확인한다. 390px → 1024px 전환 및 탭 왕복 시 지도가 정상적으로 다시 그려지는지 확인한다.
 3. 검증 계정으로 분석 한 번을 실행해 결과 표시, 저장, 크레딧 1회 차감, 마이페이지 재열기를 확인한다. 반복 클릭이 중복 분석으로 이어지지 않는지 확인한다.
 4. 결제 관련 화면은 테스트 설정으로 확인하고 기존 Cloudflare 배포 브랜치/환경변수를 확인한다.
-5. 검증된 브랜치를 운영 브랜치에 반영한 뒤 기존 도메인에서 최종 확인한다.
+5. 운영 반영과 기존 도메인의 화면·지도 검색 확인은 완료했다. 나머지 인증·분석·저장·결제 통합 검증 결과를 이어 기록한다.
 
 기존 빌드에는 큰 JavaScript 번들 경고가 있다. 의존성 업그레이드와 코드 분할은 별도 작업으로 검토한다.
 
