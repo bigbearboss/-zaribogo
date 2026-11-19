@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>자리보고 반응형 화면 검토</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e8edf5; color: #1e293b; font: 14px system-ui, sans-serif; }
+    header { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #cbd5e1; }
+    label { display: flex; align-items: center; gap: 8px; }
+    select, button { min-height: 36px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font: inherit; }
+    main { padding: 20px; width: max-content; min-width: 100%; }
+    iframe { box-sizing: content-box; display: block; margin: 0 auto; border: 1px solid #cbd5e1; background: white; width: 390px; height: 844px; box-shadow: 0 12px 32px #0f172a12; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>자리보고 · 반응형 화면 검토</strong>
+    <label>화면 폭 <select id="width"><option>320</option><option>360</option><option selected>390</option><option>430</option><option>768</option><option>1024</option><option>1440</option></select></label>
+    <label>화면 <select id="page"><option value="/">서비스 소개</option><option value="/?ui-preview=app">분석 조건</option><option value="/?ui-preview=report">분석 리포트 예시</option><option value="/mypage.html">마이페이지</option></select></label>
+    <button id="reload">다시 불러오기</button>
+    <span>개발 전용 · 리포트 예시는 실제 분석 결과가 아닙니다.</span>
+  </header>
+  <main><iframe id="preview" title="자리보고 화면" src="/"></iframe></main>
+  <script type="module">
+    const frame = document.querySelector('#preview');
+    document.querySelector('#width').addEventListener('change', event => frame.style.width = event.target.value + 'px');
+    document.querySelector('#page').addEventListener('change', event => frame.src = event.target.value);
+    document.querySelector('#reload').addEventListener('click', () => frame.contentWindow.location.reload());
+  </script>
+</body>
+</html>

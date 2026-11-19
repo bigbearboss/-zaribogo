@@ -781,11 +781,7 @@
     position: relative;
 }
 
-.map-square > div,
-.map-square > * {
-    width: 100% !important;
-    height: 100% !important;
-}
+/* Kakao owns its internal tile/control dimensions; only size the container. */
 
 .map-addr-bar {
     display: flex;

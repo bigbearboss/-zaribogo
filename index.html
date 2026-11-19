@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="./src/style.css">
     <link rel="stylesheet" href="./src/landing.css">
     <link rel="stylesheet" href="./src/zentropa-report.css">
+    <link rel="stylesheet" href="./src/responsive.css">
     <!-- External Libraries (Phase 16) -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -26,7 +27,7 @@
                 <div class="logo" style="cursor:pointer; display:flex; align-items:center;" onclick="window.scrollTo({top:0, behavior:'smooth'})">
                     <img src="/logo.png" alt="ZARIBOGO" class="logo-img" style="height:56px; width:auto; filter:invert(1);">
                 </div>
-                <nav class="land-nav" style="display:flex; gap:30px; font-size:0.9rem; font-weight:500;">
+                <nav id="landingNav" class="land-nav" aria-label="서비스 메뉴" style="display:flex; gap:30px; font-size:0.9rem; font-weight:500;">
                     <a href="#" onclick="document.getElementById('land-hero').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">서비스 소개</a>
                     <a href="#" onclick="document.getElementById('land-process').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">분석 항목</a>
                     <a href="#" onclick="document.getElementById('land-feature1').scrollIntoView({behavior:'smooth'}); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">리포트 샘플</a>
@@ -34,9 +35,9 @@
                     <a href="#" onclick="alert('고객 후기는 아직 준비 중입니다.'); return false;" style="color:var(--land-text-light-muted); text-decoration:none; transition:color 0.2s;">고객 후기</a>
                 </nav>
                 
-                <div class="land-mobile-menu-btn" style="display:none; cursor:pointer;" onclick="document.querySelector('.land-nav').classList.toggle('active')">
+                <button type="button" class="land-mobile-menu-btn" aria-label="메뉴 열기" aria-controls="landingNav" aria-expanded="false" style="display:none; cursor:pointer;">
                     <i data-lucide="menu" style="width:28px;height:28px;color:var(--land-white);"></i>
-                </div>
+                </button>
                 <div class="land-auth">
 
                     <button class="btn-nav-login" onclick="document.getElementById('btnLogin').click()" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.9rem; transition:background 0.2s;">로그인 / 가입</button>
@@ -53,14 +54,14 @@
             <div class="land-container land-hero-content">
                 <div class="land-hero-text">
                     <h1 class="land-title-main">이 자리,<br>계약해도 될까요?</h1>
-                    <p class="land-subtitle">좋아 보이는 자리도, 숫자로 보면 다르게 보일 수 있습니다.<br>주소와 업종만 입력하면 월세 부담, 주변 수요, 경쟁 강도까지 확인해<br>계약 전 다시 살펴봐야 할 위험을 정리해드립니다.</p>
+                    <p class="land-subtitle">좋아 보이는 자리도, 숫자로 보면 다르게 보일 수 있습니다.<br> 주소와 업종만 입력하면 월세 부담, 주변 수요, 경쟁 강도까지 확인해<br> 계약 전 다시 살펴봐야 할 위험을 정리해드립니다.</p>
                     
-                    <div style="display:flex; gap:16px; margin-top:30px;">
-                        <button class="btn-cta-large btn-start-app">무료로 내 자리 확인하기 <span>→</span></button>
+                    <div class="land-hero-actions" style="display:flex; gap:16px; margin-top:30px;">
+                        <button class="btn-cta-large btn-start-app">무료로 내 자리 확인하기</button>
                         <button class="btn-cta-large" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);" onclick="document.getElementById('sampleReportModal').classList.remove('hidden')">샘플 리포트 먼저 보기</button>
                     </div>
                     
-                    <ul style="list-style:none; padding:0; margin-top:24px; display:flex; gap:20px; font-size:0.9rem; color:var(--land-text-muted);">
+                    <ul class="land-benefits" style="list-style:none; padding:0; margin-top:24px; display:flex; gap:20px; font-size:0.9rem; color:var(--land-text-muted);">
                         <li style="display:flex; align-items:center; gap:6px;"><i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--land-accent);"></i> 데이터 기반 분석</li>
                         <li style="display:flex; align-items:center; gap:6px;"><i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--land-accent);"></i> 실제 시장 반영</li>
                         <li style="display:flex; align-items:center; gap:6px;"><i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--land-accent);"></i> 계약 위험 사전 체크</li>
@@ -339,7 +340,7 @@
                         </div>
                     </div>
                     <div style="text-align:center; margin-top:40px;">
-                        <button class="btn-cta-large btn-start-app">지금 내 자리 확인하기 <span>→</span></button>
+                        <button class="btn-cta-large btn-start-app">지금 내 자리 확인하기 </button>
                     </div>
                 </div>
             </div>
@@ -420,7 +421,7 @@
                 <h2 class="land-title-sec">필요한 만큼만 분석하세요.</h2>
                 <p style="color:var(--land-text-muted); margin-bottom:50px;">후보지가 생길 때마다 필요한 만큼만 사용할 수 있습니다.<br>초기 유저 할인 가격이 바로 적용됩니다.</p>
                 
-                <div style="display:flex; justify-content:center; gap:20px; align-items:stretch;">
+                <div class="pricing-grid" style="display:flex; justify-content:center; gap:20px; align-items:stretch;">
                     <!-- Starter Pack -->
                     <div style="width:300px; text-align:left; border:1px solid var(--land-border); border-radius:16px; padding:30px; box-shadow:0 10px 30px rgba(0,0,0,0.03);">
                         <div style="font-size:1.2rem; font-weight:800; margin-bottom:5px;">Starter Pack</div>
@@ -471,7 +472,7 @@
 
         <!-- 10. FAQ -->
         <section style="padding: 100px 0; background: var(--land-light-bg);">
-            <div class="land-container" style="display:flex; gap:60px; justify-content:center;">
+            <div class="land-container land-faq-layout" style="display:flex; gap:60px; justify-content:center;">
                 <div style="flex:1; max-width:300px;">
                     <span style="color:var(--land-accent-dark); font-weight:700; letter-spacing:1px; font-size:0.85rem;">FAQ</span>
                     <h2 class="land-title-sec">시작하기 전에 궁금한 점</h2>
@@ -507,7 +508,7 @@
             <div class="land-container">
                 <h2>계약서에 사인하기 전,<br>한 번 더 확인하세요.</h2>
                 <p>좋은 자리처럼 보여도 비용 부담, 수요 기반, 경쟁 강도는 다를 수 있습니다.<br>자리보고로 계약 전 리스크를 먼저 확인해보세요.</p>
-                <button class="btn-cta-large btn-start-app">지금 자리 분석하기 <span>→</span></button>
+                <button class="btn-cta-large btn-start-app">지금 자리 분석하기 </button>
                 <div style="margin-top:40px;">
                     <span style="font-size:0.8rem; color:rgba(255,255,255,0.4);">© 2026 Zaribogo. 상권 분석 데이터 솔루션</span>
                 </div>
@@ -521,7 +522,7 @@
                 <button class="land-modal-close" onclick="document.getElementById('sampleReportModal').classList.add('hidden')">✕</button>
                 <h3 style="margin-bottom:16px; font-size: 1.5rem; color: #1e293b;">샘플 리포트</h3>
                 <div style="background:#f1f5f9; padding:24px; border-radius:12px; max-height: 60vh; overflow-y:auto; text-align:left;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                    <div class="sample-report-heading" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                         <span style="font-weight:700; color:#1e293b;">서울 용산구 이태원동 카페</span>
                         <span style="color:#ef4444; font-weight:800; font-size:1.1rem;">종합 CRI: 45점 (계약 주의)</span>
                     </div>
@@ -540,14 +541,24 @@
     </section>
 
     
-    <div id="app" class="hidden" data-theme="dark">
+    <div id="app" class="analysis-app hidden" data-theme="dark" data-mobile-panel="inputs">
+        <header class="mobile-app-header">
+            <button type="button" class="mobile-home-button" data-app-home aria-label="자리보고 홈으로">
+                <img src="/logo.png" alt="ZARIBOGO">
+            </button>
+            <span>계약 전, 한 번 더 확인</span>
+        </header>
+        <nav class="mobile-panel-nav" role="tablist" aria-label="자리 분석">
+            <button type="button" id="inputsTab" role="tab" aria-controls="analysisInputs" aria-selected="true" data-analysis-panel="inputs">분석 조건</button>
+            <button type="button" id="resultsTab" role="tab" aria-controls="analysisResults" aria-selected="false" tabindex="-1" data-analysis-panel="results">분석 결과</button>
+        </nav>
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside id="analysisInputs" class="sidebar" tabindex="-1">
             <header class="app-header">
-                <div class="logo" style="cursor:pointer; display:flex; align-items:center; flex-direction:column; gap:4px;" onclick="document.getElementById('app').classList.add('hidden'); document.getElementById('landingPage').classList.remove('hidden'); window.scrollTo(0,0);">
+                <button type="button" class="logo app-home-button" data-app-home style="cursor:pointer; display:flex; align-items:center; flex-direction:column; gap:4px;">
                     <img src="/logo.png" alt="ZARIBOGO" class="logo-img sidebar-logo-img" style="height:55px; width:auto;">
                     <span class="header-tagline" style="font-size:0.62rem; letter-spacing:0; margin:0; color:var(--text-muted);">AI 상권·입지 분석 서비스</span>
-                </div>
+                </button>
 
                 <!-- Auth Section -->
                 <div class="user-card-modern">
@@ -572,7 +583,7 @@
                     </div>
                 </div>
 
-                <div class="theme-toggle-modern" id="themeToggle">
+                <div class="theme-toggle-modern" id="themeToggle" role="button" tabindex="0" aria-label="화면 테마 전환">
                     <span style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-muted);font-weight:600;"><i data-lucide="moon" style="width:16px;height:16px;"></i> 다크 모드</span>
                     <div class="theme-switch" id="themeKnob">
                         <div class="switch-handle"></div>
@@ -580,7 +591,11 @@
                 </div>
             </header>
 
-            <nav class="input-nav-modern">
+            <div class="input-nav-modern">
+                <div class="input-intro">
+                    <h1>어떤 자리를 보고 계세요?</h1>
+                    <p>위치와 업종, 임대 조건을 입력해 주세요.</p>
+                </div>
                 <!-- Radius Row -->
                 <div class="sidebar-section-compact">
                     <div class="section-title-sm">분석 반경 설정 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
@@ -616,7 +631,7 @@
                     <div id="kakaoMapSection" style="position:relative;">
                         <div class="search-input-modern">
                             <i data-lucide="search" id="searchIconBtn" style="width:18px;height:18px;color:var(--text-muted);cursor:pointer;flex-shrink:0;"></i>
-                            <input id="kakaoSearchInput" type="text" placeholder="지도에서 위치 검색... (예: 강남역)">
+                            <input id="kakaoSearchInput" type="search" aria-label="분석할 위치 검색" enterkeyhint="search" autocomplete="off" placeholder="주소 또는 장소 검색 (예: 강남역)">
                             <button id="kakaoSearchBtn" type="button" style="display:none;">🔍</button>
                         </div>
                         <ul id="kakaoSearchResults" class="search-results-modern"></ul>
@@ -642,7 +657,7 @@
                 <div class="sidebar-section">
                     <div class="section-title-sm">업종 선택 <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
                     <div class="sector-search-container" id="sectorSearchContainer">
-                        <div class="sector-dropdown-trigger-modern" id="businessTypeTrigger">
+                        <div class="sector-dropdown-trigger-modern" id="businessTypeTrigger" role="button" tabindex="0" aria-label="업종 선택" aria-expanded="false" aria-controls="businessTypeDropdown">
                             <i data-lucide="store" style="width:18px;height:18px;color:var(--text-muted);"></i>
                             <span id="selectedSectorLabel" style="flex:1;">업종을 검색해주세요...</span>
                             <i data-lucide="chevron-down" style="width:18px;height:18px;color:var(--text-muted);"></i>
@@ -684,42 +699,36 @@
                     <div class="section-title-sm">임대 조건 <span class="badge-mini badge-req">필수 입력</span> <i data-lucide="info" style="width:14px;height:14px;color:var(--text-muted);"></i></div>
                     <div class="input-grid-2x2">
                         <div class="input-modern">
-                            <label>월 임대료 (원/월)</label>
-                            <input type="number" id="rent" placeholder="예) 2,500,000" value="2500000">
+                            <label for="rent">월 임대료 (원/월)</label><input type="number" id="rent" placeholder="예) 2,500,000" value="2500000">
                         </div>
                         <div class="input-modern">
-                            <label>보증금 (원)</label>
-                            <input type="number" id="deposit" placeholder="예) 50,000,000" value="50000000">
+                            <label for="deposit">보증금 (원)</label><input type="number" id="deposit" placeholder="예) 50,000,000" value="50000000">
                         </div>
                         <div class="input-modern">
-                            <label>직원 수 (명)</label>
-                            <input type="number" id="albiCount" placeholder="예) 3" value="3">
+                            <label for="albiCount">직원 수 (명)</label><input type="number" id="albiCount" placeholder="예) 3" value="3">
                         </div>
                         <div class="input-modern">
-                            <label>정규직 수 (명)</label>
-                            <input type="number" id="managerCount" placeholder="예) 1" value="1">
+                            <label for="managerCount">정규직 수 (명)</label><input type="number" id="managerCount" placeholder="예) 1" value="1">
                         </div>
                         <div class="input-modern" style="grid-column: span 2;">
-                            <label>월 인건비 (원/월)</label>
-                            <input type="number" id="laborCost" placeholder="예) 7,500,000" value="7500000">
+                            <label for="laborCost">월 인건비 (원/월)</label><input type="number" id="laborCost" placeholder="예) 7,500,000" value="7500000">
                         </div>
                     </div>
                 </div>
 
                 <!-- Advanced Inputs -->
-                <details class="advanced-settings-modern" open>
-                    <summary>고급 설정 <span class="badge-mini badge-opt">선택 입력</span> <i data-lucide="chevron-down" style="margin-left:auto; display:none;"></i> <span style="margin-left:auto;font-size:0.75rem;color:var(--accent-primary);">접기 ∧</span></summary>
+                <details class="advanced-settings-modern">
+                    <summary>고급 설정 <span class="badge-mini badge-opt">선택 입력</span> <span class="details-toggle-label" aria-hidden="true"></span></summary>
                     <div class="advanced-content">
                         <div class="input-grid-2x2">
-                            <div class="input-modern"><label>매장 면적 (m²)</label><input type="number" id="area" placeholder="예) 66" value="66"></div>
+                            <div class="input-modern"><label for="area">매장 면적 (m²)</label><input type="number" id="area" placeholder="예) 66" value="66"></div>
                             <div class="input-modern">
-                                <label>영업 층수</label>
-                                <select id="floor">
+                                <label for="floor">영업 층수</label><select id="floor">
                                     <option value="B1">지하 1층</option><option value="1" selected>1층</option><option value="2">2층</option><option value="3+">3층 이상</option>
                                 </select>
                             </div>
-                            <div class="input-modern"><label>월 관리비 (원/월)</label><input type="number" id="maintenanceFee" placeholder="예) 300,000" value="300000"></div>
-                            <div class="input-modern"><label>권리금 (원)</label><input type="number" id="premium" placeholder="예) 20,000,000" value="20000000"></div>
+                            <div class="input-modern"><label for="maintenanceFee">월 관리비 (원/월)</label><input type="number" id="maintenanceFee" placeholder="예) 300,000" value="300000"></div>
+                            <div class="input-modern"><label for="premium">권리금 (원)</label><input type="number" id="premium" placeholder="예) 20,000,000" value="20000000"></div>
                         </div>
                         <div class="input-grid-2x2" style="margin-top:12px; align-items:center;">
                             <div class="input-modern-check" style="margin-top:0; grid-column: span 2; display:flex; align-items:center; gap:8px;">
@@ -727,8 +736,7 @@
                                 <label for="hasParking">전용 주차 가능</label>
                             </div>
                             <div class="input-modern">
-                                <label>접객 좌석</label>
-                                <select id="seatingCount">
+                                <label for="seatingCount">접객 좌석</label><select id="seatingCount">
                                     <option value="">선택하세요</option>
                                     <option value="10이하">10석 이하</option>
                                     <option value="11-20">11 ~ 20석</option>
@@ -738,8 +746,7 @@
                                 </select>
                             </div>
                             <div class="input-modern">
-                                <label>매출 수준</label>
-                                <select id="revenueLevel">
+                                <label for="revenueLevel">매출 수준</label><select id="revenueLevel">
                                     <option value="">선택하세요</option>
                                     <option value="low">월 500만원 미만</option>
                                     <option value="mid">월 500~1,500만원</option>
@@ -749,21 +756,24 @@
                             </div>
                         </div>
                         <div class="input-grid-2x2" style="margin-top:12px;">
-                            <div class="input-modern"><label>사업 대출금 (원)</label><input type="number" id="loanAmount" placeholder="예) 0"></div>
-                            <div class="input-modern"><label>연 이자율 (%)</label><input type="number" id="interestRate" step="0.1" placeholder="예) 4.5"></div>
-                            <div class="input-modern"><label>원가 마진 (%)</label><input type="number" id="margin" placeholder="예) 30"></div>
-                            <div class="input-modern"><label>객단가 (원)</label><input type="number" id="ticketPrice" placeholder="선택사항"></div>
+                            <div class="input-modern"><label for="loanAmount">사업 대출금 (원)</label><input type="number" id="loanAmount" placeholder="예) 0"></div>
+                            <div class="input-modern"><label for="interestRate">연 이자율 (%)</label><input type="number" id="interestRate" step="0.1" placeholder="예) 4.5"></div>
+                            <div class="input-modern"><label for="margin">원가 마진 (%)</label><input type="number" id="margin" placeholder="예) 30"></div>
+                            <div class="input-modern"><label for="ticketPrice">객단가 (원)</label><input type="number" id="ticketPrice" placeholder="선택사항"></div>
                         </div>
                     </div>
                 </details>
-            </nav>
+            </div>
 
-            <button id="startAnalysis" class="btn-primary-modern">
-                <i data-lucide="sparkles" style="width:18px;height:18px;"></i> 자리 판단하기
-            </button>
+            <div class="analysis-submit">
+                <p id="analysisNotice" class="analysis-notice" role="status" aria-live="polite" hidden></p>
+                <button id="startAnalysis" class="btn-primary-modern">
+                    <i data-lucide="sparkles" style="width:18px;height:18px;"></i> 자리 판단하기
+                </button>
+            </div>
         </aside>
 
-        <main class="dashboard-modern">
+        <main id="analysisResults" class="dashboard-modern" tabindex="-1" aria-label="분석 결과">
             <div id="zentropaReportContainer" class="zentropa-report hidden"></div>
             <div id="legacyDashboardContent" class="dashboard-content-wrapper-modern">
                 <!-- 1. Top Status Banner -->
@@ -1061,7 +1071,7 @@
         });
     </script>
 
-    <script>lucide.createIcons();</script>
+    <script>window.lucide?.createIcons?.();</script>
 
     <script>
     /* ── Issue 2: 돋보기 아이콘 클릭 시 검색 실행 ── */

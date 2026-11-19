@@ -1,0 +1,190 @@
+/* Current application shell. Loaded last to isolate it from legacy layouts. */
+html { scroll-behavior: smooth; }
+body { height: auto; min-height: 100dvh; overflow: auto; font-family: 'Inter', 'Pretendard', system-ui, sans-serif; }
+button, input, select { font: inherit; }
+button, [role="button"], summary { touch-action: manipulation; }
+:is(button, a, input, select, summary, [tabindex]):focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+button:disabled { cursor: wait; opacity: .65; }
+.landing-page { height: auto; min-height: 100dvh; overflow: visible; }
+.landing-page section { scroll-margin-top: 5rem; }
+.land-hero-text, .land-hero-visual, .lf-text, .lf-visual, .lf3-col { min-width: 0; }
+.land-hero-search { transform: none; }
+.land-hero-search input { min-width: 0; width: 100%; }
+.land-hero-search .btn-search-mock { flex-shrink: 0; }
+.land-benefits { flex-wrap: wrap; }
+.land-hero-actions { flex-wrap: wrap; }
+.land-mobile-menu-btn { background: transparent; border: 0; min-width: 44px; min-height: 44px; }
+.land-modal, .modal { padding: 1rem; overflow-y: auto; }
+.land-modal-content, .modal-content { width: min(100%, 640px); max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.land-modal-close { min-width: 44px; min-height: 44px; }
+.sample-report-heading { flex-wrap: wrap; gap: .75rem; }
+.mobile-app-header, .mobile-panel-nav { display: none; }
+
+#app.analysis-app { min-width: 0; height: 100dvh; }
+#app.analysis-app > .sidebar { width: 360px; min-width: 360px; height: 100dvh; padding: 0; gap: 0; }
+.analysis-app .app-header { padding: 1.25rem; gap: 1rem; margin: 0; }
+.app-home-button { border: 0; background: transparent; color: inherit; width: 100%; }
+.analysis-app .input-nav-modern { padding: 1.25rem; gap: 1.75rem; }
+.input-intro h1 { font-size: 1.25rem; color: var(--text-primary); letter-spacing: -.04em; line-height: 1.4; }
+.input-intro p { color: var(--text-muted); font-size: .875rem; line-height: 1.6; margin-top: .5rem; }
+.analysis-app .section-title-sm { font-size: .9375rem; flex-wrap: wrap; }
+.analysis-app .input-grid-2x2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.analysis-app .input-modern { min-width: 0; }
+.analysis-app .input-modern label { font-size: .875rem; line-height: 1.5; }
+.analysis-app :is(.input-modern input, .input-modern select) { min-width: 0; width: 100%; min-height: 48px; font-size: 1rem; }
+.analysis-app .search-input-modern { padding: .75rem; }
+.analysis-app .search-input-modern input { min-width: 0; font-size: 1rem; }
+.analysis-app .sector-dropdown-trigger-modern { min-height: 52px; font-size: 1rem; }
+.analysis-app :is(.sector-item, .kakao-result-item) { min-height: 48px; padding: .875rem; }
+.analysis-app button.sector-item { display: block; width: 100%; border: 0; background: transparent; text-align: left; color: var(--text-primary); }
+.analysis-app button.sector-item:is(:hover, :focus-visible, .active) { background: var(--input-bg); }
+.analysis-app .sector-search-input-box input { font-size: 1rem; min-height: 44px; }
+.analysis-app .radius-toggle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .375rem; background: var(--input-bg); border: 1px solid var(--input-border); padding: .25rem; border-radius: 12px; }
+.analysis-app .radius-toggle button { min-height: 44px; border: 0; border-radius: 8px; color: var(--text-muted); background: transparent; font-size: .9375rem; font-weight: 600; cursor: pointer; }
+.analysis-app .radius-toggle button.active { background: var(--accent-primary); color: white; }
+.analysis-app .scenario-btn-full { min-height: 56px; }
+.analysis-app .scen-desc-full { font-size: .8125rem; }
+.analysis-app #kakaoSelectedAddr { display: block; padding: 0; }
+.analysis-app #kakaoMapContainer { width: 100%; height: 230px; aspect-ratio: auto; border: 0; border-radius: 0; }
+.analysis-app .map-addr-bar { min-height: 44px; padding: .75rem; }
+.analysis-app .map-addr-text { font-size: .875rem; overflow-wrap: anywhere; }
+.analysis-app .advanced-settings-modern summary { min-height: 48px; flex-wrap: wrap; gap: .5rem; }
+.details-toggle-label { margin-left: auto; font-size: .875rem; color: var(--accent-primary); }
+.details-toggle-label::after { content: '펼치기 +'; }
+details[open] .details-toggle-label::after { content: '접기 −'; }
+.analysis-app .btn-action-sm { min-height: 44px; font-size: .875rem; }
+.analysis-app .user-email { min-width: 0; overflow-wrap: anywhere; }
+.analysis-submit { padding: 1rem 1.25rem; margin-top: auto; background: var(--sidebar-bg); border-top: 1px solid var(--card-border); position: sticky; bottom: 0; z-index: 20; }
+.analysis-submit #startAnalysis { position: static; width: 100%; min-height: 52px; margin: 0; border-radius: 12px; font-size: 1rem; }
+.analysis-notice { padding-bottom: .75rem; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
+.analysis-app .dashboard-modern { min-width: 0; padding: 1.5rem; }
+.analysis-app .dashboard-content-wrapper-modern { min-width: 0; }
+.analysis-app :is(.cri-dashboard-grid, .bottom-dashboard-grid) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.analysis-app :is(.evidence-grid-2x2, .cri-metrics-list) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.analysis-app .status-banner-modern { flex-wrap: wrap; gap: 1.25rem; }
+.analysis-app .status-left { min-width: 0; flex: 1 1 280px; }
+.analysis-app .status-icon-circle { flex-shrink: 0; }
+.analysis-app .step-num { font-size: .875rem; }
+.analysis-app .step-indicator .step { width: auto; }
+.analysis-app .step-indicator .step span { font-size: .875rem; }
+.analysis-app .step-indicator .step-line { width: 24px; }
+.analysis-app .zentropa-report { min-height: auto; padding: 0; }
+.analysis-app .zentropa-container { padding: 0; }
+.analysis-app :is(.zentropa-card, .cri-gauge-card, .evidence-card-modern, .quick-guide-card, .action-guide-card) { min-width: 0; }
+.analysis-app :is(.financial-detail-grid, .cri-layout, .cause-grid, .factors-grid, .advice-grid, .two-col-grid, .checklist-grid) > * { min-width: 0; }
+.analysis-app :is(.financial-row, .financial-item-row, .cri-metric-header, .metric-detail-row) { gap: .75rem; flex-wrap: wrap; }
+.analysis-app :is(.risk-grade-header, .risk-grade-tip, .zentropa-card-title) { flex-wrap: wrap; }
+.analysis-app :is(.zentropa-card p, .risk-grade-desc, .advice-text, .ai-check-item, .cause-desc) { font-size: 1rem; line-height: 1.65; overflow-wrap: break-word; }
+.analysis-app :is(.cri-metric-header, .cause-name, .financial-section-label, .financial-row, .financial-item-row, .metric-detail-val) { font-size: .875rem; }
+.analysis-app :is(.btn-zentropa-primary, .btn-zentropa-secondary) { min-height: 48px; white-space: normal; }
+.ui-preview-notice { margin: 0 0 1rem; padding: .875rem; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; font-size: .875rem; line-height: 1.5; }
+
+@media (min-width: 1024px) {
+  body.analysis-active { height: 100dvh; overflow: hidden; }
+  .analysis-app .sidebar { overscroll-behavior-y: contain; }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  #app.analysis-app > .sidebar { width: 320px; min-width: 320px; }
+  .analysis-app :is(.cri-dashboard-grid, .bottom-dashboard-grid, .cri-layout, .financial-detail-grid, .cause-grid, .factors-grid) { grid-template-columns: minmax(0, 1fr); }
+  .analysis-app .dashboard-modern { padding: 1.25rem; }
+}
+
+@media (max-width: 1023px) {
+  html, body { height: auto !important; min-height: 100dvh !important; }
+  html { overflow-y: auto !important; }
+  body { overflow: visible !important; }
+  #app.analysis-app { display: block; height: auto !important; min-height: 100dvh; }
+  .mobile-app-header { display: flex; align-items: center; justify-content: space-between; padding: .5rem 1.25rem; min-height: 64px; border-bottom: 1px solid var(--card-border); background: var(--sidebar-bg); color: var(--text-muted); gap: .5rem; }
+  .mobile-app-header > span { font-size: .8125rem; }
+  .mobile-home-button { padding: 0; min-height: 44px; background: transparent; border: 0; cursor: pointer; }
+  .mobile-home-button img { width: 112px; height: auto; display: block; filter: invert(1); }
+  [data-theme="light"] .mobile-home-button img { filter: none; }
+  .mobile-panel-nav { position: sticky; top: 0; z-index: 60; display: grid; grid-template-columns: 1fr 1fr; padding: 0 1rem; background: var(--sidebar-bg); border-bottom: 1px solid var(--card-border); }
+  .mobile-panel-nav button { min-height: 52px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-muted); font-size: 1rem; font-weight: 700; cursor: pointer; }
+  .mobile-panel-nav button[aria-selected="true"] { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+  #app.analysis-app > .sidebar { width: 100%; min-width: 0 !important; height: auto !important; padding: 0 0 calc(var(--analysis-submit-height, 100px) + 1rem); border: 0 !important; overflow: visible; box-shadow: none; backdrop-filter: none; }
+  .analysis-app :is(input, select, summary) { scroll-margin-top: 70px; scroll-margin-bottom: calc(var(--analysis-submit-height, 100px) + 1rem); }
+  #app.analysis-app > [hidden] { display: none !important; }
+  .analysis-app .app-header { max-width: 680px; margin: 0 auto; width: 100%; padding: 1rem 1.25rem 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; border: 0; }
+  .analysis-app .app-header > .logo { display: none !important; }
+  .analysis-app .user-card-modern { padding: .75rem; min-width: 0; justify-content: center; }
+  .analysis-app .theme-toggle-modern { padding: .75rem; gap: .5rem; }
+  .analysis-app .theme-toggle-modern > span { font-size: .8125rem !important; }
+  .analysis-app .theme-switch { flex-shrink: 0; }
+  .analysis-app .input-nav-modern { max-width: 680px; margin: 0 auto; width: 100%; padding: 1.5rem 1.25rem; gap: 1.75rem; }
+  .input-intro h1 { font-size: 1.5rem; }
+  .input-intro p { font-size: .9375rem; }
+  .analysis-app .sidebar-section { padding: 0; }
+  .analysis-app #kakaoMapContainer { height: clamp(210px, 60vw, 300px); }
+  .analysis-submit { position: fixed; inset: auto 0 0; z-index: 70; padding: .75rem 1.25rem calc(.75rem + env(safe-area-inset-bottom)); box-shadow: 0 -8px 24px rgba(0, 0, 0, .08); }
+  .analysis-submit > * { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .analysis-submit #startAnalysis { display: flex; margin: 0 auto; }
+  .analysis-app .dashboard-modern { max-width: 760px; margin: 0 auto; padding: 1.25rem; overflow: visible; }
+  .analysis-app :is(.cri-dashboard-grid, .bottom-dashboard-grid, .cri-layout, .financial-detail-grid, .cause-grid, .factors-grid, .advice-grid, .two-col-grid, .checklist-grid, .ai-check-list, .btn-zentropa-row) { grid-template-columns: minmax(0, 1fr) !important; gap: 1rem; }
+  .analysis-app :is(.status-banner-modern, .zentropa-card, .cri-gauge-card, .evidence-card-modern, .quick-guide-card, .action-guide-card, .zentropa-ai-card) { padding: 1.25rem; }
+  .analysis-app .zentropa-container { padding: 0; gap: 1rem; }
+  .analysis-app .zentropa-ai-illustration { display: none; }
+  .analysis-app .step-indicator { width: 100%; justify-content: space-between; }
+  .analysis-app .status-left { flex-basis: 100%; }
+  .analysis-app .evidence-grid-2x2 { gap: .75rem; }
+  .analysis-app .ev-header { flex-wrap: wrap; gap: .5rem; }
+  .analysis-app .ev-title { font-size: .875rem; }
+
+  .land-header .land-nav { display: none !important; position: absolute; inset: 70px 0 auto; padding: 1rem 1.25rem; background: #0f172a; border-bottom: 1px solid var(--land-border-dark); flex-direction: column; gap: .5rem !important; }
+  .land-header .land-nav.active { display: flex !important; }
+  .land-header .land-nav a { min-height: 44px; display: flex; align-items: center; font-size: 1rem; }
+  .land-header .land-mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; }
+  .land-header .land-auth { display: block !important; margin-left: auto; margin-right: .5rem; }
+  .land-header .land-auth button { min-height: 44px; padding: .5rem .75rem !important; font-size: .875rem !important; }
+  .land-mobile-menu-btn { order: 3; }
+  .land-hero-content { flex-direction: column; gap: 2.5rem; }
+  .land-hero-visual { width: min(100%, 520px); }
+  .land-hero-text { width: 100%; }
+  .lf-split, .lf-split-rev { flex-direction: column; gap: 2rem; }
+  .lf-text, .lf-visual { width: 100%; }
+}
+
+@media (max-width: 767px) {
+  .land-container { padding: 0 1.25rem; }
+  .land-hero-v2 { padding: 3rem 0; }
+  .land-hero-text { text-align: left; }
+  .land-title-main { font-size: clamp(2.125rem, 9vw, 3rem); line-height: 1.22; }
+  .land-title-sec, .lf-text h2 { font-size: clamp(1.625rem, 6.5vw, 2rem); line-height: 1.4; }
+  .land-subtitle { font-size: 1rem; line-height: 1.8; }
+  .land-subtitle br, .lf-text p br { display: none; }
+  .land-hero-actions { flex-direction: column; gap: .75rem !important; }
+  .land-hero-actions .btn-cta-large { width: 100%; min-height: 52px; padding: .875rem; font-size: 1rem; }
+  .land-benefits { gap: .625rem 1rem !important; font-size: .875rem !important; }
+  .land-hero-search { padding-left: .875rem; }
+  .land-hero-search input { font-size: .875rem; }
+  .land-hero-dash-card { padding: 1.25rem; }
+  .lhd-header, .lhd-score-box { flex-wrap: wrap; gap: .75rem; }
+  .lp-grid, .lt-grid, .luc-grid, .lf3-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .lp-card, .luc-card { text-align: left; }
+  .lp-card p, .luc-card p, .lt-grid p, .lf-text p, .lf3-col p { font-size: 1rem; line-height: 1.7; }
+  .lp-card h4 { font-size: 1.125rem; }
+  .lpr-flow { align-items: stretch; }
+  .lpr-box { width: 100%; min-width: 0; }
+  .lf-table { table-layout: fixed; width: 100%; font-size: .875rem; }
+  .lf-table :is(td, th) { padding: .875rem .5rem; white-space: normal; overflow-wrap: anywhere; }
+  #land-pricing .pricing-grid { display: grid !important; grid-template-columns: minmax(0, 1fr); gap: 1.5rem !important; }
+  #land-pricing .pricing-grid > div { width: 100% !important; min-width: 0; padding: 1.5rem !important; margin-top: 0 !important; }
+  .land-faq-layout { flex-direction: column; gap: 1.5rem !important; }
+  .land-faq-layout > div { width: 100%; max-width: none !important; min-width: 0; }
+  .land-modal-content { padding: 1.25rem; }
+  .land-modal-content > div { padding: 1rem !important; }
+}
+
+@media (max-width: 374px) {
+  .analysis-app .input-grid-2x2 { grid-template-columns: minmax(0, 1fr); }
+  .analysis-app .input-grid-2x2 > * { grid-column: 1 !important; }
+  .analysis-app .evidence-grid-2x2, .analysis-app .cri-metrics-list { grid-template-columns: minmax(0, 1fr); }
+  .analysis-app .theme-toggle-modern > span { display: none !important; }
+  .land-header .logo-img { max-width: 116px; object-fit: contain; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

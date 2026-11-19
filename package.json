@@ -1,9 +1,11 @@
 {
     "name": "risk-engine",
     "scripts": {
-        "dev": "lsof -ti:5175 | xargs kill -9 2>/dev/null; vite",
-        "build": "tsc && vite build",
-        "preview": "vite preview"
+        "dev": "vite --host 0.0.0.0",
+        "typecheck": "tsc --noEmit",
+        "build": "npm run typecheck && vite build",
+        "preview": "vite preview",
+        "doctor": "node scripts/check-env.mjs"
     },
     "devDependencies": {
         "@types/node": "^25.3.0",
