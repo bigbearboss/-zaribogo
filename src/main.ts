@@ -29,7 +29,8 @@ import { PublicDataFetcher } from "./engine/PublicDataFetcher";
 import { RealPublicDataProvider } from "./engine/RealPublicDataProvider";
 import { CsvDatasetProvider } from "./engine/CsvDatasetProvider";
 import { getZeroCompetitionInsight } from "./engine/zeroCompetitionInsight";
-import { supabase } from './services/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from './services/supabase';
+import { initAppShell, openAnalysisApp, showAnalysisPanel, setAnalysisNotice } from './ui/appShell';
 // @ts-ignore
 import industryProfiles from "./engine/data/industryProfiles.json";
 import admCodeMap from "./engine/data/admCodeMap";
@@ -796,6 +797,12 @@ function initSectors() {
   });
 
   elements.businessTypeDropdown?.addEventListener("click", (e) => e.stopPropagation());
+  elements.businessTypeDropdown?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      elements.businessTypeDropdown.classList.add("hidden");
+      elements.businessTypeTrigger?.focus();
+    }
+  });
 
   elements.sectorSearchInput?.addEventListener("input", () => {
     filterSectors();
@@ -805,7 +812,7 @@ function initSectors() {
 function renderRecommendedSectors() {
   if (!elements.recommendedSectors) return;
   elements.recommendedSectors.innerHTML = RECOMMENDED_SECTORS.map(
-    (s) => `<div class="sector-item" data-code="${s.code}">${s.name}</div>`
+    (s) => `<button type="button" class="sector-item" data-code="${s.code}">${s.name}</button>`
   ).join("");
 
   elements.recommendedSectors.querySelectorAll(".sector-item").forEach((item) => {
@@ -841,7 +848,7 @@ function renderAllSectors(filter = "") {
   }
 
   elements.allSectors.innerHTML = filtered
-    .map((s) => `<div class="sector-item" data-code="${s.internal_code}">${s.display_name_ko}</div>`)
+    .map((s) => `<button type="button" class="sector-item" data-code="${s.internal_code}">${s.display_name_ko}</button>`)
     .join("");
 
   elements.allSectors.querySelectorAll(".sector-item").forEach((item) => {
@@ -862,6 +869,7 @@ function selectSector(code: string, label: string) {
   elements.businessType.value = code;
   elements.selectedSectorLabel.textContent = label;
   elements.businessTypeDropdown.classList.add("hidden");
+  elements.businessTypeTrigger?.focus({ preventScroll: true });
 
   document.querySelectorAll(".sector-item").forEach((el) => {
     el.classList.toggle("active", (el as HTMLElement).dataset.code === code);
@@ -1804,53 +1812,51 @@ async function saveAnalysisAndConsumeCredit(params: {
 }
 
 async function handleStartAnalysisClick() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-
-  if (authError) {
-    throw new Error(`로그인 정보를 확인할 수 없습니다. (${authError.message})`);
-  }
-
-  const user = authData.user;
-
-  if (!user) {
-    if (confirm("분석 결과 저장과 마이페이지 이용을 위해 로그인이 필요합니다. 로그인하시겠습니까?")) {
-      login();
-    }
-    return;
-  }
-
   const btn = elements.startAnalysis;
+  if (btn?.disabled) return;
+  setAnalysisNotice();
   if (btn) {
     btn.disabled = true;
     btn.textContent = "권한 확인 중...";
   }
 
   try {
-    const credit = await getUserCreditStatus(user.id);
+    if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
+      setAnalysisNotice("현재 분석 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    // A signed-out visitor is a normal state, not an uncaught getUser error.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!sessionData.session) {
+      setAnalysisNotice("분석하려면 상단의 로그인 / 회원가입을 눌러 주세요. 입력한 조건은 유지됩니다.");
+      return;
+    }
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    const user = authData.user;
+    if (!user) {
+      setAnalysisNotice("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+      return;
+    }
 
+    const credit = await getUserCreditStatus(user.id);
     if (credit.remainingCredits <= 0) {
       showUpgradeModal();
       return;
     }
 
     resetSaveButton();
-
     showAnalysisProgress();
-await wait(700);
-
-    if (btn) {
-      btn.textContent = "최종 분석 결과 정리 중...";
+    await wait(700);
+    if (btn) btn.textContent = "최종 분석 결과 정리 중...";
+    await runAnalysis({ persist: true, userId: user.id });
+    if (!elements.zentropaReportContainer?.classList.contains('hidden')) {
+      showAnalysisPanel('results', true);
     }
-
-    await runAnalysis({
-      persist: true,
-      userId: user.id,
-    });
-
- 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[handleStartAnalysisClick] Error:", error);
-    alert(error?.message || "분석 처리 중 문제가 발생했습니다.");
+    setAnalysisNotice(error instanceof Error ? error.message : "분석 처리 중 문제가 발생했습니다. 다시 시도해 주세요.");
     resetAnalysisView();
   } finally {
     if (btn) {
@@ -2698,6 +2704,9 @@ console.log("[address] handleLocationSelect done");
   resetAnalysisView();
 };
 
+// Form controls must also work when a map key is absent or the SDK is offline.
+initSectors();
+setupProductActions();
 console.log("[Main] App starting...");
 
 loadKakaoMap()
@@ -2729,8 +2738,6 @@ loadKakaoMap()
 };
 
     console.log("[Main] Initializing secondary features...");
-    initSectors();
-    setupProductActions();
     renderHistory();
 
     if (!restoreStateFromUrl()) {
@@ -2915,7 +2922,7 @@ loadKakaoMap()
   })
   .catch((err: Error) => {
     console.error("[Main] Map initialization stack failed:", err);
-    KakaoMapManager.showError("kakaoMapContainer", `지도를 불러올 수 없습니다: ${err.message}`);
+    KakaoMapManager.showError("kakaoMapContainer", "지도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
   });
 
 const originalRadiusToggle = elements.radiusToggle;
@@ -3430,9 +3437,7 @@ function updateJudgmentUI(
     window.location.href = "/mypage.html";
   });
   document.getElementById("zentropaBtnChange")?.addEventListener("click", () => {
-     elements.legacyDashboardContent.classList.remove("hidden");
-     elements.zentropaReportContainer.classList.add("hidden");
-     window.scrollTo({ top: 0, behavior: 'smooth' });
+     showAnalysisPanel('inputs', true);
   });
 
   setTimeout(() => {
@@ -3443,18 +3448,7 @@ function updateJudgmentUI(
 }
 
 
-document.querySelectorAll(".btn-start-app").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const landing = document.getElementById("landingPage");
-    const app = document.getElementById("app");
-    if (landing && app) {
-      landing.style.display = "none";
-      app.classList.remove("hidden");
-      window.scrollTo(0, 0);
-      window.dispatchEvent(new Event("resize"));
-    }
-  });
-});
+initAppShell();
 
 function updateAuthUI() {
   const user = authService.getUser();
@@ -3552,4 +3546,24 @@ function resetSaveButton() {
   elements.btnSaveSpot?.classList.remove("saved");
   const label = elements.btnSaveSpot?.querySelector(".label");
   if (label) label.textContent = "내 자리 저장";
+}
+
+// Layout fixtures are development-only and never run analysis, save data or spend credits.
+if (import.meta.env.DEV) {
+  const preview = new URLSearchParams(window.location.search).get('ui-preview');
+  if (preview === 'app' || preview === 'report') {
+    openAnalysisApp();
+    if (preview === 'report') {
+      import('./dev/responsivePreview').then(({ createPreviewAnalysis }) => {
+        currentLocation = { ...currentLocation, address: '레이아웃 검토용 예시 주소', placeName: '예시 후보지' };
+        if (elements.selectedSectorLabel) elements.selectedSectorLabel.textContent = '카페 · 화면 검토용';
+        updateJudgmentUI(createPreviewAnalysis());
+        const notice = document.createElement('p');
+        notice.className = 'ui-preview-notice';
+        notice.textContent = '화면 검토용 예시입니다. 실제 상권 분석 결과가 아니며 저장·결제·크레딧 차감이 발생하지 않습니다.';
+        elements.zentropaReportContainer?.prepend(notice);
+        showAnalysisPanel('results');
+      });
+    }
+  }
 }

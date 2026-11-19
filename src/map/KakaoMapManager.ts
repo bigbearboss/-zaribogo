@@ -97,6 +97,25 @@ export class KakaoMapManager {
             console.log(`[KakaoMap] Map clicked: ${clickedLat}, ${clickedLng}`);
             this._reverseGeocode(clickedLat, clickedLng);
         });
+
+        // The map starts inside a hidden app and may move between mobile panels.
+        // Relayout only when its actual container becomes visible or changes size.
+        let previousWidth = 0;
+        let previousHeight = 0;
+        new ResizeObserver(([entry]) => {
+            const { width, height } = entry.contentRect;
+            if (!width || !height) {
+                previousWidth = 0;
+                previousHeight = 0;
+                return;
+            }
+            if (width === previousWidth && height === previousHeight) return;
+            previousWidth = width;
+            previousHeight = height;
+            const currentCenter = this.map.getCenter();
+            this.map.relayout();
+            this.map.setCenter(currentCenter);
+        }).observe(container);
     }
 
     // ──────────────────────────────────────────────────────────
