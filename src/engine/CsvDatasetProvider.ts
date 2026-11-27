@@ -1,242 +1,62 @@
-import { LocationPayload } from "./PublicDataFetcher";
-import {
-  resolveRegionEntry,
-  resolveRegionEntryByName,
-  RegionEntry,
-} from "./regionIndex";
+import type { LocationPayload } from './PublicDataFetcher';
+import { getManifest, type RegionEntry } from './regionIndex';
+import type { CompetitorStore } from './analysisEvidence';
 
-export interface CsvQueryResult {
-  competitorsCount: number;
-  poiTotalCount: number;
-  diversityIndex: number;
-}
-
+export interface CsvQueryResult { competitorsCount: number; poiTotalCount: number; diversityIndex: number; stores: CompetitorStore[]; supported: boolean; }
 export class CsvDatasetProvider {
-  private worker: Worker;
-  private initPromise: Promise<number> | null = null;
-  private loadedUrl: string | null = null;
-  private resolves: Map<string, (res: CsvQueryResult) => void> = new Map();
-  private rejects: Map<string, (err: any) => void> = new Map();
-  private queryIdCounter = 0;
-  public sectors: { code: string; name: string }[] = [];
-
-  constructor() {
-    this.worker = new Worker(new URL("./workers/csvWorker.ts", import.meta.url), {
-      type: "module",
-    });
-
-    this.worker.onmessage = (e: MessageEvent) => {
-      const { type, payload } = e.data;
-
-      if (type === "QUERY_RESULT") {
-        const { id, ...data } = payload;
-        if (this.resolves.has(id)) {
-          this.resolves.get(id)!(data as CsvQueryResult);
-          this.resolves.delete(id);
-          this.rejects.delete(id);
-        }
-      } else if (type === "ERROR") {
-        console.error("[CSV Worker] Global Error:", payload);
-      }
-    };
-  }
-
-  public async loadDataset(
-    entry: RegionEntry,
-    onProgress?: (count: number) => void
-  ): Promise<number> {
-    const url = entry.csvUrl;
-
-    if (this.initPromise && this.loadedUrl === url) {
-      console.log("[CSV] Reusing already loaded dataset:", {
-        region: entry.name,
-        url,
-      });
-      return this.initPromise;
-    }
-
-    if (this.loadedUrl && this.loadedUrl !== url) {
-      console.log(`[CSV] Region switch: ${this.loadedUrl} → ${url}`);
-      this.initPromise = null;
-    }
-
-    this.loadedUrl = url;
-    const sizeMb = (entry.fileSize / (1024 * 1024)).toFixed(2);
-
-    console.log("[CSV] Loading dataset", {
-      region: entry.name,
-      url,
-      sizeMb,
-      bounds: {
-        latMin: entry.latMin,
-        latMax: entry.latMax,
-        lngMin: entry.lngMin,
-        lngMax: entry.lngMax,
-      },
-    });
-
-    performance.mark("provider:csv_load:start");
-
-    this.initPromise = new Promise((resolve, reject) => {
-      const messageHandler = (e: MessageEvent) => {
-        const { type, payload } = e.data;
-
-        if (type === "LOAD_COMPLETE") {
-          this.worker.removeEventListener("message", messageHandler);
-          this.sectors = payload.sectors || [];
-
-          performance.mark("provider:csv_load:end");
-          performance.measure(
-            "provider:csv_load_time",
-            "provider:csv_load:start",
-            "provider:csv_load:end"
-          );
-
-          const [m] = performance.getEntriesByName("provider:csv_load_time").slice(-1);
-
-          console.log(
-            `[Perf] provider:csv_load_time = ${m?.duration.toFixed(0)}ms | Region: ${entry.name} | Size: ${sizeMb}MB | Rows: ${payload.count.toLocaleString()}`
-          );
-
-          resolve(payload.count);
-        } else if (type === "PROGRESS" && onProgress) {
-          onProgress(payload.count);
-        } else if (type === "ERROR") {
-          this.worker.removeEventListener("message", messageHandler);
-          this.initPromise = null;
-          reject(new Error(payload));
+  private worker: Worker | null = null;
+  private loadPromise: Promise<number> | null = null;
+  private loadedKey = '';
+  private pending = new Map<string, { resolve: (result: CsvQueryResult) => void; reject: (error: Error) => void }>();
+  private counter = 0;
+  sectors: { code: string; name: string }[] = [];
+  datasetNames: string[] = [];
+  private async loadEntries(entries: RegionEntry[], onProgress?: (count: number) => void): Promise<number> {
+    const key = entries.map(e => e.csvUrl).sort().join('|');
+    if (this.loadPromise && key === this.loadedKey) return this.loadPromise;
+    for (const request of this.pending.values()) request.reject(new Error('분석 위치가 바뀌었습니다. 다시 분석해 주세요.'));
+    this.pending.clear();
+    this.worker?.terminate();
+    this.worker = new Worker(new URL('./workers/csvWorker.ts', import.meta.url), { type: 'module' });
+    this.loadedKey = key; this.datasetNames = entries.map(e => e.name);
+    this.loadPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { this.loadPromise = null; this.worker?.terminate(); reject(new Error('상권 데이터 다운로드 시간 초과')); }, 45000);
+      this.worker!.onerror = () => { clearTimeout(timer); this.loadPromise = null; reject(new Error('상권 데이터 처리 실패')); };
+      this.worker!.onmessage = ({ data }) => {
+        const { type, payload } = data;
+        if (type === 'PROGRESS') onProgress?.(payload.count);
+        if (type === 'LOAD_COMPLETE') { clearTimeout(timer); this.sectors = payload.sectors; resolve(payload.count); }
+        if (type === 'QUERY_RESULT') { const request = this.pending.get(payload.id); request?.resolve(payload); this.pending.delete(payload.id); }
+        if (type === 'ERROR') {
+          clearTimeout(timer); const error = new Error(payload.message || String(payload));
+          if (payload.id) { this.pending.get(payload.id)?.reject(error); this.pending.delete(payload.id); }
+          else { this.loadPromise = null; reject(error); }
         }
       };
-
-      this.worker.addEventListener("message", messageHandler);
-      this.worker.postMessage({ type: "LOAD_CSV", payload: { url } });
+      this.worker!.postMessage({ type: 'LOAD_CSV', payload: { urls: entries.map(e => e.csvUrl) } });
     });
-
-    return this.initPromise;
+    return this.loadPromise;
   }
-
-  /**
-   * Backward-compatible signatures:
-   * 1) loadForLocation(lat, lng, onProgress)
-   * 2) loadForLocation(lat, lng, regionNameHint, onProgress)
-   */
-  public async loadForLocation(
-    lat: number,
-    lng: number,
-    regionNameHintOrProgress?: string | ((count: number) => void),
-    onProgress?: (count: number) => void
-  ): Promise<number> {
-    let regionNameHint: string | undefined;
-    let progressHandler: ((count: number) => void) | undefined;
-
-    if (typeof regionNameHintOrProgress === "function") {
-      // old signature: loadForLocation(lat, lng, onProgress)
-      progressHandler = regionNameHintOrProgress;
-      regionNameHint = undefined;
-    } else {
-      // new signature: loadForLocation(lat, lng, regionNameHint, onProgress)
-      regionNameHint = regionNameHintOrProgress;
-      progressHandler = onProgress;
-    }
-
-    let entry: RegionEntry | null = null;
-
-    if (regionNameHint && regionNameHint.trim()) {
-      entry = await resolveRegionEntryByName(regionNameHint);
-    }
-
-    if (!entry) {
-      entry = await resolveRegionEntry(lat, lng);
-    }
-
-    console.log("[Region Resolve Debug]", {
-      requestedLat: lat,
-      requestedLng: lng,
-      regionNameHint: regionNameHint ?? null,
-      resolvedRegion: entry?.name ?? null,
-      resolvedCsvUrl: entry?.csvUrl ?? null,
-      resolvedFileSize: entry?.fileSize ?? null,
-      resolvedBounds: entry
-        ? {
-            latMin: entry.latMin,
-            latMax: entry.latMax,
-            lngMin: entry.lngMin,
-            lngMax: entry.lngMax,
-          }
-        : null,
-    });
-
-    if (!entry) {
-      console.warn("[CSV] No region entry resolved for location.", {
-        lat,
-        lng,
-        regionNameHint,
-      });
-      return 0;
-    }
-
-    return this.loadDataset(entry, progressHandler);
+  async loadDataset(entry: RegionEntry, onProgress?: (count: number) => void) { return this.loadEntries([entry], onProgress); }
+  async loadForLocation(lat: number, lng: number, hintOrProgress?: string | ((count: number) => void), onProgress?: (count: number) => void, radiusM = 1000) {
+    const manifest = await getManifest();
+    const dy = radiusM / 110000;
+    const dx = radiusM / (110000 * Math.cos(lat * Math.PI / 180));
+    const base = (import.meta.env.VITE_CSV_BASE_URL || '').replace(/\/$/, '');
+    // All intersecting districts are needed at an administrative boundary.
+    const entries = manifest.filter(e => e.latMax >= lat - dy && e.latMin <= lat + dy && e.lngMax >= lng - dx && e.lngMin <= lng + dx)
+      .map(e => ({ ...e, csvUrl: /^https?:/.test(e.csvUrl) ? e.csvUrl : `${base}${e.csvUrl}` }));
+    if (!entries.length) { this.loadPromise = null; this.datasetNames = []; throw new Error('선택 반경을 포함하는 상권 자료가 없습니다.'); }
+    return this.loadEntries(entries, typeof hintOrProgress === 'function' ? hintOrProgress : onProgress);
   }
-
-  public async queryRadius(
-    location: LocationPayload,
-    radiusM: number,
-    industryCode: string
-  ): Promise<CsvQueryResult> {
-    if (!this.initPromise) {
-      throw new Error("Dataset not loaded. Call loadDataset first.");
-    }
-
-    await this.initPromise;
-
+  async queryRadius(location: LocationPayload, radiusM: number, industryCode: string): Promise<CsvQueryResult> {
+    if (!this.loadPromise) throw new Error('Dataset not loaded');
+    await this.loadPromise;
     return new Promise((resolve, reject) => {
-      const id = `query_${this.queryIdCounter++}`;
-      performance.mark(`provider:csv_query:start:${id}`);
-
-      this.resolves.set(id, (result) => {
-        performance.mark(`provider:csv_query:end:${id}`);
-        performance.measure(
-          "provider:csv_query_time",
-          `provider:csv_query:start:${id}`,
-          `provider:csv_query:end:${id}`
-        );
-
-        const [m] = performance.getEntriesByName("provider:csv_query_time").slice(-1);
-        console.log(
-          `[Perf] provider:csv_query_time(r=${radiusM}m) = ${m?.duration.toFixed(1)}ms`
-        );
-        resolve(result);
-      });
-
-      this.rejects.set(id, reject);
-
-      console.log("[CSV Query Debug]", {
-        id,
-        lat: location.lat,
-        lng: location.lng,
-        radiusM,
-        industryCode,
-        loadedUrl: this.loadedUrl,
-      });
-
-      this.worker.postMessage({
-        type: "QUERY_RADIUS",
-        payload: {
-          id,
-          lat: location.lat,
-          lng: location.lng,
-          radiusM,
-          industryCode,
-        },
-      });
-
-      setTimeout(() => {
-        if (this.rejects.has(id)) {
-          this.rejects.get(id)!(new Error("CSV Worker query timeout (5s)"));
-          this.resolves.delete(id);
-          this.rejects.delete(id);
-        }
-      }, 5000);
+      const id = `query_${this.counter++}`;
+      const timer = setTimeout(() => { this.pending.delete(id); reject(new Error('상권 반경 집계 시간 초과')); }, 10000);
+      this.pending.set(id, { resolve: result => { clearTimeout(timer); resolve(result); }, reject: error => { clearTimeout(timer); reject(error); } });
+      this.worker!.postMessage({ type: 'QUERY_RADIUS', payload: { id, lat: location.lat, lng: location.lng, radiusM, industryCode } });
     });
   }
 }

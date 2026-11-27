@@ -86,6 +86,8 @@ export interface StabilityData {
 }
 
 export interface PublicDataResult {
+    populationEvidence?: import('./analysisEvidence').PopulationEvidence;
+    competitionEvidence?: import('./analysisEvidence').CompetitionEvidence;
     radiusM: number;
     competitorsCount: number;
     poiTotalCount: number;
@@ -181,6 +183,7 @@ export interface RadiusComparisonItem {
 }
 
 export interface RiskAnalysis {
+    consulting?: import('./consultingAnalysis').ConsultingAnalysis;
     cri: number;
     riskTier: RiskTier;
     distanceToSafe: number;

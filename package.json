@@ -5,7 +5,10 @@
         "typecheck": "tsc --noEmit",
         "build": "npm run typecheck && vite build",
         "preview": "vite preview",
-        "doctor": "node scripts/check-env.mjs"
+        "doctor": "node scripts/check-env.mjs",
+        "test:analysis": "node scripts/test-analysis.mjs",
+        "test:population": "node scripts/test-population.mjs",
+        "typecheck:population": "tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --allowImportingTsExtensions supabase/functions/sgis-context-v2/handler.ts"
     },
     "devDependencies": {
         "@types/node": "^25.3.0",

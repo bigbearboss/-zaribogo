@@ -1,3 +1,6 @@
+import { buildConsultingAnalysis, type ConsultingAnalysis } from './engine/consultingAnalysis';
+import { consultingReportHtml } from './ui/consultingReport';
+import { calculateUnitEconomics, type EconomicsInput } from './engine/unitEconomics';
 import { RiskEngine } from "./engine/RiskEngine";
 import type {
   RiskAnalysis,
@@ -1090,9 +1093,9 @@ function showAnalysisProgress(message?: string) {
   elements.judgmentReport.classList.remove("hidden");
   elements.judgmentReport.innerHTML = `
     <div class="analysis-progress-card">
-      <div class="analysis-progress-badge">AI 분석 요약</div>
-      <h3>AI가 수집된 데이터를 종합해 아래 결과를 정리했습니다.</h3>
-      <p>입지 조건, 경쟁 환경, 수요 지표를 바탕으로 실제 창업 판단에 필요한 정보를 아래에서 확인할 수 있습니다.</p>
+      <div class="analysis-progress-badge">자료 확인 중</div>
+      <h3>상권 자료와 입력 비용을 확인하고 있습니다.</h3>
+      <p>확인된 자료와 미확인 항목을 나누어 계약 전 검토 내용을 정리합니다.</p>
     </div>
   `;
 }
@@ -1624,7 +1627,7 @@ function applyProfile() {
 
   const scenarioData = profile.profiles[currentScenario];
 
-  const fields = ["margin", "ticketPrice"];
+  const fields: string[] = []; // Financial assumptions must be entered explicitly.
   const dataKeys: Record<string, string> = {
     margin: "margin",
     ticketPrice: "ticket_krw",
@@ -1840,12 +1843,6 @@ async function handleStartAnalysisClick() {
       return;
     }
 
-    const credit = await getUserCreditStatus(user.id);
-    if (credit.remainingCredits <= 0) {
-      showUpgradeModal();
-      return;
-    }
-
     resetSaveButton();
     showAnalysisProgress();
     await wait(700);
@@ -1869,580 +1866,107 @@ async function handleStartAnalysisClick() {
 
 const debouncedAnalysis = debounce(runAnalysis, 500);
 
-async function runAnalysis(options: RunAnalysisOptions = {}) {
-  console.log("[analysis] runAnalysis called", options);
-  if (isSelectingAddress) {
-    console.log("[analysis] runAnalysis blocked: address selection in progress");
-    return;
-  }
-  const { persist = false, userId } = options;
-
-  const analysisId = `analysis_${Date.now()}`;
-  performance.mark(`${analysisId}: start`);
-
-  const rent = getNum("rent", 0);
-  const maintenance = getNum("maintenanceFee", 0);
-  const labor = getNum("laborCost", 0);
-  const industryCode = getVal("businessType", "cafe_indie_small");
-  const profile = RiskEngine.getProfile(industryCode);
-  const location = currentLocation;
-
-  const publicDataFetcher = new PublicDataFetcher(new RealPublicDataProvider());
-  const apiData = await publicDataFetcher.fetchByRadius(location, currentRadius, industryCode);
-
-  const regionHint = location.placeName || location.address || "";
-  await ensureCsvLoaded(location.lat, location.lng, regionHint);
-
-  if (csvDataLoaded) {
-    try {
-      const csvResult = await csvProvider.queryRadius(location, currentRadius, industryCode);
-      apiData.competitorsCount = csvResult.competitorsCount;
-      apiData.poiTotalCount = csvResult.poiTotalCount;
-      apiData.diversityIndex = csvResult.diversityIndex;
-      apiData._sources = {
-        ...apiData._sources,
-        competitorsCount: DataSource.PUBLIC_DATA,
-        poiTotalCount: DataSource.PUBLIC_DATA,
-        diversityIndex: DataSource.PUBLIC_DATA,
-      };
-
-      conditionalLog(
-        `[CSV] Injected local metrics. hint="${regionHint}", competitors=${csvResult.competitorsCount}, poi=${csvResult.poiTotalCount}`
-      );
-    } catch (err) {
-      console.warn("[CSV] Spatial query failed; using API fallback.", err);
-    }
-  }
-
-  const pData = apiData;
-
-  performance.mark(`${analysisId}: data_ready`);
-  performance.measure("analysis:data_fetch_time", `${analysisId}: start`, `${analysisId}: data_ready`);
-  const [dMeasure] = performance.getEntriesByName("analysis:data_fetch_time").slice(-1);
-  conditionalLog(`[Perf] analysis: data_fetch_time = ${dMeasure?.duration.toFixed(0)} ms(API + CSV merge)`);
-
-  if (pData) {
-    if (elements.householdCount) elements.householdCount.value = pData.households.toString();
-    if (elements.competitorCount) elements.competitorCount.value = pData.competitorsCount.toString();
-    if (elements.officeBuildingCount) {
-      elements.officeBuildingCount.value = Math.round(pData.poiTotalCount * 0.1).toString();
-    }
-
-    if (elements.marketActivity) {
-      const vol = pData.volatilityProxy;
-      if (vol > 0.4) elements.marketActivity.value = "booming";
-      else if (vol > 0.2) elements.marketActivity.value = "high";
-      else if (vol > 0.1) elements.marketActivity.value = "moderate";
-      else elements.marketActivity.value = "low";
-    }
-  }
-
-  const otherRadii = [300, 500, 1000].filter((r) => r !== currentRadius);
-  const comparisonResults = await Promise.all(
-    otherRadii.map(async (r) => {
-      const rData = await publicDataFetcher.fetchByRadius(location, r, industryCode);
-      const analysis = RiskEngine.analyze(
-        { ...fDataMock, industryCode, industryCategory: profile.industry_category },
-        mDataMock,
-        cDataMock,
-        sDataMock,
-        rData
-      );
-      return { radius: r, score: analysis.cri };
-    })
-  );
-
-  const fData: FinancialData = {
-    industryCode,
-    industryCategory: profile.industry_category,
-    monthlyRevenue: Math.round((rent + maintenance + labor) / 0.6),
-    rent,
-    maintenanceFee: maintenance,
-    deposit: getNum("deposit", 0),
-    premium: getNum("premium", 0),
-    area: getNum("area", 0),
-    floor: getVal("floor", "1"),
-    hasParking: getCheck("hasParking"),
-    hasInsurance: false,
-    insuranceFee: 0,
-    debtService: 0,
-    operatingExpenses: rent * 0.2,
-    cashBufferMonths: 3,
-    albiCount: getNum("albiCount", 0),
-    managerCount: getNum("managerCount", 0),
-    laborCost: labor,
-    loanAmount: getNum("loanAmount", 0),
-    interestRate: getNum("interestRate", 0),
-    margin: getNum("margin") ? getNum("margin") / 100 : undefined,
-    ticketPrice: getNum("ticketPrice") || undefined,
-    sources: fieldSources,
+function readEconomicsInput(): EconomicsInput {
+  const optional = (id: string): number | null => {
+    const text = (getEl(id) as HTMLInputElement | null)?.value.trim();
+    if (!text) return null;
+    const value = Number(text);
+    if (!Number.isFinite(value) || value < 0) throw new Error('금액과 비율은 0 이상의 숫자로 입력해 주세요.');
+    return value;
   };
-
-  const mData: MarketData = {
-    householdCount: 3000,
-    officeBuildingCount: 10,
-    competitorCount: 5,
-    competitorRadius: 0.5,
-    marketActivity: "moderate",
-    footTrafficScore: 50,
-    demographicGrowthRate: 1.2,
-    vacancyRate: 5,
+  const variable = optional('variableCostRate');
+  for (const [id, label] of [['rent', '월세'], ['maintenanceFee', '월 관리비'], ['laborCost', '월 인건비']]) {
+    if (optional(id) === null) throw new Error(`${label}를 입력해 주세요. 비용이 없으면 0을 입력하세요.`);
+  }
+  return {
+    rent: optional('rent') ?? 0, maintenance: optional('maintenanceFee') ?? 0,
+    labor: optional('laborCost') ?? 0, otherFixed: optional('otherFixedCosts'), insurance: 0,
+    variableCostRate: variable === null ? null : variable / 100,
+    ownerPay: optional('ownerPay'), loanAmount: optional('loanAmount') ?? 0,
+    annualInterestRate: optional('interestRate'), loanPrincipal: optional('loanPrincipal'),
+    operatingDays: optional('operatingDays'), ticketPrice: optional('ticketPrice'),
+    expectedRevenue: optional('expectedRevenue'), targetProfit: optional('targetProfit'),
+    availableCash: optional('availableCash'), premium: optional('premium') ?? 0,
   };
-
-  const cData: CompetitionData = {
-    competitorProximity: 1,
-    marketSaturationIndex: 30,
-    pricingPower: 60,
-  };
-
-  const sData: StabilityData = {
-    leaseRemainingYears: 5,
-    ownershipStructure: "Leased",
-    regulatoryRiskIndex: 10,
-  };
-
-  const analysis: RiskAnalysis = RiskEngine.analyze(fData, mData, cData, sData, pData);
-  currentCRI = analysis.cri;
-
-  console.log("[PublicData Debug]", {
-    poiTotalCount: pData.poiTotalCount,
-    competitorsCount: pData.competitorsCount,
-    households: pData.households,
-    population: pData.population,
-    districtPoiCount: pData.districtPoiCount,
-    _sources: pData._sources,
-    confidence: analysis.confidenceScore,
-    csvLoadedRegionHint,
-  });
-
-  performance.mark(`${analysisId}: end`);
-  performance.measure("analysis:total_time", `${analysisId}: start`, `${analysisId}: end`);
-  const [tMeasure] = performance.getEntriesByName("analysis:total_time").slice(-1);
-  conditionalLog(`[Perf] analysis: total_time = ${tMeasure?.duration.toFixed(0)} ms(click → engine done)`);
-
-  // [FP DEBUG] Financial Pressure 세부 지표 로그
-  conditionalLog("[FP DEBUG]", {
-    monthlyRent: analysis.financialPressureDetail?.monthlyRent,
-    deposit: analysis.financialPressureDetail?.deposit,
-    premium: analysis.financialPressureDetail?.premium,
-    estimatedMonthlyRevenue: analysis.financialPressureDetail?.estimatedMonthlyRevenue,
-    targetMonthlyRevenue: analysis.financialPressureDetail?.targetMonthlyRevenue,
-    rentBurdenRatio: analysis.financialPressureDetail?.rentBurdenRatio,
-    rentBurdenLevel: analysis.financialPressureDetail?.rentBurdenLevel,
-    depositLiquidityMonths: analysis.financialPressureDetail?.depositLiquidityMonths,
-    depositLiquidityLevel: analysis.financialPressureDetail?.depositLiquidityLevel,
-    premiumPaybackMonths: analysis.financialPressureDetail?.premiumPaybackMonths,
-    premiumPaybackLevel: analysis.financialPressureDetail?.premiumPaybackLevel,
-    financialPressureScore: analysis.financialPressureDetail?.financialPressureScore,
-    confidenceFlags: analysis.financialPressureDetail?.confidenceFlags,
-  });
-
-  if (elements.estimationBanner) {
-    if (analysis.hasEstimatedMetric) {
-      elements.estimationBanner.classList.remove("hidden");
-    } else {
-      elements.estimationBanner.classList.add("hidden");
-    }
-  }
-
-  if (elements.metaRadius) elements.metaRadius.textContent = `${currentRadius} m`;
-  if (elements.metaSource) {
-    const sources = Object.values(pData?._sources || {});
-    const hasApi = sources.includes(DataSource.PUBLIC_DATA);
-    const hasCsv = csvDataLoaded;
-    elements.metaSource.textContent = hasCsv
-      ? hasApi
-        ? "CSV + API 하이브리드"
-        : "로컬 CSV 데이터"
-      : hasApi
-        ? "공공 API 데이터"
-        : "기본 추정치";
-  }
-
-  if (elements.metaTime) {
-    elements.metaTime.textContent = new Date().toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }
-
-  const radiusComparison = [...comparisonResults, { radius: currentRadius, score: analysis.cri }]
-    .sort((a, b) => a.radius - b.radius)
-    .map((item) => ({
-      ...item,
-      delta: item.score - analysis.cri,
-    }));
-
-  if (elements.gaugePath) {
-    const fullLength = 251.3;
-    const offset = fullLength * (1 - analysis.cri / 100);
-    (elements.gaugePath as unknown as SVGPathElement).style.strokeDashoffset = offset.toString();
-  }
-
-  if (elements.compositeScore) {
-    const target = analysis.cri;
-    const duration = 1500;
-    const startAnimTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startAnimTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      const current = Math.floor(easedProgress * target);
-      if (elements.compositeScore) elements.compositeScore.textContent = current.toString();
-      if (progress < 1) requestAnimationFrame(animate);
-      else if (elements.compositeScore) elements.compositeScore.textContent = target.toString();
-    };
-    requestAnimationFrame(animate);
-  }
-
-  if (elements.stabilityDistance) {
-    if (analysis.distanceToSafe > 0) {
-      elements.stabilityDistance.innerHTML = `안정권(35점)까지 <span class="highlight">-${analysis.distanceToSafe}점</span> 개선이 필요합니다.`;
-    } else {
-      elements.stabilityDistance.innerHTML = `<span class="highlight" style="color: #10b981;">현재 안정권 지표를 보이고 있습니다.</span>`;
-    }
-  }
-
-  if (elements.riskTier) elements.riskTier.textContent = analysis.riskTier;
-
-  if (elements.scoreBox) {
-    elements.scoreBox.classList.remove("status-stable", "status-moderate", "status-risk");
-    let themeColor = "#10b981";
-    let secondaryColor = "#34d399";
-
-    if (analysis.cri < 35) {
-      elements.scoreBox.classList.add("status-stable");
-    } else if (analysis.cri < 55) {
-      elements.scoreBox.classList.add("status-moderate");
-      themeColor = "#f59e0b";
-      secondaryColor = "#fbbf24";
-    } else {
-      elements.scoreBox.classList.add("status-risk");
-      themeColor = "#ef4444";
-      secondaryColor = "#f87171";
-    }
-
-    document.documentElement.style.setProperty("--accent-primary", themeColor);
-    document.documentElement.style.setProperty("--accent-secondary", secondaryColor);
-  }
-
-  //updateJudgmentUI(analysis);
-  renderEvidenceCards(analysis.evidenceCards);
-  renderRadiusComparison(radiusComparison, currentRadius);
-
-  if (elements.radiusMap && pData) {
-    RadiusMap.render(elements.radiusMap, currentRadius, pData.competitorsCount, pData.poiTotalCount);
-  }
-
-  if (elements.confidenceScore) {
-    elements.confidenceScore.textContent = analysis.confidenceScore.toFixed(2);
-  }
-
-  if (elements.confidenceBar) {
-    elements.confidenceBar.style.width = `${analysis.confidenceScore * 100}%`;
-  }
-
-  if (elements.confidenceLabel) {
-    let text = "낮음 (추정 데이터 기반 판단)";
-    let cls = "low";
-    if (analysis.confidenceScore >= 0.8) {
-      text = "높음 (신뢰할 수 있는 데이터)";
-      cls = "high";
-    } else if (analysis.confidenceScore >= 0.6) {
-      text = "보통 (일부 추정 데이터 포함)";
-      cls = "medium";
-    }
-    elements.confidenceLabel.className = `conf-label ${cls}`;
-    elements.confidenceLabel.textContent = text;
-  }
-
-  if (elements.sourceSummary) {
-    elements.sourceSummary.innerHTML = "";
-    Object.entries(analysis.sourceSummary).forEach(([src, count]) => {
-      if (count === 0) return;
-      const item = document.createElement("div");
-      item.className = "source-item";
-      const dot = document.createElement("span");
-      dot.className = `source-dot ${src}`;
-      item.appendChild(dot);
-      item.appendChild(document.createTextNode(`${src.replace("_", " ")}: ${count}`));
-      elements.sourceSummary.appendChild(item);
-    });
-  }
-
-  if (elements.fScore) elements.fScore.textContent = analysis.layerScores.financialPressure.score.toString();
-  if (elements.fExp) elements.fExp.textContent = analysis.layerScores.financialPressure.explanation;
-  if (elements.mScore) elements.mScore.textContent = analysis.layerScores.marketDemand.score.toString();
-  if (elements.mExp) elements.mExp.textContent = analysis.layerScores.marketDemand.explanation;
-
-  if (elements.actionGuidance) {
-    elements.actionGuidance.innerHTML = "";
-    analysis.recommendedActions.forEach((guide) => {
-      const li = document.createElement("li");
-      li.innerHTML = guide;
-      li.style.borderLeft = `4px solid ${
-        analysis.cri > 60 ? "#ef4444" : analysis.cri > 35 ? "#f59e0b" : "#10b981"
-      }`;
-      li.style.padding = "12px";
-      li.style.marginBottom = "10px";
-      li.style.listStyle = "none";
-      li.style.background = "rgba(255,255,255,0.03)";
-      li.style.borderRadius = "0 10px 10px 0";
-      li.style.fontSize = "0.88rem";
-      elements.actionGuidance.appendChild(li);
-    });
-  }
-
-  if (elements.adjustmentContainer && elements.adjustmentContent) {
-    const adjs = analysis.minimumAdjustments;
-    if (adjs && adjs.length > 0 && analysis.riskTier !== RiskTier.STABLE) {
-      elements.adjustmentContainer.style.display = "block";
-
-      const ICONS: Record<string, string> = {
-        rent: "🏢",
-        laborCost: "👥",
-        targetRevenue: "💰",
-      };
-      const fmtMan = (n: number) => `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
-      const fmtPct = (r: number) => `${Math.round(Math.abs(r) * 100)}%`;
-      const deltaLabel = (item: (typeof adjs)[0]) =>
-        item.delta < 0
-          ? `▼ ${fmtMan(item.delta)} (${fmtPct(item.deltaRate)})`
-          : `▲ ${fmtMan(item.delta)} (${fmtPct(item.deltaRate)})`;
-      const deltaClass = (item: (typeof adjs)[0]) =>
-        item.delta < 0 ? "adj-delta-reduce" : "adj-delta-increase";
-
-      elements.adjustmentContent.innerHTML = `
-        <div class="adj-header">
-          <span class="adj-header-title">💡 1차 조정 가이드라인</span>
-          <span class="adj-header-badge">참고용</span>
-        </div>
-        <p class="adj-disclaimer">현재 입력값과 추정 데이터 기준의 가이드라인입니다. 실제 상황에 맞게 직접 판단하세요.</p>
-        <div class="adj-items">
-  ${adjs
-  .map((item) => {
-    const safeLoanAmount = fData.loanAmount ?? 0;
-    const safeInterestRate = fData.interestRate ?? 0;
-    const safeRent = fData.rent ?? 0;
-    const safeMaintenanceFee = fData.maintenanceFee ?? 0;
-    const safeLaborCost = fData.laborCost ?? 0;
-    const safeOperatingExpenses = fData.operatingExpenses ?? 0;
-    const currentMonthlyRevenue = fData.monthlyRevenue ?? item.current ?? 0;
-
-    const monthlyInterest =
-      safeLoanAmount > 0 && safeInterestRate > 0
-        ? Math.round((safeLoanAmount * (safeInterestRate / 100)) / 12)
-        : 0;
-
-    const monthlyFixedCost =
-      safeRent +
-      safeMaintenanceFee +
-      safeLaborCost +
-      safeOperatingExpenses +
-      monthlyInterest;
-
-    const effectiveMarginRate = Math.max(
-      Math.min(fData.margin ?? 0.28, 0.9),
-      0.08
-    );
-
-    const breakEvenRevenue =
-      effectiveMarginRate > 0
-        ? Math.ceil(monthlyFixedCost / effectiveMarginRate)
-        : monthlyFixedCost;
-
-    const safeTargetRevenue = Math.ceil(breakEvenRevenue * 1.12);
-
-    const expectedOperatingProfitAtSafeTarget = Math.round(
-      safeTargetRevenue * effectiveMarginRate - monthlyFixedCost
-    );
-
-    const fmtManwon = (n: number) =>
-      `${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
-
-    const fmtSignedManwon = (n: number) =>
-      `${n < 0 ? "-" : ""}${Math.round(Math.abs(n) / 10_000).toLocaleString()}만원`;
-
-    const deltaLabel = (item: (typeof adjs)[0]) =>
-      item.delta < 0
-        ? `▼ ${fmtManwon(item.delta)} (${Math.round(Math.abs(item.deltaRate) * 100)}%)`
-        : `▲ ${fmtManwon(item.delta)} (${Math.round(Math.abs(item.deltaRate) * 100)}%)`;
-
-    const deltaClass = (item: (typeof adjs)[0]) =>
-      item.delta < 0 ? "adj-delta-reduce" : "adj-delta-increase";
-
-    if (item.type === "targetRevenue") {
-      const currentGoal = Math.round(currentMonthlyRevenue / 10_000).toLocaleString();
-      const breakEvenGoal = Math.round(breakEvenRevenue / 10_000).toLocaleString();
-      const safeGoal = Math.round(safeTargetRevenue / 10_000).toLocaleString();
-      const marginPct = Math.round(effectiveMarginRate * 100);
-      const expectedProfitLabel =
-        expectedOperatingProfitAtSafeTarget >= 0
-          ? `약 ${fmtManwon(expectedOperatingProfitAtSafeTarget)}`
-          : `약 ${fmtSignedManwon(expectedOperatingProfitAtSafeTarget)}`;
-
-      const revenueGap = safeTargetRevenue - currentMonthlyRevenue;
-      const revenueGapLabel =
-        revenueGap > 0
-          ? `현재 목표보다 ${fmtManwon(revenueGap)} 더 필요`
-          : `현재 목표가 안정권 기준보다 ${fmtManwon(revenueGap)} 높음`;
-
-      return `
-        <div class="adj-item adj-item-revenue">
-          <div class="adj-item-top">
-            <span class="adj-priority-num">${item.priority}</span>
-            <span class="adj-icon">💰</span>
-            <span class="adj-label">안정권 진입 월매출 가이드${
-              item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
-            }</span>
-          </div>
-
-          <div class="adj-meta">
-            <div class="adj-meta-row">
-              <span class="adj-meta-label">현재 설정 목표</span>
-              <span class="adj-meta-value">${currentGoal}만원</span>
-            </div>
-            <div class="adj-meta-row">
-              <span class="adj-meta-label">손익분기 월매출</span>
-              <span class="adj-meta-value">${breakEvenGoal}만원</span>
-            </div>
-            <div class="adj-meta-row">
-              <span class="adj-meta-label">안정권 목표 월매출</span>
-              <span class="adj-meta-value">${safeGoal}만원</span>
-            </div>
-            <div class="adj-meta-row">
-              <span class="adj-meta-label">산정 근거</span>
-              <span class="adj-meta-value">
-                월 고정비 ${fmtManwon(monthlyFixedCost)} / 마진율 ${marginPct}% / 안전 버퍼 12%
-              </span>
-            </div>
-            <div class="adj-meta-row">
-              <span class="adj-meta-label">안정권 목표 달성 시 추정 월 영업이익</span>
-              <span class="adj-meta-value">${expectedProfitLabel}</span>
-            </div>
-          </div>
-
-          <p class="adj-desc">
-            이 카드는 “매출을 낮추라”는 뜻이 아니라,
-            <strong>현재 비용 구조 기준으로 손익분기점을 넘고 조금 더 안정적으로 운영하기 위해 필요한 월매출 수준</strong>을 보여줍니다.
-            ${revenueGapLabel}. 현재 목표가 안정권 목표보다 낮다면, 비용 구조를 조정하거나 해당 매출을 실제로 만들 수 있는 입지인지 추가 검증이 필요합니다.
-          </p>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="adj-item">
-        <div class="adj-item-top">
-          <span class="adj-priority-num">${item.priority}</span>
-          <span class="adj-icon">${ICONS[item.type] || "📌"}</span>
-          <span class="adj-label">${item.label}${
-            item.isEstimated ? ' <span class="adj-estimated">(추정)</span>' : ""
-          }</span>
-        </div>
-        <div class="adj-values">
-          <span class="adj-current">${Math.round(item.current / 10_000).toLocaleString()}만원</span>
-          <span class="adj-arrow">→</span>
-          <span class="adj-target">${Math.round(item.target / 10_000).toLocaleString()}만원</span>
-          <span class="${deltaClass(item)}">${deltaLabel(item)}</span>
-        </div>
-        <p class="adj-desc">${item.description}</p>
-      </div>
-    `;
-  })
-  .join("")}
-</div>
-        <p class="adj-footer">※ 3가지 중 1~2가지를 동시에 개선할 수 있다면 안정 구간 진입 가능성이 높아집니다.</p>
-      `;
-    } else {
-      elements.adjustmentContainer.style.display = "none";
-    }
-  }
-
-if (persist) {
-  if (elements.llmCard) {
-    elements.llmCard.style.display = "block";
-  }
-
-  const industry = {
-    code: industryCode,
-    name: elements.selectedSectorLabel?.textContent || "선택 업종",
-  };
-
-  if (!userId) {
-    throw new Error("사용자 정보가 없어 결과를 저장할 수 없습니다.");
-  }
-
-  const draftStructuredResultData = buildStructuredResultData({
-    analysis,
-    aiResult: null,
-    location: currentLocation,
-    businessTypeCode: industryCode,
-    businessTypeLabel: industry.name,
-    radius: currentRadius,
-    publicData: pData,
-  });
-
-  const aiResult = await renderAIInsights(
-    analysis,
-    pData,
-    draftStructuredResultData
-  );
-
-  const structuredResultData = buildStructuredResultData({
-    analysis,
-    aiResult,
-    location: currentLocation,
-    businessTypeCode: industryCode,
-    businessTypeLabel: industry.name,
-    radius: currentRadius,
-    publicData: pData,
-  });
-
-   renderStructuredResultUI(structuredResultData);
-  updateJudgmentUI(analysis, structuredResultData);
-  renderFinancialPressureCard(analysis.financialPressureDetail ?? null);
-  showAnalysisCompleteToast("분석 결과가 준비되었습니다. 저장을 이어서 진행하고 있어요.");;
-
-  await saveAnalysisAndConsumeCredit({
-    userId,
-    location: currentLocation,
-    businessTypeCode: industryCode,
-    businessTypeLabel: industry.name,
-    analysis,
-    aiResult:
-      aiResult ??
-      ({
-        oneLineSummary: structuredResultData.summary.one_line,
-        keyRisks: structuredResultData.summary.risk,
-        recommendedActions: structuredResultData.summary.recommendations,
-        precautions: structuredResultData.summary.precautions,
-      } as AIAnalysisResult),
-    publicData: pData,
-    resultDataOverride: structuredResultData,
-  });
-
-  const calibratedAiResult = {
-    ...(aiResult || {}),
-    oneLineSummary: structuredResultData.summary.one_line,
-  } as AIAnalysisResult;
-
-  await saveToHistory(
-    currentLocation,
-    industry,
-    currentRadius,
-    analysis,
-    calibratedAiResult
-  );
-} else {
-  if (elements.llmCard) {
-    elements.llmCard.style.display = "none";
-  }
 }
 
-  lastAnalysisResult = analysis;
+function showConsultingReport(report: ConsultingAnalysis, saved = false) {
+  if (!elements.zentropaReportContainer) return;
+  elements.legacyDashboardContent?.classList.add('hidden');
+  elements.zentropaReportContainer.classList.remove('hidden');
+  elements.zentropaReportContainer.innerHTML = consultingReportHtml(report) + `
+    <div class="consult-controls"><button id="consultChange" type="button">비용·분석 조건 수정</button><a href="/mypage.html">${saved ? '저장된 보고서 확인' : '내 보고서 목록'}</a></div>`;
+  document.getElementById('consultChange')?.addEventListener('click', () => showAnalysisPanel('inputs', true));
+}
+
+async function runAnalysis(options: RunAnalysisOptions = {}) {
+  // Input changes alone must not fetch data, generate a paid report or consume credit.
+  if (!options.persist || isSelectingAddress) return;
+  const location = { ...currentLocation };
+  const radius = currentRadius;
+  const industryCode = elements.businessType.value;
+  const industryName = elements.selectedSectorLabel?.textContent?.trim() || '선택 업종';
+  if (!industryCode) throw new Error('분석할 업종을 선택해 주세요.');
+  if (location.source === 'default') throw new Error('실제로 검토할 위치를 먼저 선택해 주세요.');
+  const financial = readEconomicsInput();
+  calculateUnitEconomics(financial); // Validate before requesting external data.
+  if (!options.userId) throw new Error('로그인 정보를 확인할 수 없습니다.');
+  const provider = new RealPublicDataProvider();
+  const pData = await provider.fetchByRadius(location, radius, industryCode);
+  try {
+    await csvProvider.loadForLocation(location.lat, location.lng, location.address || '', undefined, radius);
+    const csv = await csvProvider.queryRadius(location, radius, industryCode);
+    pData.competitorsCount = csv.competitorsCount;
+    pData.poiTotalCount = csv.poiTotalCount;
+    pData.diversityIndex = csv.diversityIndex;
+    pData._sources = { ...pData._sources, competitorsCount: csv.supported ? DataSource.PUBLIC_DATA : DataSource.UNAVAILABLE,
+      poiTotalCount: DataSource.PUBLIC_DATA, diversityIndex: DataSource.DERIVED_FROM_CSV };
+    pData.competitionEvidence = {
+      status: csv.supported ? 'available' : 'unsupported', count: csv.supported ? csv.competitorsCount : null,
+      totalStores: csv.poiTotalCount, stores: csv.stores, radiusM: radius,
+      datasets: csvProvider.datasetNames, referenceDate: null,
+      limitations: ['소상공인 상가업소 등록 자료의 분류·상호 기준 후보입니다. 현재 영업 여부는 현장에서 확인해야 합니다.', '자료 기준일이 확인되지 않아 최근 개·폐업 누락이 있을 수 있습니다. 배달 전문점·대체 업종은 추가 조사해야 합니다.'],
+    };
+  } catch {
+    console.warn('[Analysis] Competitors unavailable; zero competitors is not assumed.');
+  }
+  const report = buildConsultingAnalysis(financial, pData, location.address || location.placeName || '', industryName);
+  // A census radius estimate alone does not validate spending or achievable sales.
+  // The existing billing RPC is unchanged; incomplete reports never reach it.
+  if (report.scoreWithheld) {
+    showConsultingReport(report);
+    setAnalysisNotice('실제 소비·매출 등 의사결정 근거 검증이 남아 참고 검토만 제공합니다. 이번 결과는 크레딧을 차감하거나 유료 보고서로 저장하지 않았습니다.');
+    const notice = document.createElement('p');
+    notice.className = 'consult-alert';
+    notice.textContent = '참고 검토 · 필수 상권 근거 미확인으로 크레딧 차감 및 유료 보고서 저장 없음';
+    elements.zentropaReportContainer?.prepend(notice);
+    showAnalysisCompleteToast('참고 검토가 준비되었습니다. 크레딧은 차감하지 않았습니다.');
+    return;
+  }
+  const credit = await getUserCreditStatus(options.userId);
+  if (credit.remainingCredits <= 0) { showUpgradeModal(); return; }
+  const result = {
+    version: 'v3', savedAt: report.createdAt, consulting: report, score_withheld: true,
+    score: { total: null, grade: null, risk_level: 'unknown', tier_label: report.decision },
+    cri: null, riskTier: report.decision, confidenceScore: null,
+    location, industry: { code: industryCode, label: industryName },
+    analysis_meta: { radius_m: radius, estimated_metric_used: true },
+    evidence: { population: null, households: null, competitors: report.competition.count,
+      administrative_population: report.population, competition: report.competition },
+    summary: { one_line: report.summary, risk: report.risks, recommendations: report.actions,
+      field_checklist: report.fieldChecks, realtor_checklist: report.contractChecks },
+    oneLineSummary: report.summary, keyRisks: report.risks, recommendedActions: report.actions,
+  };
+  // Preserve the existing atomic save-and-consume RPC. No new billing or schema logic.
+  const { error } = await supabase.rpc('save_analysis_and_consume_credit', {
+    user_id_input: options.userId,
+    title_input: `[${industryName}] ${location.placeName || location.address} 분석 리포트`,
+    location_input: location.placeName || location.address,
+    business_type_input: industryCode, result_data_input: result,
+  });
+  if (error) throw new Error(`분석 저장 실패: ${error.message}`);
+  showConsultingReport(report, true);
+  showAnalysisCompleteToast('비용·상권 검토 보고서가 저장되었습니다.');
 }
 
 elements.startAnalysis?.addEventListener("click", () => {
@@ -3071,6 +2595,7 @@ function updateJudgmentUI(
   analysis: RiskAnalysis,
   structuredResult?: ReturnType<typeof buildStructuredResultData>
 ) {
+  if (analysis.consulting) { showConsultingReport(analysis.consulting); return; }
   if (!elements.zentropaReportContainer || !elements.legacyDashboardContent) return;
 
   elements.legacyDashboardContent.classList.add("hidden");

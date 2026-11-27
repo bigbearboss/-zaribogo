@@ -1,3 +1,4 @@
+import { consultingReportHtml } from './ui/consultingReport';
 import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from './services/supabase';
 import { authService } from './services/AuthService';
 import { fetchActiveCreditProducts } from './services/paymentService';
@@ -697,6 +698,26 @@ function renderFinancialPressureCard(fp: any | null) {
 
 function openReportDetail(report: any) {
     const data = report.result_data || {};
+    const legacy = document.getElementById('reportDetailContent');
+    let consulting = document.getElementById('consultingReportDetail');
+    if (!consulting && legacy) {
+        consulting = document.createElement('div');
+        consulting.id = 'consultingReportDetail';
+        legacy.before(consulting);
+    }
+    if (legacy) legacy.hidden = data.consulting?.version === 3;
+    if (consulting) consulting.hidden = data.consulting?.version !== 3;
+    if (data.consulting?.version === 3 && consulting) {
+        consulting.innerHTML = consultingReportHtml(data.consulting);
+        DOM.detailTitle.textContent = report.title || '사업성 검토';
+        DOM.detailDate.textContent = new Date(report.created_at).toLocaleDateString('ko-KR');
+        DOM.detailAddress.textContent = data.consulting.address;
+        DOM.detailGradeBadge.textContent = '조건부 검토';
+        DOM.detailGradeBadge.className = 'grade-badge';
+        renderFinancialPressureCard(null);
+        switchView('report-detail', true);
+        return;
+    }
     
     // Financial Pressure Card Rendering
     renderFinancialPressureCard(data.financial_pressure_detail || null);

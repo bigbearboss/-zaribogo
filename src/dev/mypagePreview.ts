@@ -1,4 +1,5 @@
 import type { CreditProduct } from '../services/paymentService';
+import { createPreviewAnalysis } from './responsivePreview';
 
 /** Fictional UI fixtures, dynamically imported only by Vite's DEV branch. */
 export const previewUser = { id: 'layout-preview-only', email: 'very.long.layout.preview.account@example.invalid' };
@@ -10,6 +11,11 @@ export const previewProducts: CreditProduct[] = [
   { id: 'preview-team', name: 'Pro / B2B', price: 0, base_credits: 0, bonus_credits: 0, total_credits: 0, is_b2b_only: true, badge_text: null, is_active: true },
 ];
 export const previewReports = [
+  {
+    id: 'preview-consulting', title: '[화면 예시] 손익·상권 근거 검토 v3',
+    location: '화면 검토용 가상 주소', business_type: '카페', created_at: '2026-11-21T00:00:00Z',
+    result_data: { version: 'v3', consulting: createPreviewAnalysis().consulting },
+  },
   {
     id: 'preview-report', title: '[화면 예시] 해오름마을 근린상가 카페 후보지 비교 리포트',
     location: '경기도 파주시 해오름로 예시 상가 1층 (실제 분석 아님)', business_type: '카페', created_at: '2026-11-19T02:00:00Z',

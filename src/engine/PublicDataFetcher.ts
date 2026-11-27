@@ -1,4 +1,5 @@
 import type { PublicDataResult } from "./types";
+import { emptyPublicData } from "./analysisEvidence";
 
 export interface LocationPayload {
     lat: number;
@@ -52,7 +53,7 @@ export class PublicDataFetcher {
     private provider: PublicDataProvider;
 
     constructor(provider?: PublicDataProvider) {
-        this.provider = provider || new MockPublicDataProvider();
+        this.provider = provider || { fetchByRadius: async (_location, radius) => emptyPublicData(radius) };
     }
 
     async fetchByRadius(location: LocationPayload, radius: number, industryCode: string): Promise<PublicDataResult> {
