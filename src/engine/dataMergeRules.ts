@@ -17,6 +17,7 @@ import type { PublicDataResult } from "./types";
 //    (Priority and weights are defined separately below)
 // ──────────────────────────────────────────────────────────────
 export enum DataSource {
+    UNAVAILABLE = "unavailable",
     USER_INPUT = "user_input",
     PUBLIC_DATA = "public_data",
 
@@ -48,6 +49,7 @@ export const SOURCE_PRIORITY_ORDER: DataSource[] = [
 //    Used to compute card-level and overall confidence scores.
 // ──────────────────────────────────────────────────────────────
 export const SOURCE_CONFIDENCE_WEIGHTS: Record<DataSource, number> = {
+    [DataSource.UNAVAILABLE]: 0,
     [DataSource.USER_INPUT]: 1.0,
     [DataSource.PUBLIC_DATA]: 1.0,
     [DataSource.DERIVED_FROM_PUBLIC]: 0.8,
@@ -224,7 +226,7 @@ export function computeFallbackState(
 
     for (const rule of METRIC_MERGE_RULES) {
         const src = (sourcesMap[rule.metric] ?? DataSource.ESTIMATED) as DataSource;
-        const isEstimated = rule.isEstimatedWhen.includes(src);
+        const isEstimated = src === DataSource.UNAVAILABLE || rule.isEstimatedWhen.includes(src);
         if (isEstimated) {
             estimatedMetrics.push(rule.metric as string);
             if (rule.criticality === "high") {
